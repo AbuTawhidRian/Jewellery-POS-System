@@ -1,0 +1,19 @@
+name: Docker Build and Publish
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Build the Docker image
+      run: docker build . --file Dockerfile --tag abu-tawhid-rian/jewellery-pos-system:latest
+
+    # Add steps here to push to a Docker registry (like Docker Hub or GitHub Container Registry)
+    # or add steps to SSH into your server and deploy the new image.

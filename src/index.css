@@ -1,0 +1,46 @@
+@import "tailwindcss";
+
+@theme {
+  --color-slate-850: #141E30;
+  --color-slate-900: #0F172A;
+  --color-slate-950: #020617;
+  --color-gold-400: #FDE047;
+  --color-gold-500: #D4AF37;
+  --color-gold-600: #B8860B;
+}
+
+body {
+  background-color: var(--color-slate-900, #0F172A);
+  color: #f1f5f9;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Print Specific Styles */
+@media print {
+  @page {
+    /* 2.25 inch x 0.5 inch typical dumbbell jewelry label */
+    size: 2.25in 0.5in landscape;
+    margin: 0;
+  }
+  body * {
+    visibility: hidden;
+  }
+  #print-area, #print-area * {
+    visibility: visible;
+  }
+  #print-area {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 2.25in;
+    height: 0.5in;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: white !important;
+    color: black !important;
+  }
+}

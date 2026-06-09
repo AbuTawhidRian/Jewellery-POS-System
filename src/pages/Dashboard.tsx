@@ -1,0 +1,89 @@
+import React from 'react';
+import { useInventory } from '../store/InventoryContext';
+import { Package, Scale, TrendingUp, ShoppingBag } from 'lucide-react';
+import { isToday, parseISO } from 'date-fns';
+
+const Dashboard: React.FC = () => {
+  const { items, sales } = useInventory();
+
+  const activeStock = items.filter(i => i.status === 'In Stock');
+  const totalItemsInStock = activeStock.length;
+  const totalWeightInStock = activeStock.reduce((acc, item) => acc + item.weight, 0);
+  
+  const todaySales = sales.filter(s => isToday(parseISO(s.date)));
+  const totalSalesTodayItems = todaySales.length;
+  
+  // Note: Since price is not tracked per item, we show the total weight sold today as a proxy, 
+  // or just count of items sold. The requirements asked for "Total Sales Today (AED)". 
+  // We'll show N/A or calculate based on a mock gold rate if needed, but let's show items count for now.
+  const totalItemsSold = sales.length;
+
+  const stats = [
+    { label: 'Items In Stock', value: totalItemsInStock, icon: Package, color: 'text-blue-400', bg: 'bg-blue-400/10' },
+    { label: 'Gold Weight (g)', value: totalWeightInStock.toFixed(2), icon: Scale, color: 'text-gold-500', bg: 'bg-gold-500/10' },
+    { label: 'Sales Today (Items)', value: totalSalesTodayItems, icon: TrendingUp, color: 'text-emerald-400', bg: 'bg-emerald-400/10' },
+    { label: 'Total Items Sold', value: totalItemsSold, icon: ShoppingBag, color: 'text-purple-400', bg: 'bg-purple-400/10' },
+  ];
+
+  return (
+    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 ease-out">
+      <header className="mb-8">
+        <h1 className="text-3xl font-bold text-slate-100">Dashboard</h1>
+        <p className="text-slate-400 mt-1">Welcome back. Here's what's happening today.</p>
+      </header>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        {stats.map((stat, idx) => {
+          const Icon = stat.icon;
+          return (
+            <div key={idx} className="bg-slate-950 p-6 rounded-2xl border border-slate-800 shadow-lg relative overflow-hidden group hover:border-slate-700 transition-colors">
+              <div className="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-gradient-to-br from-white/5 to-transparent rounded-full blur-2xl group-hover:bg-white/10 transition-colors"></div>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-slate-400 mb-1">{stat.label}</p>
+                  <h3 className="text-3xl font-bold text-slate-100">{stat.value}</h3>
+                </div>
+                <div className={`p-3 rounded-xl ${stat.bg} ${stat.color}`}>
+                  <Icon className="w-6 h-6" />
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Quick overview of recent activity */}
+      <div className="bg-slate-950 rounded-2xl border border-slate-800 p-6 shadow-lg">
+        <h2 className="text-xl font-bold text-slate-100 mb-4">Recent Sales</h2>
+        {sales.length === 0 ? (
+          <p className="text-slate-500 text-center py-8">No sales recorded yet.</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse min-w-[600px]">
+              <thead>
+                <tr className="border-b border-slate-800 text-sm text-slate-400">
+                  <th className="pb-3 font-medium">Item</th>
+                  <th className="pb-3 font-medium">Barcode</th>
+                  <th className="pb-3 font-medium">Weight</th>
+                  <th className="pb-3 font-medium">Buyer</th>
+                </tr>
+              </thead>
+              <tbody className="text-sm">
+                {sales.slice(-5).reverse().map((sale) => (
+                  <tr key={sale.id} className="border-b border-slate-800/50 last:border-0 hover:bg-slate-900/50 transition-colors">
+                    <td className="py-3 text-slate-200">{sale.type}</td>
+                    <td className="py-3 text-slate-400 font-mono">{sale.barcode}</td>
+                    <td className="py-3 text-gold-400 font-medium">{sale.weight.toFixed(2)}g</td>
+                    <td className="py-3 text-slate-300">{sale.buyer_name}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default Dashboard;

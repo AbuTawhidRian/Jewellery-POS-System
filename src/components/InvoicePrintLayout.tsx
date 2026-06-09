@@ -1,0 +1,84 @@
+import React from 'react';
+import { useInventory } from '../store/InventoryContext';
+import { format } from 'date-fns';
+import { Diamond } from 'lucide-react';
+
+const InvoicePrintLayout: React.FC = () => {
+  const { printInvoiceData } = useInventory();
+
+  if (!printInvoiceData) return null;
+
+  return (
+    <div className="hidden print:block bg-white text-black min-h-screen font-sans">
+      <div className="max-w-[21cm] mx-auto p-12 bg-white">
+        
+        {/* Header */}
+        <div className="flex justify-between items-start border-b-2 border-slate-200 pb-8 mb-8">
+          <div className="flex items-center gap-3">
+            <Diamond className="w-10 h-10 text-slate-800" />
+            <div>
+              <h1 className="text-3xl font-bold tracking-tight text-slate-900">Rian Jewellery</h1>
+              <p className="text-sm text-slate-500 mt-1">Wholesale & Retail Trading</p>
+            </div>
+          </div>
+          <div className="text-right">
+            <h2 className="text-xl font-bold text-slate-400 tracking-widest uppercase mb-2">Invoice</h2>
+            <p className="text-sm text-slate-600"><strong>Date:</strong> {format(new Date(printInvoiceData.date), 'MMM dd, yyyy')}</p>
+            <p className="text-sm text-slate-600"><strong>Time:</strong> {format(new Date(printInvoiceData.date), 'hh:mm a')}</p>
+          </div>
+        </div>
+
+        {/* Bill To */}
+        <div className="mb-10">
+          <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-2">Billed To</h3>
+          <p className="text-xl font-bold text-slate-800">{printInvoiceData.buyerName}</p>
+        </div>
+
+        {/* Table */}
+        <table className="w-full text-left border-collapse mb-10">
+          <thead>
+            <tr className="border-b-2 border-slate-800 text-slate-800">
+              <th className="py-3 px-2 font-bold w-16">#</th>
+              <th className="py-3 px-2 font-bold">Item Barcode</th>
+              <th className="py-3 px-2 font-bold">Item Type</th>
+              <th className="py-3 px-2 font-bold text-right">Weight (g)</th>
+            </tr>
+          </thead>
+          <tbody className="text-sm">
+            {printInvoiceData.items.map((item, idx) => (
+              <tr key={item.barcode} className="border-b border-slate-200">
+                <td className="py-4 px-2 text-slate-500">{idx + 1}</td>
+                <td className="py-4 px-2 font-mono font-medium text-slate-700">{item.barcode}</td>
+                <td className="py-4 px-2 text-slate-600">{item.type}</td>
+                <td className="py-4 px-2 font-medium text-right text-slate-900">{item.weight.toFixed(2)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+
+        {/* Summary */}
+        <div className="flex justify-end">
+          <div className="w-1/2 bg-slate-50 p-6 rounded-xl border border-slate-100">
+            <div className="flex justify-between items-center mb-2 text-slate-600">
+              <span>Total Items:</span>
+              <span className="font-medium">{printInvoiceData.items.length}</span>
+            </div>
+            <div className="flex justify-between items-center pt-4 border-t border-slate-200">
+              <span className="font-bold text-slate-800">Total Net Weight:</span>
+              <span className="text-xl font-bold text-slate-900">{printInvoiceData.totalWeight.toFixed(2)} g</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="mt-20 pt-8 border-t border-slate-200 text-center text-sm text-slate-500">
+          <p>Thank you for your business!</p>
+          <p className="mt-1">For any inquiries, please contact us at contact@rianjewellery.com</p>
+        </div>
+
+      </div>
+    </div>
+  );
+};
+
+export default InvoicePrintLayout;

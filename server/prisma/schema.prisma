@@ -1,0 +1,38 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Item {
+  id          String   @id @default(uuid())
+  barcode     String   @unique
+  type        String
+  description String
+  weight      Float
+  status      String   @default("In Stock")
+  dateAdded   DateTime @default(now())
+  
+  sales       Sale[]
+}
+
+model Buyer {
+  id          String   @id @default(uuid())
+  name        String
+  
+  sales       Sale[]
+}
+
+model Sale {
+  id          String   @id @default(uuid())
+  itemId      String
+  buyerId     String
+  date        DateTime @default(now())
+  weight      Float
+
+  item        Item     @relation(fields: [itemId], references: [id])
+  buyer       Buyer    @relation(fields: [buyerId], references: [id])
+}

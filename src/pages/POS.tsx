@@ -1,0 +1,534 @@
+import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { useInventory, type Item } from '../store/InventoryContext';
+import { ShoppingCart, CheckCircle, XCircle, ScanLine, Trash2, Camera, CameraOff, Building2 } from 'lucide-react';
+import clsx from 'clsx';
+import { Html5QrcodeScanner } from 'html5-qrcode';
+import Dialog from '../components/Dialog';
+
+const POS: React.FC = () => {
+  const { items, buyers, sales, processBulkSale, addBuyer, deleteBuyer, setPrintInvoiceData } = useInventory();
+  const [selectedBuyer, setSelectedBuyer] = useState('');
+  const [barcode, setBarcode] = useState('');
+  const [notification, setNotification] = useState<{ type: 'success' | 'error', message: string } | null>(null);
+  const [cart, setCart] = useState<Item[]>([]);
+  const [isScanning, setIsScanning] = useState(false);
+  
+  // New Buyer Modal State
+  const [isBuyerModalOpen, setIsBuyerModalOpen] = useState(false);
+  const [newBuyerName, setNewBuyerName] = useState('');
+  const [isAddingBuyer, setIsAddingBuyer] = useState(false);
+
+  // Searchable Dropdown State
+  const [buyerSearch, setBuyerSearch] = useState('');
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Dialog State
+  const [dialogConfig, setDialogConfig] = useState<{
+    isOpen: boolean;
+    type: 'alert' | 'confirm';
+    title: string;
+    message: string;
+    onConfirm?: () => void;
+    onCancel?: () => void;
+    confirmText?: string;
+    cancelText?: string;
+  }>({ isOpen: false, type: 'alert', title: '', message: '' });
+
+  const inputRef = useRef<HTMLInputElement>(null);
+  const newBuyerInputRef = useRef<HTMLInputElement>(null);
+  const scannerRef = useRef<Html5QrcodeScanner | null>(null);
+
+  // Keep input focused automatically
+  useEffect(() => {
+    const focusInput = () => {
+      const activeTag = document.activeElement?.tagName;
+      if (!isScanning && !isBuyerModalOpen && activeTag !== 'BUTTON' && activeTag !== 'INPUT' && inputRef.current) {
+        // Only auto-focus if we aren't typing in the buyer search
+        if (document.activeElement?.id !== 'buyer-search') {
+          inputRef.current.focus();
+        }
+      }
+    };
+    focusInput();
+    document.addEventListener('click', focusInput);
+    return () => document.removeEventListener('click', focusInput);
+  }, [isScanning, isBuyerModalOpen]);
+
+  // Handle outside click for searchable dropdown
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Focus modal input when opened
+  useEffect(() => {
+    if (isBuyerModalOpen && newBuyerInputRef.current) {
+      newBuyerInputRef.current.focus();
+    }
+  }, [isBuyerModalOpen]);
+
+  const showNotification = useCallback((type: 'success' | 'error', message: string) => {
+    setNotification({ type, message });
+    setTimeout(() => setNotification(null), 3000);
+  }, []);
+
+  const processScannedCode = useCallback((code: string) => {
+    if (!code) return;
+
+    const item = items.find(i => i.barcode === code);
+    
+    if (!item) {
+      showNotification('error', `Barcode ${code} not found in inventory.`);
+    } else if (item.status === 'Sold') {
+      showNotification('error', `Item ${code} is already sold!`);
+    } else {
+      setCart(prev => {
+        if (prev.some(c => c.barcode === code)) return prev;
+        showNotification('success', `Added ${item.type} (${item.weight}g) to cart.`);
+        return [...prev, item];
+      });
+    }
+  }, [items, showNotification]);
+
+  const handleScan = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      processScannedCode(barcode.trim());
+      setBarcode('');
+    }
+  };
+
+  // Setup Camera Scanner
+  useEffect(() => {
+    if (isScanning) {
+      scannerRef.current = new Html5QrcodeScanner(
+        "reader",
+        { fps: 5, qrbox: { width: 250, height: 100 }, aspectRatio: 1.0 },
+        /* verbose= */ false
+      );
+      
+      let lastScannedCode = '';
+      let lastScannedTime = 0;
+
+      scannerRef.current.render(
+        (decodedText) => {
+          const now = Date.now();
+          // Prevent double scanning the same code within 3 seconds
+          if (decodedText === lastScannedCode && (now - lastScannedTime) < 3000) {
+            return;
+          }
+          lastScannedCode = decodedText;
+          lastScannedTime = now;
+          
+          processScannedCode(decodedText);
+        },
+        () => {
+          // ignore background errors
+        }
+      );
+    } else {
+      if (scannerRef.current) {
+        scannerRef.current.clear().catch(console.error);
+        scannerRef.current = null;
+      }
+    }
+
+    return () => {
+      if (scannerRef.current) {
+        scannerRef.current.clear().catch(console.error);
+      }
+    };
+  }, [isScanning, processScannedCode]);
+
+  const removeFromCart = (barcodeToRemove: string) => {
+    setCart(prev => prev.filter(c => c.barcode !== barcodeToRemove));
+  };
+
+  const handleCheckout = async () => {
+    if (!selectedBuyer) {
+      showNotification('error', 'Please select a Buyer Company first.');
+      return;
+    }
+    
+    if (cart.length === 0) {
+      showNotification('error', 'Cart is empty.');
+      return;
+    }
+
+    const barcodes = cart.map(c => c.barcode);
+    const result = await processBulkSale(barcodes, selectedBuyer);
+    
+    if (result.success) {
+      const buyerName = buyers.find(b => b.id === selectedBuyer)?.name || 'Unknown Buyer';
+      const completedCart = [...cart];
+      const weight = totalWeight;
+
+      setDialogConfig({
+        isOpen: true,
+        type: 'confirm',
+        title: 'Sale Complete!',
+        message: `Successfully sold ${completedCart.length} items to ${buyerName}.`,
+        confirmText: 'Print Invoice',
+        cancelText: 'Done',
+        onConfirm: () => {
+          setPrintInvoiceData({
+            buyerName,
+            items: completedCart,
+            date: new Date().toISOString(),
+            totalWeight: weight
+          });
+          setTimeout(() => window.print(), 100);
+          setCart([]);
+          setSelectedBuyer('');
+          setBuyerSearch('');
+          setDialogConfig(prev => ({ ...prev, isOpen: false }));
+        },
+        onCancel: () => {
+          setCart([]);
+          setSelectedBuyer('');
+          setBuyerSearch('');
+          setDialogConfig(prev => ({ ...prev, isOpen: false }));
+        }
+      });
+    } else {
+      showNotification('error', result.message);
+    }
+    
+    setTimeout(() => inputRef.current?.focus(), 10);
+  };
+
+  const totalWeight = cart.reduce((acc, item) => acc + item.weight, 0);
+
+  return (
+    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 ease-out h-full flex flex-col relative">
+      <header className="mb-8">
+        <h1 className="text-3xl font-bold text-slate-100 flex items-center gap-3">
+          <ShoppingCart className="w-8 h-8 text-gold-500" />
+          Point of Sale
+        </h1>
+        <p className="text-slate-400 mt-1">Scan items into the cart and review before completing the sale.</p>
+      </header>
+
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 flex-1 min-h-0 pb-8">
+        
+        {/* Left Column: Scanner and Buyer */}
+        <div className="lg:col-span-5 flex flex-col gap-6">
+          
+          <div className="bg-slate-950 p-6 rounded-2xl border border-slate-800 shadow-lg">
+            <label className="block text-sm font-bold tracking-wide text-slate-400 uppercase mb-3">
+              1. Select Buyer Company
+            </label>
+            <div className="flex gap-2 relative">
+              <div ref={dropdownRef} className="flex-1 relative">
+                <input 
+                  id="buyer-search"
+                  type="text"
+                  value={buyerSearch}
+                  onChange={(e) => {
+                    setBuyerSearch(e.target.value);
+                    setIsDropdownOpen(true);
+                    setSelectedBuyer(''); // Clear selection if user types
+                  }}
+                  onFocus={() => setIsDropdownOpen(true)}
+                  className="w-full bg-slate-900 border-2 border-slate-700 rounded-xl px-5 py-4 text-lg text-slate-100 focus:outline-none focus:border-gold-500 transition-colors"
+                  placeholder="-- Search or Select a Buyer --"
+                  autoComplete="off"
+                />
+                
+                {isDropdownOpen && (
+                  <div className="absolute z-50 w-full mt-2 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl overflow-hidden max-h-60 overflow-y-auto">
+                    {buyers.filter(b => b.name.toLowerCase().includes(buyerSearch.toLowerCase())).length === 0 ? (
+                      <div className="px-5 py-4 text-slate-400 text-sm text-center">No buyers found. Click "+ New" to add one.</div>
+                    ) : (
+                      buyers
+                        .filter(b => b.name.toLowerCase().includes(buyerSearch.toLowerCase()))
+                        .map(b => (
+                          <div 
+                            key={b.id} 
+                            onClick={() => {
+                              setSelectedBuyer(b.id);
+                              setBuyerSearch(b.name);
+                              setIsDropdownOpen(false);
+                              setTimeout(() => inputRef.current?.focus(), 10);
+                            }}
+                            className={clsx(
+                              "px-5 py-4 cursor-pointer transition-colors border-b border-slate-700/50 last:border-0",
+                              selectedBuyer === b.id ? "bg-gold-500/20 text-gold-500 font-bold" : "text-slate-200 hover:bg-slate-700 hover:text-white"
+                            )}
+                          >
+                            {b.name}
+                          </div>
+                        ))
+                    )}
+                  </div>
+                )}
+              </div>
+              <button
+                onClick={() => setIsBuyerModalOpen(true)}
+                className="bg-slate-900 hover:bg-slate-800 border-2 border-slate-700 hover:border-gold-500 text-gold-500 rounded-xl px-4 flex flex-col items-center justify-center transition-all"
+                title="Manage Buyers"
+              >
+                <Building2 className="w-6 h-6" />
+                <span className="text-[10px] font-bold uppercase mt-1">Manage</span>
+              </button>
+            </div>
+          </div>
+
+          <div className="bg-slate-950 p-6 rounded-2xl border border-slate-800 shadow-xl relative overflow-hidden flex flex-col items-center">
+            <div className="w-full flex justify-between items-center mb-6">
+              <label className="flex items-center gap-2 text-sm font-bold tracking-widest text-gold-500 uppercase">
+                <ScanLine className="w-5 h-5" />
+                2. Scan Barcode
+              </label>
+              
+              <button
+                onClick={() => setIsScanning(!isScanning)}
+                className={clsx(
+                  "flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-bold transition-colors",
+                  isScanning ? "bg-red-500/20 text-red-400 hover:bg-red-500/30" : "bg-gold-500/20 text-gold-500 hover:bg-gold-500/30"
+                )}
+              >
+                {isScanning ? (
+                  <><CameraOff className="w-4 h-4" /> Stop Camera</>
+                ) : (
+                  <><Camera className="w-4 h-4" /> Use Camera</>
+                )}
+              </button>
+            </div>
+            
+            {isScanning ? (
+              <div className="w-full h-auto overflow-hidden rounded-xl border-2 border-gold-500/50 bg-slate-900">
+                <div id="reader" className="w-full"></div>
+              </div>
+            ) : (
+              <div className="w-full">
+                <input 
+                  ref={inputRef}
+                  type="text"
+                  value={barcode}
+                  onChange={(e) => setBarcode(e.target.value)}
+                  onKeyDown={handleScan}
+                  className="w-full bg-slate-900 border-b-4 border-slate-700 focus:border-gold-500 px-6 py-6 text-4xl text-center text-slate-100 font-mono focus:outline-none transition-colors rounded-t-xl"
+                  placeholder="WAITING..."
+                  autoComplete="off"
+                />
+                <p className="text-center text-slate-500 mt-4 text-sm font-medium">
+                  Type or scan with a physical scanner, then press ENTER
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Notification Area */}
+          <div className="h-20 mt-2">
+            {notification && (
+              <div className={clsx(
+                "p-4 rounded-xl border flex items-center justify-center gap-3 text-sm font-bold animate-in slide-in-from-top-2 fade-in duration-300",
+                notification.type === 'success' 
+                  ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400" 
+                  : "bg-red-500/10 border-red-500/30 text-red-400"
+              )}>
+                {notification.type === 'success' ? <CheckCircle className="w-5 h-5 shrink-0" /> : <XCircle className="w-5 h-5 shrink-0" />}
+                <span className="truncate">{notification.message}</span>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Right Column: Cart */}
+        <div className="lg:col-span-7 bg-slate-950 rounded-2xl border border-slate-800 shadow-lg flex flex-col h-[600px] lg:h-auto overflow-hidden relative">
+          <div className="p-6 border-b border-slate-800 flex justify-between items-center bg-slate-900/50">
+            <h2 className="text-xl font-bold text-slate-100">Shopping Cart</h2>
+            <span className="px-3 py-1 bg-slate-800 text-slate-300 rounded-full text-sm font-semibold">
+              {cart.length} Items
+            </span>
+          </div>
+
+          <div className="flex-1 overflow-y-auto p-0 md:p-2">
+            {cart.length === 0 ? (
+              <div className="h-full flex flex-col items-center justify-center text-slate-500 p-4">
+                <ShoppingCart className="w-16 h-16 mb-4 opacity-20" />
+                <p className="text-center">Scan items to add them to the cart.</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse min-w-[500px]">
+                <thead className="sticky top-0 bg-slate-950 z-10 shadow-sm">
+                  <tr className="text-sm text-slate-400 border-b border-slate-800">
+                    <th className="py-3 px-4 font-medium">Barcode</th>
+                    <th className="py-3 px-4 font-medium">Type</th>
+                    <th className="py-3 px-4 font-medium text-right">Weight (g)</th>
+                    <th className="py-3 px-4 font-medium text-center">Action</th>
+                  </tr>
+                </thead>
+                <tbody className="text-sm">
+                    {cart.map((item) => (
+                      <tr key={item.id} className="border-b border-slate-800/50 hover:bg-slate-900/50 transition-colors">
+                        <td className="py-3 px-4 font-mono text-slate-300">{item.barcode}</td>
+                        <td className="py-3 px-4 text-slate-200">{item.type}</td>
+                        <td className="py-3 px-4 text-gold-400 font-medium text-right">{item.weight.toFixed(2)}</td>
+                        <td className="py-3 px-4 text-center">
+                          <button 
+                            onClick={() => removeFromCart(item.barcode)}
+                            className="p-2 text-slate-500 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors"
+                            title="Remove item"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+
+          <div className="p-6 bg-slate-900 border-t border-slate-800 mt-auto shrink-0">
+            <div className="flex justify-between items-center mb-6">
+              <span className="text-slate-400 font-medium text-lg">Total Weight</span>
+              <span className="text-3xl font-bold text-gold-500">{totalWeight.toFixed(2)}<span className="text-xl ml-1">g</span></span>
+            </div>
+            <button 
+              onClick={handleCheckout}
+              disabled={cart.length === 0}
+              className="w-full bg-gold-500 hover:bg-gold-400 disabled:bg-slate-800 disabled:text-slate-500 text-slate-950 font-bold py-4 px-4 rounded-xl transition-all shadow-[0_0_15px_rgba(212,175,55,0.3)] disabled:shadow-none text-lg flex justify-center items-center gap-2"
+            >
+              <CheckCircle className="w-6 h-6" />
+              Complete Sale
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+      {/* Manage Buyers Modal */}
+      {isBuyerModalOpen && (
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[80vh]">
+            <div className="p-6 border-b border-slate-800 flex justify-between items-center bg-slate-950/50 shrink-0">
+              <h3 className="text-xl font-bold text-slate-100 flex items-center gap-2">
+                <Building2 className="w-6 h-6 text-gold-500" />
+                Manage Buyers
+              </h3>
+              <button 
+                onClick={() => setIsBuyerModalOpen(false)}
+                className="text-slate-500 hover:text-slate-300 transition-colors"
+              >
+                <XCircle className="w-6 h-6" />
+              </button>
+            </div>
+            
+            <div className="p-6 overflow-y-auto flex-1">
+              <div className="space-y-2 mb-6">
+                {buyers.length === 0 ? (
+                  <p className="text-slate-500 text-sm text-center py-4">No buyers found.</p>
+                ) : (
+                  buyers.map(b => (
+                    <div key={b.id} className="flex justify-between items-center bg-slate-950 border border-slate-800 rounded-lg p-3">
+                      <span className="text-slate-200 font-medium">{b.name}</span>
+                      <button
+                        onClick={() => {
+                          if (sales.some(s => s.buyer_id === b.id)) {
+                            setDialogConfig({
+                              isOpen: true,
+                              type: 'alert',
+                              title: 'Cannot Delete',
+                              message: `Cannot delete '${b.name}' because there are sales recorded for this buyer.`
+                            });
+                            return;
+                          }
+                          setDialogConfig({
+                            isOpen: true,
+                            type: 'confirm',
+                            title: 'Delete Buyer',
+                            message: `Are you sure you want to delete '${b.name}'?`,
+                            onConfirm: async () => {
+                              const success = await deleteBuyer(b.id);
+                              if (success && selectedBuyer === b.id) {
+                                setSelectedBuyer('');
+                                setBuyerSearch('');
+                              }
+                              setDialogConfig(prev => ({ ...prev, isOpen: false }));
+                            }
+                          });
+                        }}
+                        className="p-2 text-slate-500 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors"
+                        title="Delete buyer"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              <div className="border-t border-slate-800 pt-6">
+                <label className="block text-sm font-bold tracking-wide text-slate-400 uppercase mb-2">
+                  Add New Buyer
+                </label>
+                <div className="flex gap-2">
+                  <input 
+                    type="text"
+                    value={newBuyerName}
+                    onChange={(e) => setNewBuyerName(e.target.value)}
+                    className="flex-1 bg-slate-950 border-2 border-slate-700 focus:border-gold-500 rounded-xl px-4 py-2 text-slate-100 focus:outline-none transition-colors"
+                    placeholder="e.g. Al Futtaim Jewelry"
+                  />
+                  <button
+                    onClick={async () => {
+                      if (!newBuyerName.trim()) return;
+                      setIsAddingBuyer(true);
+                      const added = await addBuyer(newBuyerName.trim());
+                      setIsAddingBuyer(false);
+                      if (added) {
+                        setNewBuyerName('');
+                        setSelectedBuyer(added.id);
+                        setBuyerSearch(added.name);
+                      }
+                    }}
+                    disabled={isAddingBuyer || !newBuyerName.trim()}
+                    className="bg-gold-500 hover:bg-gold-400 disabled:bg-slate-800 disabled:text-slate-500 text-slate-950 font-bold px-4 rounded-xl transition-colors shrink-0"
+                  >
+                    {isAddingBuyer ? '...' : 'Add'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <Dialog
+        isOpen={dialogConfig.isOpen}
+        type={dialogConfig.type}
+        title={dialogConfig.title}
+        message={dialogConfig.message}
+        onConfirm={() => {
+          if (dialogConfig.onConfirm) {
+            dialogConfig.onConfirm();
+          } else {
+            setDialogConfig({ ...dialogConfig, isOpen: false });
+          }
+        }}
+        onCancel={() => {
+          if (dialogConfig.onCancel) {
+            dialogConfig.onCancel();
+          } else {
+            setDialogConfig({ ...dialogConfig, isOpen: false });
+          }
+        }}
+        confirmText={dialogConfig.confirmText || (dialogConfig.type === 'confirm' ? 'Delete' : 'OK')}
+        cancelText={dialogConfig.cancelText || 'Cancel'}
+      />
+    </div>
+  );
+};
+
+export default POS;
