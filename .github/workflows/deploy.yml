@@ -32,4 +32,4 @@ jobs:
           docker build -t jewellery-pos-app .
           docker stop jewellery-pos-container || true
           docker rm jewellery-pos-container || true
-          docker run -d -p 8080:80 --name jewellery-pos-container --restart always jewellery-pos-app
+          docker run -d -p 9999:80 --name jewellery-pos-container --restart always jewellery-pos-app
