@@ -57,6 +57,34 @@ const POS: React.FC = () => {
     return () => document.removeEventListener('click', focusInput);
   }, [isScanning, isBuyerModalOpen]);
 
+  // Audio Beep Helper
+  const playBeep = useCallback((type: 'success' | 'error') => {
+    try {
+      const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const osc = ctx.createOscillator();
+      const gainNode = ctx.createGain();
+      
+      osc.connect(gainNode);
+      gainNode.connect(ctx.destination);
+      
+      if (type === 'success') {
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(800, ctx.currentTime);
+        gainNode.gain.setValueAtTime(0.05, ctx.currentTime);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.1);
+      } else {
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(150, ctx.currentTime);
+        gainNode.gain.setValueAtTime(0.05, ctx.currentTime);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.3);
+      }
+    } catch (e) {
+      console.error('Audio beep failed', e);
+    }
+  }, []);
+
   // Handle outside click for searchable dropdown
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -75,36 +103,75 @@ const POS: React.FC = () => {
     }
   }, [isBuyerModalOpen]);
 
-  const showNotification = useCallback((type: 'success' | 'error', message: string) => {
+  const showNotification = useCallback((type: 'success' | 'error', message: string, disableBeep: boolean = false) => {
     setNotification({ type, message });
     setTimeout(() => setNotification(null), 3000);
-  }, []);
+    if (!disableBeep) {
+      playBeep(type);
+    }
+  }, [playBeep]);
 
   const processScannedCode = useCallback((code: string) => {
     if (!code) return;
 
-    const item = items.find(i => i.barcode === code);
-    
-    if (!item) {
-      showNotification('error', `Barcode ${code} not found in inventory.`);
-    } else if (item.status === 'Sold') {
-      showNotification('error', `Item ${code} is already sold!`);
-    } else {
-      setCart(prev => {
-        if (prev.some(c => c.barcode === code)) return prev;
+    setCart(prev => {
+      const item = items.find(i => i.barcode === code);
+      
+      if (!item) {
+        showNotification('error', `Barcode ${code} not found in inventory.`);
+        return prev;
+      } else if (item.status === 'Sold') {
+        showNotification('error', `Item ${code} is already sold!`);
+        return prev;
+      } else if (prev.some(c => c.barcode === code)) {
+        showNotification('error', `WARNING: Item ${code} is already in the cart!`);
+        return prev;
+      } else {
         showNotification('success', `Added ${item.type} (${item.weight}g) to cart.`);
         return [...prev, item];
-      });
-    }
+      }
+    });
   }, [items, showNotification]);
 
   const handleScan = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       e.preventDefault();
+      if (!barcode.trim()) {
+        // If input is empty and we press enter, trigger checkout if cart has items
+        if (cart.length > 0) {
+          handleCheckout();
+        }
+        return;
+      }
       processScannedCode(barcode.trim());
       setBarcode('');
+    } else if (e.key === 'Backspace' && !barcode) {
+      // Alternate undo shortcut: Backspace on empty input
+      handleUndoScan();
     }
   };
+
+  const handleUndoScan = useCallback(() => {
+    setCart(prev => {
+      if (prev.length === 0) return prev;
+      const newCart = [...prev];
+      const removed = newCart.pop();
+      showNotification('error', `Undid scan: removed ${removed?.barcode} from cart.`, true);
+      return newCart;
+    });
+  }, [showNotification]);
+
+  // Global Keyboard listener for Ctrl+Z Undo
+  useEffect(() => {
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
+        e.preventDefault();
+        handleUndoScan();
+      }
+    };
+    window.addEventListener('keydown', handleGlobalKeyDown);
+    return () => window.removeEventListener('keydown', handleGlobalKeyDown);
+  }, [handleUndoScan]);
 
   // Setup Camera Scanner
   useEffect(() => {

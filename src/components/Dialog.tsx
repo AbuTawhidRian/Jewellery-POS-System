@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { XCircle, AlertTriangle, Info } from 'lucide-react';
 import clsx from 'clsx';
 
@@ -23,6 +23,24 @@ const Dialog: React.FC<DialogProps> = ({
   onConfirm, 
   onCancel 
 }) => {
+  useEffect(() => {
+    if (!isOpen) return;
+    
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        onConfirm();
+        if (type === 'alert') onCancel();
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        onCancel();
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onConfirm, onCancel, type]);
+
   if (!isOpen) return null;
 
   return (
