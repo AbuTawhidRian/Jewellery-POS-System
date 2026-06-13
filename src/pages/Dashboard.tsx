@@ -1,6 +1,6 @@
 import React from 'react';
 import { useInventory } from '../store/InventoryContext';
-import { Package, Scale, TrendingUp, ShoppingBag } from 'lucide-react';
+import { Package, Scale, TrendingUp, ShoppingBag, LayoutDashboard } from 'lucide-react';
 import { isToday, parseISO } from 'date-fns';
 
 const Dashboard: React.FC = () => {
@@ -28,8 +28,11 @@ const Dashboard: React.FC = () => {
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 ease-out">
       <header className="mb-8">
-        <h1 className="text-3xl font-bold text-slate-100">Dashboard</h1>
-        <p className="text-slate-400 mt-1">Welcome back. Here's what's happening today.</p>
+        <h1 className="text-3xl font-bold text-slate-100 flex items-center gap-3">
+          <LayoutDashboard className="w-8 h-8 text-gold-500" />
+          Dashboard
+        </h1>
+        <p className="text-slate-400 mt-2">Overview of your jewelry inventory and sales.</p>
       </header>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">

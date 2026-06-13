@@ -29,9 +29,9 @@ const Sidebar: React.FC = () => {
               to={link.to}
               className={({ isActive }) =>
                 clsx(
-                  'flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 group',
+                  'flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 group outline-none focus:outline-none focus:ring-0',
                   isActive 
-                    ? 'bg-slate-900 text-gold-500 shadow-sm border border-slate-800/50' 
+                    ? 'bg-slate-900 text-gold-500 shadow-sm' 
                     : 'text-slate-400 hover:bg-slate-900/50 hover:text-slate-200'
                 )
               }

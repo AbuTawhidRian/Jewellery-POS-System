@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useInventory, type Item } from '../store/InventoryContext';
-import { Plus, Search, XCircle, Trash2, Printer, Settings, CheckCircle, MoreVertical, Edit2 } from 'lucide-react';
+import { Plus, Search, XCircle, Trash2, Printer, Settings, CheckCircle, MoreVertical, Edit2, Lock } from 'lucide-react';
 import Dialog from '../components/Dialog';
 
 
@@ -123,11 +123,14 @@ const Vault: React.FC = () => {
   };
 
   return (
-    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 ease-out">
-      <header className="mb-8">
-        <h1 className="text-3xl font-bold text-slate-100">The Vault</h1>
-        <p className="text-slate-400 mt-1">Manage your active jewelry inventory.</p>
-      </header>
+    <div className="h-full flex flex-col space-y-6 animate-in fade-in duration-500">
+      <div>
+        <h1 className="text-3xl font-bold text-slate-100 flex items-center gap-3">
+          <Lock className="w-8 h-8 text-gold-500" />
+          The Vault
+        </h1>
+        <p className="text-slate-400 mt-2 text-sm">Manage your active jewelry inventory.</p>
+      </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
         {/* Entry Form */}
@@ -317,7 +320,7 @@ const Vault: React.FC = () => {
             </div>
 
             <div className="flex-1 overflow-auto p-0 md:p-6">
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto min-h-[300px] pb-16">
                 <table className="w-full text-left border-collapse min-w-[700px]">
                   <thead>
                     <tr className="border-b border-slate-800 text-sm text-slate-400">
