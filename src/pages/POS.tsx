@@ -230,46 +230,45 @@ const POS: React.FC = () => {
       return;
     }
 
-    const barcodes = cart.map(c => c.barcode);
-    const result = await processBulkSale(barcodes, selectedBuyer);
-    
-    if (result.success) {
-      const buyerName = buyers.find(b => b.id === selectedBuyer)?.name || 'Unknown Buyer';
-      const completedCart = [...cart];
-      const weight = totalWeight;
+    const buyerName = buyers.find(b => b.id === selectedBuyer)?.name || 'Unknown Buyer';
+    const completedCart = [...cart];
+    const weight = totalWeight;
 
-      setDialogConfig({
-        isOpen: true,
-        type: 'confirm',
-        title: 'Sale Complete!',
-        message: `Successfully sold ${completedCart.length} items to ${buyerName}.`,
-        confirmText: 'Print Invoice',
-        cancelText: 'Done',
-        onConfirm: () => {
+    setDialogConfig({
+      isOpen: true,
+      type: 'confirm',
+      title: 'Confirm Sale',
+      message: `Are you sure you want to complete this sale of ${completedCart.length} items to ${buyerName}?`,
+      confirmText: 'Yes, Complete Sale',
+      cancelText: 'Cancel',
+      onConfirm: async () => {
+        setDialogConfig(prev => ({ ...prev, isOpen: false }));
+        
+        const barcodes = completedCart.map(c => c.barcode);
+        const result = await processBulkSale(barcodes, selectedBuyer);
+        
+        if (result.success) {
           setPrintInvoiceData({
             buyerName,
             items: completedCart,
             date: new Date().toISOString(),
             totalWeight: weight
           });
+          showNotification('success', 'Sale completed successfully!');
           setTimeout(() => window.print(), 100);
           setCart([]);
           setSelectedBuyer('');
           setBuyerSearch('');
-          setDialogConfig(prev => ({ ...prev, isOpen: false }));
-        },
-        onCancel: () => {
-          setCart([]);
-          setSelectedBuyer('');
-          setBuyerSearch('');
-          setDialogConfig(prev => ({ ...prev, isOpen: false }));
+        } else {
+          showNotification('error', result.message);
         }
-      });
-    } else {
-      showNotification('error', result.message);
-    }
-    
-    setTimeout(() => inputRef.current?.focus(), 10);
+        setTimeout(() => inputRef.current?.focus(), 10);
+      },
+      onCancel: () => {
+        setDialogConfig(prev => ({ ...prev, isOpen: false }));
+        setTimeout(() => inputRef.current?.focus(), 10);
+      }
+    });
   };
 
   const totalWeight = cart.reduce((acc, item) => acc + Math.max(0, (Number(item.weight) || 0) - (Number(item.stone_weight) || 0)), 0);

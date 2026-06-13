@@ -9,7 +9,16 @@ const InvoicePrintLayout: React.FC = () => {
   if (!printInvoiceData) return null;
 
   return (
-    <div className="hidden print:block bg-white text-black min-h-screen font-sans">
+    <>
+      <style type="text/css" media="print">
+        {`
+          @page { size: auto; margin: 15mm; }
+          body * { visibility: hidden; }
+          #invoice-print-area, #invoice-print-area * { visibility: visible; }
+          #invoice-print-area { position: absolute; left: 0; top: 0; width: 100%; }
+        `}
+      </style>
+      <div id="invoice-print-area" className="hidden print:block bg-white text-black min-h-screen font-sans">
       <div className="max-w-[21cm] mx-auto p-12 bg-white">
         
         {/* Header */}
@@ -89,6 +98,7 @@ const InvoicePrintLayout: React.FC = () => {
 
       </div>
     </div>
+    </>
   );
 };
 
