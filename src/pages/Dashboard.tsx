@@ -8,7 +8,7 @@ const Dashboard: React.FC = () => {
 
   const activeStock = items.filter(i => i.status === 'In Stock');
   const totalItemsInStock = activeStock.length;
-  const totalWeightInStock = activeStock.reduce((acc, item) => acc + (Number(item.weight) || 0), 0);
+  const totalWeightInStock = activeStock.reduce((acc, item) => acc + Math.max(0, (Number(item.weight) || 0) - (Number(item.stone_weight) || 0)), 0);
   
   const todaySales = sales.filter(s => isToday(parseISO(s.date)));
   const totalSalesTodayItems = todaySales.length;

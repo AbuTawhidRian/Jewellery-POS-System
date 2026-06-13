@@ -203,7 +203,7 @@ const POS: React.FC = () => {
     setTimeout(() => inputRef.current?.focus(), 10);
   };
 
-  const totalWeight = cart.reduce((acc, item) => acc + (Number(item.weight) || 0), 0);
+  const totalWeight = cart.reduce((acc, item) => acc + Math.max(0, (Number(item.weight) || 0) - (Number(item.stone_weight) || 0)), 0);
 
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 ease-out h-full flex flex-col relative">
@@ -401,7 +401,7 @@ const POS: React.FC = () => {
 
           <div className="p-6 bg-slate-900 border-t border-slate-800 mt-auto shrink-0">
             <div className="flex justify-between items-center mb-6">
-              <span className="text-slate-400 font-medium text-lg">Total Weight</span>
+              <span className="text-slate-400 font-medium text-lg">Total Net Weight</span>
               <span className="text-3xl font-bold text-gold-500">{totalWeight.toFixed(2)}<span className="text-xl ml-1">g</span></span>
             </div>
             <button 
