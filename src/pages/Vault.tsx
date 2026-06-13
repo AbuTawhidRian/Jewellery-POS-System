@@ -1,11 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useInventory, type Item } from '../store/InventoryContext';
-import { Plus, Printer, Search, RefreshCw, Settings, Trash2, XCircle } from 'lucide-react';
+import { Plus, Printer, Search, Settings, Trash2, XCircle } from 'lucide-react';
 import Dialog from '../components/Dialog';
 
-const generateBarcode = () => {
-  return 'AG-' + Math.floor(100000 + Math.random() * 900000).toString();
-};
 
 
 const Vault: React.FC = () => {
@@ -13,7 +10,6 @@ const Vault: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   
   // Form State
-  const [barcode, setBarcode] = useState(generateBarcode());
   const [type, setType] = useState('');
   const [description, setDescription] = useState('');
   const [weight, setWeight] = useState('');
