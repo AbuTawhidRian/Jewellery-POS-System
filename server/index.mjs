@@ -22,7 +22,18 @@ const pool = new Pool({
 });
 
 pool.connect()
-  .then(() => console.log('Connected to PostgreSQL successfully'))
+  .then(async (client) => {
+    console.log('Connected to PostgreSQL successfully');
+    try {
+      await client.query('ALTER TABLE items ADD COLUMN IF NOT EXISTS stone_weight DECIMAL(10, 2) DEFAULT 0');
+      await client.query('ALTER TABLE sales ADD COLUMN IF NOT EXISTS stone_weight DECIMAL(10, 2) DEFAULT 0');
+      console.log('Schema migration complete.');
+    } catch (e) {
+      console.error('Schema migration failed:', e);
+    } finally {
+      client.release();
+    }
+  })
   .catch(err => console.error('Failed to connect to PostgreSQL', err.stack));
 
 // API Routes
@@ -38,15 +49,30 @@ app.get('/api/items', async (req, res) => {
 });
 
 app.post('/api/items', async (req, res) => {
-  const { barcode, type, description, weight } = req.body;
-  try {
-    const result = await pool.query(
-      'INSERT INTO items (barcode, type, description, weight, status) VALUES ($1, $2, $3, $4, $5) RETURNING *',
-      [barcode, type, description, weight, 'In Stock']
-    );
-    res.json({ data: result.rows[0] });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
+  const { type, description, weight, stone_weight } = req.body;
+  const maxRetries = 5;
+  const sw = stone_weight ? parseFloat(stone_weight) : 0;
+
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    // Generate 8-digit barcode: AG-XXXXXXXX
+    const randomNum = Math.floor(10000000 + Math.random() * 90000000);
+    const barcode = `AG-${randomNum}`;
+
+    try {
+      const result = await pool.query(
+        'INSERT INTO items (barcode, type, description, weight, stone_weight, status) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
+        [barcode, type, description, weight, sw, 'In Stock']
+      );
+      return res.json({ data: result.rows[0] });
+    } catch (err) {
+      if (err.code === '23505') { // Unique constraint violation
+        if (attempt === maxRetries) {
+          return res.status(500).json({ error: 'Failed to generate a unique barcode. Please try again.' });
+        }
+        continue; // Retry with a new barcode
+      }
+      return res.status(500).json({ error: err.message });
+    }
   }
 });
 
@@ -166,9 +192,9 @@ app.post('/api/sales', async (req, res) => {
     const newSales = [];
     for (const item of itemsToUpdate) {
       const saleRes = await client.query(
-        `INSERT INTO sales (item_id, barcode, buyer_id, buyer_name, weight, type) 
-         VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
-        [item.id, item.barcode, buyer.id, buyer.name, item.weight, item.type]
+        `INSERT INTO sales (item_id, barcode, buyer_id, buyer_name, weight, stone_weight, type) 
+         VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+        [item.id, item.barcode, buyer.id, buyer.name, item.weight, item.stone_weight || 0, item.type]
       );
       newSales.push(saleRes.rows[0]);
     }

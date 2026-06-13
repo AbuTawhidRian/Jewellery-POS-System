@@ -17,6 +17,7 @@ const Vault: React.FC = () => {
   const [type, setType] = useState('');
   const [description, setDescription] = useState('');
   const [weight, setWeight] = useState('');
+  const [stoneWeight, setStoneWeight] = useState('');
 
   // Manage Types Modal State
   const [isManageTypesOpen, setIsManageTypesOpen] = useState(false);
@@ -70,19 +71,21 @@ const Vault: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!barcode || !type || !weight) return;
+    if (!type || !weight) return;
 
-    // Check if barcode already exists
-    if (items.some(i => i.barcode === barcode)) {
-      setDialogConfig({ isOpen: true, type: 'alert', title: 'Error', message: 'An item with this barcode already exists!' });
+    const sw = stoneWeight ? parseFloat(stoneWeight) : 0;
+    const gw = parseFloat(weight);
+
+    if (sw > gw) {
+      setDialogConfig({ isOpen: true, type: 'alert', title: 'Error', message: 'Stone weight cannot be greater than gross weight!' });
       return;
     }
 
     const result = await addItem({
-      barcode,
       type,
       description,
-      weight: parseFloat(weight)
+      weight: gw,
+      stone_weight: sw
     });
 
     if (!result.success) {
@@ -95,9 +98,9 @@ const Vault: React.FC = () => {
     }
 
     // Reset form
-    setBarcode(generateBarcode());
     setDescription('');
     setWeight('');
+    setStoneWeight('');
   };
 
   return (
@@ -117,27 +120,6 @@ const Vault: React.FC = () => {
             </h2>
             
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <div className="flex justify-between items-center mb-1">
-                  <label className="block text-sm font-medium text-slate-400">Barcode ID</label>
-                  <button 
-                    type="button" 
-                    onClick={() => setBarcode(generateBarcode())}
-                    className="text-xs flex items-center gap-1 text-gold-500 hover:text-gold-400 transition-colors"
-                  >
-                    <RefreshCw className="w-3 h-3" /> Auto-generate
-                  </button>
-                </div>
-                <input 
-                  type="text" 
-                  required
-                  value={barcode}
-                  onChange={(e) => setBarcode(e.target.value)}
-                  className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-slate-100 focus:outline-none focus:border-gold-500 focus:ring-1 focus:ring-gold-500 transition-colors"
-                  placeholder="e.g. AG-1001"
-                />
-              </div>
-
               <div>
                 <label className="block text-sm font-medium text-slate-400 mb-1">Item Type</label>
                 <div className="flex gap-2">
@@ -203,18 +185,32 @@ const Vault: React.FC = () => {
                 />
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-slate-400 mb-1">Weight (Grams)</label>
-                <input 
-                  type="number"
-                  required
-                  step="0.01"
-                  min="0"
-                  value={weight}
-                  onChange={(e) => setWeight(e.target.value)}
-                  className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-slate-100 focus:outline-none focus:border-gold-500 focus:ring-1 focus:ring-gold-500 transition-colors"
-                  placeholder="0.00"
-                />
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-400 mb-1">Gross Wt (g)</label>
+                  <input 
+                    type="number"
+                    required
+                    step="0.01"
+                    min="0"
+                    value={weight}
+                    onChange={(e) => setWeight(e.target.value)}
+                    className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-slate-100 focus:outline-none focus:border-gold-500 focus:ring-1 focus:ring-gold-500 transition-colors"
+                    placeholder="0.00"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-400 mb-1">Stone Wt (g)</label>
+                  <input 
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={stoneWeight}
+                    onChange={(e) => setStoneWeight(e.target.value)}
+                    className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-slate-100 focus:outline-none focus:border-gold-500 focus:ring-1 focus:ring-gold-500 transition-colors"
+                    placeholder="0.00"
+                  />
+                </div>
               </div>
 
               <div className="flex items-center gap-2 mt-4">
@@ -226,7 +222,7 @@ const Vault: React.FC = () => {
                   className="w-4 h-4 rounded border-slate-700 text-gold-500 focus:ring-gold-500 focus:ring-offset-slate-950 bg-slate-900"
                 />
                 <label htmlFor="printTag" className="text-sm text-slate-300 cursor-pointer">
-                  Print tag immediately upon saving
+                  Print tag immediately
                 </label>
               </div>
 
@@ -266,24 +262,32 @@ const Vault: React.FC = () => {
                       <th className="pb-3 px-4 font-medium">Barcode</th>
                       <th className="pb-3 px-4 font-medium">Type</th>
                       <th className="pb-3 px-4 font-medium hidden md:table-cell">Description</th>
-                      <th className="pb-3 px-4 font-medium">Weight</th>
+                      <th className="pb-3 px-4 font-medium">Gr. Wt</th>
+                      <th className="pb-3 px-4 font-medium">St. Wt</th>
+                      <th className="pb-3 px-4 font-medium">Net Wt</th>
                       <th className="pb-3 px-4 font-medium text-right">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="text-sm">
                     {filteredStock.length === 0 ? (
                       <tr>
-                        <td colSpan={5} className="py-8 text-center text-slate-500">
+                        <td colSpan={7} className="py-8 text-center text-slate-500">
                           No items found in active stock.
                         </td>
                       </tr>
                     ) : (
-                      filteredStock.map((item) => (
+                      filteredStock.map((item) => {
+                        const sw = Number(item.stone_weight) || 0;
+                        const gw = Number(item.weight) || 0;
+                        const nw = Math.max(0, gw - sw);
+                        return (
                         <tr key={item.id} className="border-b border-slate-800/50 hover:bg-slate-900/30 transition-colors group">
                           <td className="py-3 px-4 font-mono text-slate-300">{item.barcode}</td>
                           <td className="py-3 px-4 text-slate-200">{item.type}</td>
                           <td className="py-3 px-4 text-slate-400 hidden md:table-cell truncate max-w-[200px]">{item.description || '-'}</td>
-                          <td className="py-3 px-4 font-medium text-gold-400">{item.weight.toFixed(2)}g</td>
+                          <td className="py-3 px-4 font-medium text-slate-300">{gw.toFixed(2)}g</td>
+                          <td className="py-3 px-4 text-slate-400">{sw > 0 ? sw.toFixed(2) + 'g' : '-'}</td>
+                          <td className="py-3 px-4 font-medium text-gold-400">{nw.toFixed(2)}g</td>
                           <td className="py-3 px-4 text-right">
                             <button 
                               onClick={() => handlePrint(item)}
@@ -294,7 +298,8 @@ const Vault: React.FC = () => {
                             </button>
                           </td>
                         </tr>
-                      ))
+                        );
+                      })
                     )}
                   </tbody>
                 </table>

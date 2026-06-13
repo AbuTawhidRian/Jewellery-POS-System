@@ -41,18 +41,27 @@ const InvoicePrintLayout: React.FC = () => {
               <th className="py-3 px-2 font-bold w-16">#</th>
               <th className="py-3 px-2 font-bold">Item Barcode</th>
               <th className="py-3 px-2 font-bold">Item Type</th>
-              <th className="py-3 px-2 font-bold text-right">Weight (g)</th>
+              <th className="py-3 px-2 font-bold text-right">Gross Wt (g)</th>
+              <th className="py-3 px-2 font-bold text-right">Stone Wt (g)</th>
+              <th className="py-3 px-2 font-bold text-right">Net Wt (g)</th>
             </tr>
           </thead>
           <tbody className="text-sm">
-            {printInvoiceData.items.map((item, idx) => (
+            {printInvoiceData.items.map((item, idx) => {
+              const sw = Number(item.stone_weight) || 0;
+              const gw = Number(item.weight) || 0;
+              const nw = Math.max(0, gw - sw);
+              return (
               <tr key={item.barcode} className="border-b border-slate-200">
                 <td className="py-4 px-2 text-slate-500">{idx + 1}</td>
                 <td className="py-4 px-2 font-mono font-medium text-slate-700">{item.barcode}</td>
                 <td className="py-4 px-2 text-slate-600">{item.type}</td>
-                <td className="py-4 px-2 font-medium text-right text-slate-900">{item.weight.toFixed(2)}</td>
+                <td className="py-4 px-2 font-medium text-right text-slate-700">{gw.toFixed(2)}</td>
+                <td className="py-4 px-2 text-right text-slate-500">{sw > 0 ? sw.toFixed(2) : '-'}</td>
+                <td className="py-4 px-2 font-medium text-right text-slate-900">{nw.toFixed(2)}</td>
               </tr>
-            ))}
+              );
+            })}
           </tbody>
         </table>
 
@@ -65,7 +74,9 @@ const InvoicePrintLayout: React.FC = () => {
             </div>
             <div className="flex justify-between items-center pt-4 border-t border-slate-200">
               <span className="font-bold text-slate-800">Total Net Weight:</span>
-              <span className="text-xl font-bold text-slate-900">{printInvoiceData.totalWeight.toFixed(2)} g</span>
+              <span className="text-xl font-bold text-slate-900">
+                {printInvoiceData.items.reduce((acc, item) => acc + Math.max(0, (Number(item.weight) || 0) - (Number(item.stone_weight) || 0)), 0).toFixed(2)} g
+              </span>
             </div>
           </div>
         </div>

@@ -28,9 +28,16 @@ const ThermalPrintLayout: React.FC = () => {
       <div className="flex flex-col items-center justify-center w-full">
         <h1 className="text-[10px] font-bold leading-none mb-1 uppercase tracking-tight">Alex Gold FZC</h1>
         <svg ref={barcodeRef} className="max-w-full h-auto"></svg>
-        <div className="flex justify-between w-full px-2 mt-1 text-[9px] font-semibold">
-          <span>{printItem.type}</span>
-          <span>W: {printItem.weight.toFixed(2)}g</span>
+        <div className="flex flex-col items-center w-full px-1 mt-1 text-[9px] font-semibold">
+          <div className="flex justify-between w-full">
+            <span className="truncate max-w-[50%]">{printItem.type}</span>
+            <span>GW: {printItem.weight.toFixed(2)}g</span>
+          </div>
+          {printItem.stone_weight > 0 && (
+            <div className="flex justify-end w-full mt-[1px] text-[8px]">
+              <span>NW: {(printItem.weight - printItem.stone_weight).toFixed(2)}g</span>
+            </div>
+          )}
         </div>
       </div>
     </div>

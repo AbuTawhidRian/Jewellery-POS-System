@@ -20,14 +20,21 @@ const Ledger: React.FC = () => {
       return;
     }
 
-    const headers = ['Date/Time Sold', 'Barcode', 'Item Type', 'Weight (g)', 'Buyer Company'];
-    const rows = filteredSales.map(sale => [
-      format(parseISO(sale.date), 'yyyy-MM-dd HH:mm:ss'),
-      sale.barcode,
-      sale.type,
-      sale.weight.toString(),
-      `"${sale.buyer_name}"` // Handle commas in names
-    ]);
+    const headers = ['Date/Time Sold', 'Barcode', 'Item Type', 'Gross Wt (g)', 'Stone Wt (g)', 'Net Wt (g)', 'Buyer Company'];
+    const rows = filteredSales.map(sale => {
+      const sw = Number(sale.stone_weight) || 0;
+      const gw = Number(sale.weight) || 0;
+      const nw = Math.max(0, gw - sw);
+      return [
+        format(parseISO(sale.date), 'yyyy-MM-dd HH:mm:ss'),
+        sale.barcode,
+        sale.type,
+        gw.toFixed(2),
+        sw.toFixed(2),
+        nw.toFixed(2),
+        `"${sale.buyer_name}"` // Handle commas in names
+      ];
+    });
 
     const csvContent = [
       headers.join(','),
@@ -89,19 +96,25 @@ const Ledger: React.FC = () => {
                 <th className="pb-3 px-4 font-medium">Date/Time Sold</th>
                 <th className="pb-3 px-4 font-medium">Barcode</th>
                 <th className="pb-3 px-4 font-medium">Item Type</th>
-                <th className="pb-3 px-4 font-medium">Weight (g)</th>
+                <th className="pb-3 px-4 font-medium">Gr. Wt</th>
+                <th className="pb-3 px-4 font-medium">St. Wt</th>
+                <th className="pb-3 px-4 font-medium">Net Wt</th>
                 <th className="pb-3 px-4 font-medium">Buyer Company</th>
               </tr>
             </thead>
             <tbody className="text-sm">
               {filteredSales.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="py-12 text-center text-slate-500">
+                  <td colSpan={7} className="py-12 text-center text-slate-500">
                     No sales recorded for this filter.
                   </td>
                 </tr>
               ) : (
-                filteredSales.slice().reverse().map((sale) => (
+                filteredSales.slice().reverse().map((sale) => {
+                  const sw = Number(sale.stone_weight) || 0;
+                  const gw = Number(sale.weight) || 0;
+                  const nw = Math.max(0, gw - sw);
+                  return (
                   <tr key={sale.id} className="border-b border-slate-800/50 hover:bg-slate-900/30 transition-colors">
                     <td className="py-4 px-4 text-slate-300">
                       {format(parseISO(sale.date), 'MMM dd, yyyy')} <br/>
@@ -109,10 +122,13 @@ const Ledger: React.FC = () => {
                     </td>
                     <td className="py-4 px-4 font-mono text-slate-400">{sale.barcode}</td>
                     <td className="py-4 px-4 text-slate-200">{sale.type}</td>
-                    <td className="py-4 px-4 font-medium text-gold-400">{sale.weight.toFixed(2)}</td>
+                    <td className="py-4 px-4 font-medium text-slate-300">{gw.toFixed(2)}g</td>
+                    <td className="py-4 px-4 text-slate-400">{sw > 0 ? sw.toFixed(2) + 'g' : '-'}</td>
+                    <td className="py-4 px-4 font-medium text-gold-400">{nw.toFixed(2)}g</td>
                     <td className="py-4 px-4 text-slate-300">{sale.buyer_name}</td>
                   </tr>
-                ))
+                  );
+                })
               )}
             </tbody>
           </table>

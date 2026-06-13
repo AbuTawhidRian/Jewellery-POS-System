@@ -8,6 +8,7 @@ export interface Item {
   type: string;
   description: string;
   weight: number;
+  stone_weight: number;
   status: ItemStatus;
   date_added?: string;
 }
@@ -30,12 +31,13 @@ export interface Sale {
   buyer_name: string;
   date: string;
   weight: number;
+  stone_weight: number;
   type: string;
 }
 
 export interface InvoiceData {
   buyerName: string;
-  items: { barcode: string; type: string; weight: number }[];
+  items: { barcode: string; type: string; weight: number; stone_weight: number }[];
   date: string;
   totalWeight: number;
 }
@@ -46,7 +48,7 @@ interface InventoryContextType {
   sales: Sale[];
   itemTypes: ItemType[];
   isLoading: boolean;
-  addItem: (item: Omit<Item, 'id' | 'status' | 'dateAdded' | 'date_added'>) => Promise<{ success: boolean, data?: Item, error?: string }>;
+  addItem: (item: Partial<Pick<Item, 'barcode'>> & Omit<Item, 'id' | 'status' | 'dateAdded' | 'date_added' | 'barcode'>) => Promise<{ success: boolean, data?: Item, error?: string }>;
   addBuyer: (name: string) => Promise<Buyer | null>;
   deleteBuyer: (id: string) => Promise<boolean>;
   addItemType: (name: string) => Promise<ItemType | null>;
@@ -97,7 +99,7 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     fetchData();
   }, []);
 
-  const addItem = async (itemData: Omit<Item, 'id' | 'status' | 'dateAdded' | 'date_added'>) => {
+  const addItem = async (itemData: Partial<Pick<Item, 'barcode'>> & Omit<Item, 'id' | 'status' | 'dateAdded' | 'date_added' | 'barcode'>) => {
     try {
       const res = await fetch(`${API_URL}/items`, {
         method: 'POST',

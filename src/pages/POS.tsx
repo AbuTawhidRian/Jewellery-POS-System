@@ -363,16 +363,24 @@ const POS: React.FC = () => {
                   <tr className="text-sm text-slate-400 border-b border-slate-800">
                     <th className="py-3 px-4 font-medium">Barcode</th>
                     <th className="py-3 px-4 font-medium">Type</th>
-                    <th className="py-3 px-4 font-medium text-right">Weight (g)</th>
+                    <th className="py-3 px-4 font-medium text-right">Gr. Wt</th>
+                    <th className="py-3 px-4 font-medium text-right">St. Wt</th>
+                    <th className="py-3 px-4 font-medium text-right">Net Wt</th>
                     <th className="py-3 px-4 font-medium text-center">Action</th>
                   </tr>
                 </thead>
                 <tbody className="text-sm">
-                    {cart.map((item) => (
+                    {cart.map((item) => {
+                      const sw = Number(item.stone_weight) || 0;
+                      const gw = Number(item.weight) || 0;
+                      const nw = Math.max(0, gw - sw);
+                      return (
                       <tr key={item.id} className="border-b border-slate-800/50 hover:bg-slate-900/50 transition-colors">
                         <td className="py-3 px-4 font-mono text-slate-300">{item.barcode}</td>
                         <td className="py-3 px-4 text-slate-200">{item.type}</td>
-                        <td className="py-3 px-4 text-gold-400 font-medium text-right">{item.weight.toFixed(2)}</td>
+                        <td className="py-3 px-4 text-slate-300 font-medium text-right">{gw.toFixed(2)}g</td>
+                        <td className="py-3 px-4 text-slate-400 text-right">{sw > 0 ? sw.toFixed(2) + 'g' : '-'}</td>
+                        <td className="py-3 px-4 text-gold-400 font-medium text-right">{nw.toFixed(2)}g</td>
                         <td className="py-3 px-4 text-center">
                           <button 
                             onClick={() => removeFromCart(item.barcode)}
@@ -383,7 +391,8 @@ const POS: React.FC = () => {
                           </button>
                         </td>
                       </tr>
-                    ))}
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
