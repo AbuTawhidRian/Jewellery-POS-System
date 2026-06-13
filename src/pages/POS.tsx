@@ -1,12 +1,12 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useInventory, type Item } from '../store/InventoryContext';
-import { ShoppingCart, CheckCircle, XCircle, ScanLine, Trash2, Camera, CameraOff, Building2 } from 'lucide-react';
+import { ShoppingCart, CheckCircle, XCircle, ScanLine, Trash2, Camera, CameraOff, Building2, Settings } from 'lucide-react';
 import clsx from 'clsx';
 import { Html5QrcodeScanner } from 'html5-qrcode';
 import Dialog from '../components/Dialog';
 
 const POS: React.FC = () => {
-  const { items, buyers, sales, processBulkSale, addBuyer, deleteBuyer, setPrintInvoiceData } = useInventory();
+  const { items, buyers, sales, processBulkSale, addBuyer, editBuyer, deleteBuyer, setPrintInvoiceData } = useInventory();
   const [selectedBuyer, setSelectedBuyer] = useState('');
   const [barcode, setBarcode] = useState('');
   const [notification, setNotification] = useState<{ type: 'success' | 'error', message: string } | null>(null);
@@ -17,6 +17,8 @@ const POS: React.FC = () => {
   const [isBuyerModalOpen, setIsBuyerModalOpen] = useState(false);
   const [newBuyerName, setNewBuyerName] = useState('');
   const [isAddingBuyer, setIsAddingBuyer] = useState(false);
+  const [editingBuyerId, setEditingBuyerId] = useState<string | null>(null);
+  const [editingBuyerName, setEditingBuyerName] = useState('');
 
   // Searchable Dropdown State
   const [buyerSearch, setBuyerSearch] = useState('');
@@ -441,38 +443,90 @@ const POS: React.FC = () => {
                 ) : (
                   buyers.map(b => (
                     <div key={b.id} className="flex justify-between items-center bg-slate-950 border border-slate-800 rounded-lg p-3">
-                      <span className="text-slate-200 font-medium">{b.name}</span>
-                      <button
-                        onClick={() => {
-                          if (sales.some(s => s.buyer_id === b.id)) {
-                            setDialogConfig({
-                              isOpen: true,
-                              type: 'alert',
-                              title: 'Cannot Delete',
-                              message: `Cannot delete '${b.name}' because there are sales recorded for this buyer.`
-                            });
-                            return;
-                          }
-                          setDialogConfig({
-                            isOpen: true,
-                            type: 'confirm',
-                            title: 'Delete Buyer',
-                            message: `Are you sure you want to delete '${b.name}'?`,
-                            onConfirm: async () => {
-                              const success = await deleteBuyer(b.id);
-                              if (success && selectedBuyer === b.id) {
-                                setSelectedBuyer('');
-                                setBuyerSearch('');
-                              }
-                              setDialogConfig(prev => ({ ...prev, isOpen: false }));
-                            }
-                          });
-                        }}
-                        className="p-2 text-slate-500 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors"
-                        title="Delete buyer"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                      {editingBuyerId === b.id ? (
+                        <input
+                          type="text"
+                          value={editingBuyerName}
+                          onChange={(e) => setEditingBuyerName(e.target.value)}
+                          className="flex-1 bg-slate-900 border border-gold-500 rounded px-2 py-1 text-slate-100 text-sm focus:outline-none mr-2"
+                          autoFocus
+                        />
+                      ) : (
+                        <span className="text-slate-200 font-medium">{b.name}</span>
+                      )}
+                      
+                      <div className="flex items-center">
+                        {editingBuyerId === b.id ? (
+                          <>
+                            <button
+                              onClick={async () => {
+                                if (!editingBuyerName.trim() || editingBuyerName === b.name) {
+                                  setEditingBuyerId(null);
+                                  return;
+                                }
+                                const success = await editBuyer(b.id, editingBuyerName.trim());
+                                if (success && selectedBuyer === b.id) {
+                                  setBuyerSearch(editingBuyerName.trim());
+                                }
+                                setEditingBuyerId(null);
+                              }}
+                              className="p-2 text-gold-500 hover:text-gold-400 hover:bg-gold-500/10 rounded-lg transition-colors"
+                            >
+                              <CheckCircle className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => setEditingBuyerId(null)}
+                              className="p-2 text-slate-500 hover:text-slate-300 hover:bg-slate-800 rounded-lg transition-colors"
+                            >
+                              <XCircle className="w-4 h-4" />
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            <button
+                              onClick={() => {
+                                setEditingBuyerId(b.id);
+                                setEditingBuyerName(b.name);
+                              }}
+                              className="p-2 text-slate-500 hover:text-blue-400 hover:bg-blue-400/10 rounded-lg transition-colors"
+                              title="Edit buyer"
+                            >
+                              <Settings className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => {
+                                if (sales.some(s => s.buyer_id === b.id)) {
+                                  setDialogConfig({
+                                    isOpen: true,
+                                    type: 'alert',
+                                    title: 'Cannot Delete',
+                                    message: `Cannot delete '${b.name}' because there are sales recorded for this buyer.`
+                                  });
+                                  return;
+                                }
+                                setDialogConfig({
+                                  isOpen: true,
+                                  type: 'confirm',
+                                  title: 'Delete Buyer',
+                                  message: `Are you sure you want to delete '${b.name}'?`,
+                                  onConfirm: async () => {
+                                    const success = await deleteBuyer(b.id);
+                                    if (success && selectedBuyer === b.id) {
+                                      setSelectedBuyer('');
+                                      setBuyerSearch('');
+                                    }
+                                    setDialogConfig(prev => ({ ...prev, isOpen: false }));
+                                  }
+                                });
+                              }}
+                              className="p-2 text-slate-500 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors"
+                              title="Delete buyer"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </>
+                        )}
+                      </div>
                     </div>
                   ))
                 )}

@@ -25,6 +25,7 @@ pool.connect()
   .then(async (client) => {
     console.log('Connected to PostgreSQL successfully');
     try {
+      await client.query('CREATE TABLE IF NOT EXISTS descriptions (id SERIAL PRIMARY KEY, name VARCHAR(255) NOT NULL UNIQUE)');
       await client.query('ALTER TABLE items ADD COLUMN IF NOT EXISTS stone_weight DECIMAL(10, 2) DEFAULT 0');
       await client.query('ALTER TABLE sales ADD COLUMN IF NOT EXISTS stone_weight DECIMAL(10, 2) DEFAULT 0');
       console.log('Schema migration complete.');
@@ -76,6 +77,22 @@ app.post('/api/items', async (req, res) => {
   }
 });
 
+app.put('/api/items/:id', async (req, res) => {
+  const { id } = req.params;
+  const { type, description, weight, stone_weight } = req.body;
+  const sw = stone_weight ? parseFloat(stone_weight) : 0;
+  const gw = parseFloat(weight);
+  try {
+    const result = await pool.query(
+      'UPDATE items SET type = $1, description = $2, weight = $3, stone_weight = $4 WHERE id = $5 RETURNING *',
+      [type, description, gw, sw, id]
+    );
+    res.json({ data: result.rows[0] });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // --- BUYERS ---
 app.get('/api/buyers', async (req, res) => {
   try {
@@ -96,6 +113,24 @@ app.post('/api/buyers', async (req, res) => {
     res.json({ data: result.rows[0] });
   } catch (err) {
     res.status(500).json({ error: err.message });
+  }
+});
+
+app.put('/api/buyers/:id', async (req, res) => {
+  const { id } = req.params;
+  const { name } = req.body;
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const result = await client.query('UPDATE buyers SET name = $1 WHERE id = $2 RETURNING *', [name, id]);
+    await client.query('UPDATE sales SET buyer_name = $1 WHERE buyer_id = $2', [name, id]);
+    await client.query('COMMIT');
+    res.json({ data: result.rows[0] });
+  } catch (err) {
+    await client.query('ROLLBACK');
+    res.status(500).json({ error: err.message });
+  } finally {
+    client.release();
   }
 });
 
@@ -132,10 +167,86 @@ app.post('/api/item_types', async (req, res) => {
   }
 });
 
+app.put('/api/item_types/:id', async (req, res) => {
+  const { id } = req.params;
+  const { name } = req.body;
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const oldType = await client.query('SELECT name FROM item_types WHERE id = $1', [id]);
+    if (oldType.rows.length === 0) throw new Error("Type not found");
+    const oldName = oldType.rows[0].name;
+    const result = await client.query('UPDATE item_types SET name = $1 WHERE id = $2 RETURNING *', [name, id]);
+    await client.query('UPDATE items SET type = $1 WHERE type = $2', [name, oldName]);
+    await client.query('UPDATE sales SET type = $1 WHERE type = $2', [name, oldName]);
+    await client.query('COMMIT');
+    res.json({ data: result.rows[0] });
+  } catch (err) {
+    await client.query('ROLLBACK');
+    res.status(500).json({ error: err.message });
+  } finally {
+    client.release();
+  }
+});
+
 app.delete('/api/item_types/:id', async (req, res) => {
   const { id } = req.params;
   try {
     await pool.query('DELETE FROM item_types WHERE id = $1', [id]);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// --- DESCRIPTIONS ---
+app.get('/api/descriptions', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM descriptions ORDER BY name ASC');
+    res.json({ data: result.rows });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/descriptions', async (req, res) => {
+  const { name } = req.body;
+  try {
+    const result = await pool.query(
+      'INSERT INTO descriptions (name) VALUES ($1) RETURNING *',
+      [name]
+    );
+    res.json({ data: result.rows[0] });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.put('/api/descriptions/:id', async (req, res) => {
+  const { id } = req.params;
+  const { name } = req.body;
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const oldDesc = await client.query('SELECT name FROM descriptions WHERE id = $1', [id]);
+    if (oldDesc.rows.length === 0) throw new Error("Description not found");
+    const oldName = oldDesc.rows[0].name;
+    const result = await client.query('UPDATE descriptions SET name = $1 WHERE id = $2 RETURNING *', [name, id]);
+    await client.query('UPDATE items SET description = $1 WHERE description = $2', [name, oldName]);
+    await client.query('COMMIT');
+    res.json({ data: result.rows[0] });
+  } catch (err) {
+    await client.query('ROLLBACK');
+    res.status(500).json({ error: err.message });
+  } finally {
+    client.release();
+  }
+});
+
+app.delete('/api/descriptions/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    await pool.query('DELETE FROM descriptions WHERE id = $1', [id]);
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: err.message });
