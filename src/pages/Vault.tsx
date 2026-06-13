@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useInventory, type Item } from '../store/InventoryContext';
-import { Plus, Search, XCircle, Trash2, Printer, Settings, CheckCircle } from 'lucide-react';
+import { Plus, Search, XCircle, Trash2, Printer, Settings, CheckCircle, MoreVertical, Edit2 } from 'lucide-react';
 import Dialog from '../components/Dialog';
 
 
@@ -28,6 +28,9 @@ const Vault: React.FC = () => {
   // Edit Item Modal State
   const [isEditItemModalOpen, setIsEditItemModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<{ id: string; type: string; description: string; weight: string; stone_weight: string } | null>(null);
+
+  // Table Actions Menu State
+  const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
 
   // Dropdown State
   const [typeSearch, setTypeSearch] = useState('');
@@ -347,40 +350,8 @@ const Vault: React.FC = () => {
                           <td className="py-3 px-4 font-medium text-slate-300">{gw.toFixed(2)}g</td>
                           <td className="py-3 px-4 text-slate-400">{sw > 0 ? sw.toFixed(2) + 'g' : '-'}</td>
                           <td className="py-3 px-4 font-medium text-gold-400">{nw.toFixed(2)}g</td>
-                          <td className="py-3 px-4 text-right">
-                            <div className="flex gap-2 justify-end">
-                              <button 
-                                onClick={() => {
-                                  setEditingItem({
-                                    id: item.id,
-                                    type: item.type,
-                                    description: item.description || '',
-                                    weight: item.weight.toString(),
-                                    stone_weight: item.stone_weight ? item.stone_weight.toString() : ''
-                                  });
-                                  setIsEditItemModalOpen(true);
-                                }}
-                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-slate-800 text-blue-400 hover:bg-blue-500 hover:text-white transition-colors text-xs font-semibold"
-                              >
-                                Edit
-                              </button>
-                              <button 
-                                onClick={() => {
-                                  setDialogConfig({
-                                    isOpen: true,
-                                    type: 'confirm',
-                                    title: 'Delete Item',
-                                    message: `Are you sure you want to delete barcode ${item.barcode}?`,
-                                    onConfirm: async () => {
-                                      await deleteItem(item.id);
-                                      setDialogConfig(prev => ({ ...prev, isOpen: false }));
-                                    }
-                                  });
-                                }}
-                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-slate-800 text-red-400 hover:bg-red-500 hover:text-white transition-colors text-xs font-semibold"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
+                          <td className="py-3 px-4 text-right relative">
+                            <div className="flex gap-2 justify-end items-center">
                               <button 
                                 onClick={() => handlePrint(item)}
                                 className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-slate-800 text-slate-300 hover:bg-gold-500 hover:text-slate-950 transition-colors text-xs font-semibold"
@@ -388,6 +359,62 @@ const Vault: React.FC = () => {
                                 <Printer className="w-3.5 h-3.5" />
                                 Print Tag
                               </button>
+                              
+                              <div className="relative">
+                                <button
+                                  onClick={() => setActiveMenuId(activeMenuId === item.id ? null : item.id)}
+                                  className="p-1.5 rounded-md bg-slate-800 text-slate-400 hover:text-white transition-colors border border-slate-700"
+                                >
+                                  <MoreVertical className="w-4 h-4" />
+                                </button>
+
+                                {activeMenuId === item.id && (
+                                  <>
+                                    <div 
+                                      className="fixed inset-0 z-40" 
+                                      onClick={() => setActiveMenuId(null)}
+                                    ></div>
+                                    <div className="absolute right-0 top-full mt-1 w-32 bg-slate-800 border border-slate-700 rounded-lg shadow-xl z-50 overflow-hidden">
+                                      <button 
+                                        onClick={() => {
+                                          setActiveMenuId(null);
+                                          setEditingItem({
+                                            id: item.id,
+                                            type: item.type,
+                                            description: item.description || '',
+                                            weight: item.weight.toString(),
+                                            stone_weight: item.stone_weight ? item.stone_weight.toString() : ''
+                                          });
+                                          setIsEditItemModalOpen(true);
+                                        }}
+                                        className="w-full text-left px-4 py-2 text-sm text-blue-400 hover:bg-slate-700 transition-colors flex items-center gap-2"
+                                      >
+                                        <Edit2 className="w-3.5 h-3.5" />
+                                        Edit
+                                      </button>
+                                      <button 
+                                        onClick={() => {
+                                          setActiveMenuId(null);
+                                          setDialogConfig({
+                                            isOpen: true,
+                                            type: 'confirm',
+                                            title: 'Delete Item',
+                                            message: `Are you sure you want to delete barcode ${item.barcode}?`,
+                                            onConfirm: async () => {
+                                              await deleteItem(item.id);
+                                              setDialogConfig(prev => ({ ...prev, isOpen: false }));
+                                            }
+                                          });
+                                        }}
+                                        className="w-full text-left px-4 py-2 text-sm text-red-400 hover:bg-slate-700 transition-colors flex items-center gap-2 border-t border-slate-700"
+                                      >
+                                        <Trash2 className="w-3.5 h-3.5" />
+                                        Delete
+                                      </button>
+                                    </div>
+                                  </>
+                                )}
+                              </div>
                             </div>
                           </td>
                         </tr>
