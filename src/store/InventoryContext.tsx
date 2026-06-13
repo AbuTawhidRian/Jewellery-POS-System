@@ -55,6 +55,7 @@ interface InventoryContextType {
   isLoading: boolean;
   addItem: (item: Partial<Pick<Item, 'barcode'>> & Omit<Item, 'id' | 'status' | 'dateAdded' | 'date_added' | 'barcode'>) => Promise<{ success: boolean, data?: Item, error?: string }>;
   editItem: (id: string, updatedData: Partial<Item>) => Promise<{ success: boolean, data?: Item, error?: string }>;
+  deleteItem: (id: string) => Promise<boolean>;
   addBuyer: (name: string) => Promise<Buyer | null>;
   editBuyer: (id: string, name: string) => Promise<boolean>;
   deleteBuyer: (id: string) => Promise<boolean>;
@@ -149,6 +150,20 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       return { success: false, error: result.error || 'Failed to update item' };
     } catch (error: any) {
       return { success: false, error: error.message };
+    }
+  };
+
+  const deleteItem = async (id: string) => {
+    try {
+      const res = await fetch(`${API_URL}/items/${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        setItems(prev => prev.filter(i => i.id !== id));
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error("Error deleting item:", error);
+      return false;
     }
   };
 
@@ -354,7 +369,7 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   };
 
   return (
-    <InventoryContext.Provider value={{ items, buyers, sales, itemTypes, descriptions, isLoading, addItem, editItem, addBuyer, editBuyer, deleteBuyer, addItemType, editItemType, deleteItemType, addDescription, editDescription, deleteDescription, processBulkSale, printItem, setPrintItem, printInvoiceData, setPrintInvoiceData }}>
+    <InventoryContext.Provider value={{ items, buyers, sales, itemTypes, descriptions, isLoading, addItem, editItem, deleteItem, addBuyer, editBuyer, deleteBuyer, addItemType, editItemType, deleteItemType, addDescription, editDescription, deleteDescription, processBulkSale, printItem, setPrintItem, printInvoiceData, setPrintInvoiceData }}>
       {children}
     </InventoryContext.Provider>
   );

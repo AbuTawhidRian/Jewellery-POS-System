@@ -93,6 +93,16 @@ app.put('/api/items/:id', async (req, res) => {
   }
 });
 
+app.delete('/api/items/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    await pool.query('DELETE FROM items WHERE id = $1', [id]);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // --- BUYERS ---
 app.get('/api/buyers', async (req, res) => {
   try {

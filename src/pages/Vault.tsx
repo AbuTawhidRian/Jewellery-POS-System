@@ -6,7 +6,7 @@ import Dialog from '../components/Dialog';
 
 
 const Vault: React.FC = () => {
-  const { items, itemTypes, addItem, editItem, setPrintItem, addItemType, editItemType, deleteItemType, descriptions, addDescription, editDescription, deleteDescription } = useInventory();
+  const { items, itemTypes, addItem, editItem, deleteItem, setPrintItem, addItemType, editItemType, deleteItemType, descriptions, addDescription, editDescription, deleteDescription } = useInventory();
   const [searchTerm, setSearchTerm] = useState('');
   
   // Form State
@@ -348,13 +348,47 @@ const Vault: React.FC = () => {
                           <td className="py-3 px-4 text-slate-400">{sw > 0 ? sw.toFixed(2) + 'g' : '-'}</td>
                           <td className="py-3 px-4 font-medium text-gold-400">{nw.toFixed(2)}g</td>
                           <td className="py-3 px-4 text-right">
-                            <button 
-                              onClick={() => handlePrint(item)}
-                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-slate-800 text-slate-300 hover:bg-gold-500 hover:text-slate-950 transition-colors text-xs font-semibold"
-                            >
-                              <Printer className="w-3.5 h-3.5" />
-                              Print Tag
-                            </button>
+                            <div className="flex gap-2 justify-end">
+                              <button 
+                                onClick={() => {
+                                  setEditingItem({
+                                    id: item.id,
+                                    type: item.type,
+                                    description: item.description || '',
+                                    weight: item.weight.toString(),
+                                    stone_weight: item.stone_weight ? item.stone_weight.toString() : ''
+                                  });
+                                  setIsEditItemModalOpen(true);
+                                }}
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-slate-800 text-blue-400 hover:bg-blue-500 hover:text-white transition-colors text-xs font-semibold"
+                              >
+                                Edit
+                              </button>
+                              <button 
+                                onClick={() => {
+                                  setDialogConfig({
+                                    isOpen: true,
+                                    type: 'confirm',
+                                    title: 'Delete Item',
+                                    message: `Are you sure you want to delete barcode ${item.barcode}?`,
+                                    onConfirm: async () => {
+                                      await deleteItem(item.id);
+                                      setDialogConfig(prev => ({ ...prev, isOpen: false }));
+                                    }
+                                  });
+                                }}
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-slate-800 text-red-400 hover:bg-red-500 hover:text-white transition-colors text-xs font-semibold"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                              <button 
+                                onClick={() => handlePrint(item)}
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-slate-800 text-slate-300 hover:bg-gold-500 hover:text-slate-950 transition-colors text-xs font-semibold"
+                              >
+                                <Printer className="w-3.5 h-3.5" />
+                                Print Tag
+                              </button>
+                            </div>
                           </td>
                         </tr>
                         );

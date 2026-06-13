@@ -24,7 +24,7 @@ const ThermalPrintLayout: React.FC = () => {
   if (!printItem) return null;
 
   return (
-    <div id="print-area" className="hidden print:flex w-full h-full bg-white text-black font-sans box-border overflow-hidden p-1">
+    <div id="print-area" className="fixed top-0 -left-[9999px] print:static print:flex print:w-full print:h-full bg-white text-black font-sans box-border overflow-hidden p-1 z-[-1] print:z-50 w-[150px]">
       <div className="flex flex-col items-center justify-center w-full">
         <h1 className="text-[10px] font-bold leading-none mb-1 uppercase tracking-tight">Alex Gold FZC</h1>
         <svg ref={barcodeRef} className="max-w-full h-auto"></svg>
