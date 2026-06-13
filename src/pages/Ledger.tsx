@@ -1,23 +1,58 @@
 import React, { useState, useMemo } from 'react';
 import { useInventory, type Sale } from '../store/InventoryContext';
-import { Download, FileText, Filter, Printer, ChevronDown, ChevronRight } from 'lucide-react';
+import { Download, FileText, Filter, Printer, ChevronDown, ChevronRight, Calendar, Trash2 } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import Dialog from '../components/Dialog';
 
 const Ledger: React.FC = () => {
-  const { sales, buyers, setPrintInvoiceData } = useInventory();
+  const { sales, buyers, setPrintInvoiceData, voidTransaction } = useInventory();
   const [filterBuyerId, setFilterBuyerId] = useState<string>('all');
+  const [filterDateRange, setFilterDateRange] = useState<string>('all');
+  const [customStartDate, setCustomStartDate] = useState<string>('');
+  const [customEndDate, setCustomEndDate] = useState<string>('');
+  
   const [expandedTx, setExpandedTx] = useState<string | null>(null);
   
-  const [dialogConfig, setDialogConfig] = useState<{isOpen: boolean, message: string}>({ isOpen: false, message: '' });
+  const [dialogConfig, setDialogConfig] = useState<{
+    isOpen: boolean; 
+    type: 'alert' | 'confirm'; 
+    title: string; 
+    message: string;
+    onConfirm?: () => void;
+  }>({ isOpen: false, type: 'alert', title: '', message: '' });
 
-  const filteredSales = filterBuyerId === 'all' 
-    ? sales 
-    : sales.filter(s => s.buyer_id === filterBuyerId);
+  const filteredSales = useMemo(() => {
+    let result = sales;
+    if (filterBuyerId !== 'all') {
+      result = result.filter(s => s.buyer_id === filterBuyerId);
+    }
+    
+    if (filterDateRange !== 'all') {
+      const now = new Date();
+      result = result.filter(s => {
+        const saleDate = parseISO(s.date);
+        if (filterDateRange === 'today') {
+          return saleDate.toDateString() === now.toDateString();
+        } else if (filterDateRange === 'week') {
+          const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+          return saleDate >= weekAgo;
+        } else if (filterDateRange === 'month') {
+          return saleDate.getMonth() === now.getMonth() && saleDate.getFullYear() === now.getFullYear();
+        } else if (filterDateRange === 'custom') {
+          const start = customStartDate ? new Date(customStartDate) : new Date(0);
+          const end = customEndDate ? new Date(customEndDate) : new Date();
+          end.setHours(23, 59, 59, 999);
+          return saleDate >= start && saleDate <= end;
+        }
+        return true;
+      });
+    }
+    return result;
+  }, [sales, filterBuyerId, filterDateRange, customStartDate, customEndDate]);
 
   const exportToCSV = () => {
     if (filteredSales.length === 0) {
-      setDialogConfig({ isOpen: true, message: "No sales data to export for this filter." });
+      setDialogConfig({ isOpen: true, type: 'alert', title: 'Export Failed', message: "No sales data to export for this filter." });
       return;
     }
 
@@ -34,7 +69,7 @@ const Ledger: React.FC = () => {
         gw.toFixed(2),
         sw.toFixed(2),
         nw.toFixed(2),
-        `"${sale.buyer_name}"` // Handle commas in names
+        `"${sale.buyer_name}"`
       ];
     });
 
@@ -57,7 +92,6 @@ const Ledger: React.FC = () => {
     const txMap = new Map<string, { date: string, buyerId: string, buyerName: string, items: Sale[], totalItems: number, totalNet: number, totalGross: number }>();
     
     filteredSales.forEach(sale => {
-      // Use date as transaction ID since they are grouped in the same millisecond during checkout
       const key = sale.date;
       
       if (!txMap.has(key)) {
@@ -85,7 +119,7 @@ const Ledger: React.FC = () => {
   }, [filteredSales]);
 
   const printTransactionInvoice = (tx: any, e: React.MouseEvent) => {
-    e.stopPropagation(); // prevent expanding the accordion
+    e.stopPropagation();
     setPrintInvoiceData({
       buyerName: tx.buyerName,
       items: tx.items,
@@ -95,9 +129,30 @@ const Ledger: React.FC = () => {
     setTimeout(() => window.print(), 100);
   };
 
+  const handleVoidTransaction = (tx: any, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setDialogConfig({
+      isOpen: true,
+      type: 'confirm',
+      title: 'Void Transaction',
+      message: `Are you sure you want to void this transaction from ${format(parseISO(tx.date), 'MMM dd, yyyy')}? This will delete the sale and return ${tx.totalItems} items back to In Stock.`,
+      onConfirm: async () => {
+        const result = await voidTransaction(tx.buyerId, tx.date);
+        if (!result.success) {
+          setDialogConfig({
+            isOpen: true,
+            type: 'alert',
+            title: 'Void Failed',
+            message: result.message
+          });
+        }
+      }
+    });
+  };
+
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 ease-out h-full flex flex-col">
-      <header className="mb-8 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+      <header className="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-slate-100 flex items-center gap-3">
             <FileText className="w-8 h-8 text-gold-500" />
@@ -106,7 +161,7 @@ const Ledger: React.FC = () => {
           <p className="text-slate-400 mt-1">Complete history of all checkout transactions.</p>
         </div>
         
-        <div className="flex flex-col sm:flex-row gap-2">
+        <div className="flex flex-col sm:flex-row gap-2 flex-wrap md:flex-nowrap">
           <div className="flex items-center gap-2 bg-slate-900 border border-slate-700 rounded-lg px-3 py-2">
             <Filter className="w-4 h-4 text-slate-400" />
             <select 
@@ -120,13 +175,46 @@ const Ledger: React.FC = () => {
               ))}
             </select>
           </div>
+
+          <div className="flex items-center gap-2 bg-slate-900 border border-slate-700 rounded-lg px-3 py-2">
+            <Calendar className="w-4 h-4 text-slate-400" />
+            <select 
+              value={filterDateRange}
+              onChange={(e) => setFilterDateRange(e.target.value)}
+              className="bg-transparent text-sm text-slate-200 focus:outline-none appearance-none cursor-pointer pr-4"
+            >
+              <option value="all" className="bg-slate-900 text-slate-200">All Time</option>
+              <option value="today" className="bg-slate-900 text-slate-200">Today</option>
+              <option value="week" className="bg-slate-900 text-slate-200">Last 7 Days</option>
+              <option value="month" className="bg-slate-900 text-slate-200">This Month</option>
+              <option value="custom" className="bg-slate-900 text-slate-200">Custom Range</option>
+            </select>
+          </div>
+          
+          {filterDateRange === 'custom' && (
+            <div className="flex items-center gap-2">
+              <input 
+                type="date" 
+                value={customStartDate}
+                onChange={(e) => setCustomStartDate(e.target.value)}
+                className="bg-slate-900 border border-slate-700 rounded-lg px-2 py-2 text-sm text-slate-200 focus:outline-none focus:border-gold-500"
+              />
+              <span className="text-slate-500">-</span>
+              <input 
+                type="date" 
+                value={customEndDate}
+                onChange={(e) => setCustomEndDate(e.target.value)}
+                className="bg-slate-900 border border-slate-700 rounded-lg px-2 py-2 text-sm text-slate-200 focus:outline-none focus:border-gold-500"
+              />
+            </div>
+          )}
           
           <button 
             onClick={exportToCSV}
             className="inline-flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-100 font-semibold py-2 px-4 rounded-lg border border-slate-700 transition-colors shadow-sm"
           >
             <Download className="w-4 h-4 text-gold-500" />
-            Export CSV
+            <span className="hidden sm:inline">Export CSV</span>
           </button>
         </div>
       </header>
@@ -172,13 +260,24 @@ const Ledger: React.FC = () => {
                         <td className="py-4 px-4 font-medium text-slate-300 text-center">{tx.totalItems}</td>
                         <td className="py-4 px-4 font-medium text-gold-400 text-right">{tx.totalNet.toFixed(2)}g</td>
                         <td className="py-4 px-4 text-right">
-                          <button 
-                            onClick={(e) => printTransactionInvoice(tx, e)}
-                            className="inline-flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold py-1.5 px-3 rounded-lg border border-slate-700 transition-colors"
-                          >
-                            <Printer className="w-3.5 h-3.5 text-gold-500" />
-                            Print Invoice
-                          </button>
+                          <div className="flex justify-end gap-2">
+                            <button 
+                              onClick={(e) => printTransactionInvoice(tx, e)}
+                              className="inline-flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold py-1.5 px-3 rounded-lg border border-slate-700 transition-colors"
+                              title="Print Invoice"
+                            >
+                              <Printer className="w-3.5 h-3.5 text-gold-500" />
+                              <span className="hidden sm:inline">Print</span>
+                            </button>
+                            <button 
+                              onClick={(e) => handleVoidTransaction(tx, e)}
+                              className="inline-flex items-center gap-2 bg-red-900/30 hover:bg-red-900/50 text-red-400 text-xs font-semibold py-1.5 px-3 rounded-lg border border-red-900/50 transition-colors"
+                              title="Void Transaction"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                              <span className="hidden sm:inline">Void</span>
+                            </button>
+                          </div>
                         </td>
                       </tr>
                       {isExpanded && (
@@ -235,10 +334,13 @@ const Ledger: React.FC = () => {
 
       <Dialog 
         isOpen={dialogConfig.isOpen}
-        type="alert"
-        title="Export Failed"
+        type={dialogConfig.type as any}
+        title={dialogConfig.title}
         message={dialogConfig.message}
-        onConfirm={() => setDialogConfig({ ...dialogConfig, isOpen: false })}
+        onConfirm={() => {
+          if (dialogConfig.onConfirm) dialogConfig.onConfirm();
+          setDialogConfig({ ...dialogConfig, isOpen: false });
+        }}
         onCancel={() => setDialogConfig({ ...dialogConfig, isOpen: false })}
       />
     </div>

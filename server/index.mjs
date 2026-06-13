@@ -266,7 +266,12 @@ app.delete('/api/descriptions/:id', async (req, res) => {
 // --- SALES ---
 app.get('/api/sales', async (req, res) => {
   try {
-    const result = await pool.query('SELECT * FROM sales ORDER BY date DESC');
+    const result = await pool.query(`
+      SELECT s.*, i.description 
+      FROM sales s 
+      LEFT JOIN items i ON s.item_id = i.id 
+      ORDER BY s.date DESC
+    `);
     res.json({ data: result.rows });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -317,7 +322,9 @@ app.post('/api/sales', async (req, res) => {
          VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
         [item.id, item.barcode, buyer.id, buyer.name, item.weight, item.stone_weight || 0, item.type]
       );
-      newSales.push(saleRes.rows[0]);
+      const newSale = saleRes.rows[0];
+      newSale.description = item.description;
+      newSales.push(newSale);
     }
 
     await client.query('COMMIT');
@@ -329,6 +336,51 @@ app.post('/api/sales', async (req, res) => {
   } catch (err) {
     await client.query('ROLLBACK');
     res.status(500).json({ success: false, message: err.message || 'Failed to process sale' });
+  } finally {
+    client.release();
+  }
+});
+
+app.post('/api/sales/void', async (req, res) => {
+  const { buyerId, date } = req.body;
+  if (!buyerId || !date) {
+    return res.status(400).json({ success: false, message: 'buyerId and date are required to void a transaction' });
+  }
+
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    // Find the sales for this transaction
+    const salesRes = await client.query(
+      'SELECT item_id FROM sales WHERE buyer_id = $1 AND date = $2',
+      [buyerId, date]
+    );
+
+    if (salesRes.rows.length === 0) {
+      throw new Error('Transaction not found or already voided');
+    }
+
+    const itemIds = salesRes.rows.map(row => row.item_id);
+    const idPlaceholders = itemIds.map((_, i) => `$${i + 1}`).join(',');
+
+    // 1. Update items back to 'In Stock'
+    await client.query(
+      `UPDATE items SET status = 'In Stock' WHERE id IN (${idPlaceholders})`,
+      itemIds
+    );
+
+    // 2. Delete the sales records
+    await client.query(
+      'DELETE FROM sales WHERE buyer_id = $1 AND date = $2',
+      [buyerId, date]
+    );
+
+    await client.query('COMMIT');
+    res.json({ success: true, message: `Successfully voided transaction with ${itemIds.length} items.` });
+  } catch (err) {
+    await client.query('ROLLBACK');
+    res.status(500).json({ success: false, message: err.message || 'Failed to void transaction' });
   } finally {
     client.release();
   }

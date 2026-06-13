@@ -68,6 +68,7 @@ interface InventoryContextType {
   editDescription: (id: string, name: string) => Promise<boolean>;
   deleteDescription: (id: string) => Promise<boolean>;
   processBulkSale: (barcodes: string[], buyerId: string) => Promise<{ success: boolean; message: string }>;
+  voidTransaction: (buyerId: string, date: string) => Promise<{ success: boolean; message: string }>;
   printItem: Item | null;
   setPrintItem: (item: Item | null) => void;
   printInvoiceData: InvoiceData | null;
@@ -369,8 +370,33 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }
   };
 
+  const voidTransaction = async (buyerId: string, date: string) => {
+    try {
+      const res = await fetch(`${API_URL}/sales/void`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ buyerId, date })
+      });
+      const result = await res.json();
+      
+      if (res.ok && result.success) {
+        // Remove voided sales from the local state
+        setSales(prev => prev.filter(s => !(s.buyer_id === buyerId && s.date === date)));
+        // Re-fetch items to get the voided ones back 'In Stock'
+        fetch(`${API_URL}/items`).then(res => res.json()).then(data => {
+          if (data.data) setItems(data.data);
+        });
+        return { success: true, message: result.message };
+      }
+      return { success: false, message: result.message || 'Failed to void transaction' };
+    } catch (error: any) {
+      console.error("Error voiding transaction:", error);
+      return { success: false, message: error.message };
+    }
+  };
+
   return (
-    <InventoryContext.Provider value={{ items, buyers, sales, itemTypes, descriptions, isLoading, addItem, editItem, deleteItem, addBuyer, editBuyer, deleteBuyer, addItemType, editItemType, deleteItemType, addDescription, editDescription, deleteDescription, processBulkSale, printItem, setPrintItem, printInvoiceData, setPrintInvoiceData }}>
+    <InventoryContext.Provider value={{ items, buyers, sales, itemTypes, descriptions, isLoading, addItem, editItem, deleteItem, addBuyer, editBuyer, deleteBuyer, addItemType, editItemType, deleteItemType, addDescription, editDescription, deleteDescription, processBulkSale, voidTransaction, printItem, setPrintItem, printInvoiceData, setPrintInvoiceData }}>
       {children}
     </InventoryContext.Provider>
   );
