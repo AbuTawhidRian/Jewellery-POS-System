@@ -203,7 +203,7 @@ const POS: React.FC = () => {
     setTimeout(() => inputRef.current?.focus(), 10);
   };
 
-  const totalWeight = cart.reduce((acc, item) => acc + item.weight, 0);
+  const totalWeight = cart.reduce((acc, item) => acc + (Number(item.weight) || 0), 0);
 
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 ease-out h-full flex flex-col relative">

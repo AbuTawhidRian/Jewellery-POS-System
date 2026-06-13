@@ -8,7 +8,7 @@ const Dashboard: React.FC = () => {
 
   const activeStock = items.filter(i => i.status === 'In Stock');
   const totalItemsInStock = activeStock.length;
-  const totalWeightInStock = activeStock.reduce((acc, item) => acc + item.weight, 0);
+  const totalWeightInStock = activeStock.reduce((acc, item) => acc + (Number(item.weight) || 0), 0);
   
   const todaySales = sales.filter(s => isToday(parseISO(s.date)));
   const totalSalesTodayItems = todaySales.length;
@@ -73,7 +73,7 @@ const Dashboard: React.FC = () => {
                   <tr key={sale.id} className="border-b border-slate-800/50 last:border-0 hover:bg-slate-900/50 transition-colors">
                     <td className="py-3 text-slate-200">{sale.type}</td>
                     <td className="py-3 text-slate-400 font-mono">{sale.barcode}</td>
-                    <td className="py-3 text-gold-400 font-medium">{sale.weight.toFixed(2)}g</td>
+                    <td className="py-3 text-gold-400 font-medium">{Number(sale.weight).toFixed(2)}g</td>
                     <td className="py-3 text-slate-300">{sale.buyer_name}</td>
                   </tr>
                 ))}

@@ -137,7 +137,7 @@ const Ledger: React.FC = () => {
         
         <div className="bg-slate-900 border-t border-slate-800 p-4 flex justify-between items-center text-sm">
           <span className="text-slate-400">Total Records: <strong className="text-slate-200">{filteredSales.length}</strong></span>
-          <span className="text-slate-400">Total Weight Sold: <strong className="text-gold-500">{filteredSales.reduce((acc, s) => acc + s.weight, 0).toFixed(2)}g</strong></span>
+          <span className="text-slate-400">Total Weight Sold: <strong className="text-gold-500">{filteredSales.reduce((acc, s) => acc + (Number(s.weight) || 0), 0).toFixed(2)}g</strong></span>
         </div>
       </div>
 
