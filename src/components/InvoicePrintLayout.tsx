@@ -48,23 +48,40 @@ const InvoicePrintLayout: React.FC = () => {
           <thead>
             <tr className="border-b-2 border-slate-800 text-slate-800">
               <th className="py-3 px-2 font-bold w-16">#</th>
-              <th className="py-3 px-2 font-bold">Item Barcode</th>
+              <th className="py-3 px-2 font-bold">Model</th>
               <th className="py-3 px-2 font-bold">Item Type</th>
+              <th className="py-3 px-2 font-bold text-center">Qty</th>
               <th className="py-3 px-2 font-bold text-right">Gross Wt (g)</th>
               <th className="py-3 px-2 font-bold text-right">Stone Wt (g)</th>
               <th className="py-3 px-2 font-bold text-right">Net Wt (g)</th>
             </tr>
           </thead>
           <tbody className="text-sm">
-            {printInvoiceData.items.map((item, idx) => {
-              const sw = Number(item.stone_weight) || 0;
-              const gw = Number(item.weight) || 0;
+            {Object.values(printInvoiceData.items.reduce((acc, item) => {
+              const key = `${item.description || 'Unknown'}-${item.type}`;
+              if (!acc[key]) {
+                acc[key] = {
+                  description: item.description || 'Unknown',
+                  type: item.type,
+                  qty: 0,
+                  weight: 0,
+                  stone_weight: 0,
+                };
+              }
+              acc[key].qty += 1;
+              acc[key].weight += Number(item.weight) || 0;
+              acc[key].stone_weight += Number(item.stone_weight) || 0;
+              return acc;
+            }, {} as Record<string, { description: string, type: string, qty: number, weight: number, stone_weight: number }>)).map((group, idx) => {
+              const sw = group.stone_weight;
+              const gw = group.weight;
               const nw = Math.max(0, gw - sw);
               return (
-              <tr key={item.barcode} className="border-b border-slate-200">
+              <tr key={`${group.description}-${group.type}`} className="border-b border-slate-200">
                 <td className="py-4 px-2 text-slate-500">{idx + 1}</td>
-                <td className="py-4 px-2 font-mono font-medium text-slate-700">{item.barcode}</td>
-                <td className="py-4 px-2 text-slate-600">{item.type}</td>
+                <td className="py-4 px-2 font-bold text-slate-800">{group.description}</td>
+                <td className="py-4 px-2 text-slate-600">{group.type}</td>
+                <td className="py-4 px-2 font-medium text-center text-slate-700">{group.qty}</td>
                 <td className="py-4 px-2 font-medium text-right text-slate-700">{gw.toFixed(2)}</td>
                 <td className="py-4 px-2 text-right text-slate-500">{sw > 0 ? sw.toFixed(2) : '-'}</td>
                 <td className="py-4 px-2 font-medium text-right text-slate-900">{nw.toFixed(2)}</td>

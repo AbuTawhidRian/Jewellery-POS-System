@@ -1,12 +1,13 @@
-import React, { useState } from 'react';
-import { useInventory } from '../store/InventoryContext';
-import { Download, FileText, Filter, Printer } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { useInventory, type Sale } from '../store/InventoryContext';
+import { Download, FileText, Filter, Printer, ChevronDown, ChevronRight } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import Dialog from '../components/Dialog';
 
 const Ledger: React.FC = () => {
   const { sales, buyers, setPrintInvoiceData } = useInventory();
   const [filterBuyerId, setFilterBuyerId] = useState<string>('all');
+  const [expandedTx, setExpandedTx] = useState<string | null>(null);
   
   const [dialogConfig, setDialogConfig] = useState<{isOpen: boolean, message: string}>({ isOpen: false, message: '' });
 
@@ -20,7 +21,7 @@ const Ledger: React.FC = () => {
       return;
     }
 
-    const headers = ['Date/Time Sold', 'Barcode', 'Item Type', 'Gross Wt (g)', 'Stone Wt (g)', 'Net Wt (g)', 'Buyer Company'];
+    const headers = ['Date/Time Sold', 'Barcode', 'Item Type', 'Model', 'Gross Wt (g)', 'Stone Wt (g)', 'Net Wt (g)', 'Buyer Company'];
     const rows = filteredSales.map(sale => {
       const sw = Number(sale.stone_weight) || 0;
       const gw = Number(sale.weight) || 0;
@@ -29,6 +30,7 @@ const Ledger: React.FC = () => {
         format(parseISO(sale.date), 'yyyy-MM-dd HH:mm:ss'),
         sale.barcode,
         sale.type,
+        `"${sale.description}"`,
         gw.toFixed(2),
         sw.toFixed(2),
         nw.toFixed(2),
@@ -51,26 +53,45 @@ const Ledger: React.FC = () => {
     document.body.removeChild(link);
   };
 
-  const printInvoice = () => {
-    if (filterBuyerId === 'all') {
-      setDialogConfig({ isOpen: true, message: "Please select a specific Buyer Company from the dropdown to print an invoice." });
-      return;
-    }
-    if (filteredSales.length === 0) {
-      setDialogConfig({ isOpen: true, message: "No sales found for this buyer to print." });
-      return;
-    }
-
-    const buyerName = buyers.find(b => b.id === filterBuyerId)?.name || 'Unknown Buyer';
-    const totalWeight = filteredSales.reduce((acc, sale) => acc + Math.max(0, (Number(sale.weight) || 0) - (Number(sale.stone_weight) || 0)), 0);
-
-    setPrintInvoiceData({
-      buyerName,
-      items: filteredSales as any,
-      date: new Date().toISOString(),
-      totalWeight
+  const transactions = useMemo(() => {
+    const txMap = new Map<string, { date: string, buyerId: string, buyerName: string, items: Sale[], totalItems: number, totalNet: number, totalGross: number }>();
+    
+    filteredSales.forEach(sale => {
+      // Use date as transaction ID since they are grouped in the same millisecond during checkout
+      const key = sale.date;
+      
+      if (!txMap.has(key)) {
+        txMap.set(key, {
+          date: sale.date,
+          buyerId: sale.buyer_id,
+          buyerName: sale.buyer_name,
+          items: [],
+          totalItems: 0,
+          totalNet: 0,
+          totalGross: 0
+        });
+      }
+      
+      const tx = txMap.get(key)!;
+      tx.items.push(sale);
+      tx.totalItems++;
+      const sw = Number(sale.stone_weight) || 0;
+      const gw = Number(sale.weight) || 0;
+      tx.totalGross += gw;
+      tx.totalNet += Math.max(0, gw - sw);
     });
+    
+    return Array.from(txMap.values()).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  }, [filteredSales]);
 
+  const printTransactionInvoice = (tx: any, e: React.MouseEvent) => {
+    e.stopPropagation(); // prevent expanding the accordion
+    setPrintInvoiceData({
+      buyerName: tx.buyerName,
+      items: tx.items,
+      date: tx.date,
+      totalWeight: tx.totalNet
+    });
     setTimeout(() => window.print(), 100);
   };
 
@@ -82,7 +103,7 @@ const Ledger: React.FC = () => {
             <FileText className="w-8 h-8 text-gold-500" />
             Sales Ledger
           </h1>
-          <p className="text-slate-400 mt-1">Complete history of all sold inventory.</p>
+          <p className="text-slate-400 mt-1">Complete history of all checkout transactions.</p>
         </div>
         
         <div className="flex flex-col sm:flex-row gap-2">
@@ -101,14 +122,6 @@ const Ledger: React.FC = () => {
           </div>
           
           <button 
-            onClick={printInvoice}
-            className="inline-flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-100 font-semibold py-2 px-4 rounded-lg border border-slate-700 transition-colors shadow-sm"
-          >
-            <Printer className="w-4 h-4 text-gold-500" />
-            Print Invoice
-          </button>
-          
-          <button 
             onClick={exportToCSV}
             className="inline-flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-100 font-semibold py-2 px-4 rounded-lg border border-slate-700 transition-colors shadow-sm"
           >
@@ -124,40 +137,88 @@ const Ledger: React.FC = () => {
             <table className="w-full text-left border-collapse min-w-[800px]">
             <thead className="sticky top-0 bg-slate-950 z-10">
               <tr className="border-b border-slate-800 text-sm text-slate-400">
+                <th className="pb-3 px-4 font-medium w-10"></th>
                 <th className="pb-3 px-4 font-medium">Date/Time Sold</th>
-                <th className="pb-3 px-4 font-medium">Barcode</th>
-                <th className="pb-3 px-4 font-medium">Item Type</th>
-                <th className="pb-3 px-4 font-medium">Gr. Wt</th>
-                <th className="pb-3 px-4 font-medium">St. Wt</th>
-                <th className="pb-3 px-4 font-medium">Net Wt</th>
                 <th className="pb-3 px-4 font-medium">Buyer Company</th>
+                <th className="pb-3 px-4 font-medium text-center">Total Items</th>
+                <th className="pb-3 px-4 font-medium text-right">Total Net Wt</th>
+                <th className="pb-3 px-4 font-medium text-right">Action</th>
               </tr>
             </thead>
             <tbody className="text-sm">
-              {filteredSales.length === 0 ? (
+              {transactions.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="py-12 text-center text-slate-500">
-                    No sales recorded for this filter.
+                  <td colSpan={6} className="py-12 text-center text-slate-500">
+                    No transactions recorded for this filter.
                   </td>
                 </tr>
               ) : (
-                filteredSales.slice().reverse().map((sale) => {
-                  const sw = Number(sale.stone_weight) || 0;
-                  const gw = Number(sale.weight) || 0;
-                  const nw = Math.max(0, gw - sw);
+                transactions.map((tx) => {
+                  const isExpanded = expandedTx === tx.date;
                   return (
-                  <tr key={sale.id} className="border-b border-slate-800/50 hover:bg-slate-900/30 transition-colors">
-                    <td className="py-4 px-4 text-slate-300">
-                      {format(parseISO(sale.date), 'MMM dd, yyyy')} <br/>
-                      <span className="text-xs text-slate-500">{format(parseISO(sale.date), 'hh:mm:ss a')}</span>
-                    </td>
-                    <td className="py-4 px-4 font-mono text-slate-400">{sale.barcode}</td>
-                    <td className="py-4 px-4 text-slate-200">{sale.type}</td>
-                    <td className="py-4 px-4 font-medium text-slate-300">{gw.toFixed(2)}g</td>
-                    <td className="py-4 px-4 text-slate-400">{sw > 0 ? sw.toFixed(2) + 'g' : '-'}</td>
-                    <td className="py-4 px-4 font-medium text-gold-400">{nw.toFixed(2)}g</td>
-                    <td className="py-4 px-4 text-slate-300">{sale.buyer_name}</td>
-                  </tr>
+                    <React.Fragment key={tx.date}>
+                      <tr 
+                        onClick={() => setExpandedTx(isExpanded ? null : tx.date)}
+                        className="border-b border-slate-800/50 hover:bg-slate-900/50 cursor-pointer transition-colors"
+                      >
+                        <td className="py-4 px-4 text-slate-500">
+                          {isExpanded ? <ChevronDown className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
+                        </td>
+                        <td className="py-4 px-4 text-slate-300">
+                          {format(parseISO(tx.date), 'MMM dd, yyyy')} <br/>
+                          <span className="text-xs text-slate-500">{format(parseISO(tx.date), 'hh:mm:ss a')}</span>
+                        </td>
+                        <td className="py-4 px-4 text-slate-200 font-bold">{tx.buyerName}</td>
+                        <td className="py-4 px-4 font-medium text-slate-300 text-center">{tx.totalItems}</td>
+                        <td className="py-4 px-4 font-medium text-gold-400 text-right">{tx.totalNet.toFixed(2)}g</td>
+                        <td className="py-4 px-4 text-right">
+                          <button 
+                            onClick={(e) => printTransactionInvoice(tx, e)}
+                            className="inline-flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold py-1.5 px-3 rounded-lg border border-slate-700 transition-colors"
+                          >
+                            <Printer className="w-3.5 h-3.5 text-gold-500" />
+                            Print Invoice
+                          </button>
+                        </td>
+                      </tr>
+                      {isExpanded && (
+                        <tr className="bg-slate-900/20 border-b border-slate-800/50">
+                          <td colSpan={6} className="p-0">
+                            <div className="p-4 pl-14 bg-slate-900/30">
+                              <table className="w-full text-left border-collapse text-xs">
+                                <thead>
+                                  <tr className="border-b border-slate-800 text-slate-500">
+                                    <th className="pb-2 px-2 font-medium">Barcode</th>
+                                    <th className="pb-2 px-2 font-medium">Model</th>
+                                    <th className="pb-2 px-2 font-medium">Type</th>
+                                    <th className="pb-2 px-2 font-medium text-right">Gr. Wt</th>
+                                    <th className="pb-2 px-2 font-medium text-right">St. Wt</th>
+                                    <th className="pb-2 px-2 font-medium text-right">Net Wt</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {tx.items.map(item => {
+                                    const sw = Number(item.stone_weight) || 0;
+                                    const gw = Number(item.weight) || 0;
+                                    const nw = Math.max(0, gw - sw);
+                                    return (
+                                      <tr key={item.id} className="border-b border-slate-800/30">
+                                        <td className="py-2 px-2 font-mono text-slate-400">{item.barcode}</td>
+                                        <td className="py-2 px-2 text-slate-300">{item.description}</td>
+                                        <td className="py-2 px-2 text-slate-400">{item.type}</td>
+                                        <td className="py-2 px-2 text-right text-slate-400">{gw.toFixed(2)}g</td>
+                                        <td className="py-2 px-2 text-right text-slate-500">{sw > 0 ? sw.toFixed(2) + 'g' : '-'}</td>
+                                        <td className="py-2 px-2 text-right font-medium text-slate-300">{nw.toFixed(2)}g</td>
+                                      </tr>
+                                    );
+                                  })}
+                                </tbody>
+                              </table>
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </React.Fragment>
                   );
                 })
               )}
@@ -167,8 +228,8 @@ const Ledger: React.FC = () => {
         </div>
         
         <div className="bg-slate-900 border-t border-slate-800 p-4 flex justify-between items-center text-sm">
-          <span className="text-slate-400">Total Records: <strong className="text-slate-200">{filteredSales.length}</strong></span>
-          <span className="text-slate-400">Total Net Weight: <strong className="text-gold-500">{filteredSales.reduce((acc, s) => acc + Math.max(0, (Number(s.weight) || 0) - (Number(s.stone_weight) || 0)), 0).toFixed(2)}g</strong></span>
+          <span className="text-slate-400">Total Transactions: <strong className="text-slate-200">{transactions.length}</strong></span>
+          <span className="text-slate-400">Total Net Weight Sold: <strong className="text-gold-500">{transactions.reduce((acc, tx) => acc + tx.totalNet, 0).toFixed(2)}g</strong></span>
         </div>
       </div>
 

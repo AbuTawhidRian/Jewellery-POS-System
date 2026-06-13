@@ -38,11 +38,12 @@ export interface Sale {
   weight: number;
   stone_weight: number;
   type: string;
+  description: string;
 }
 
 export interface InvoiceData {
   buyerName: string;
-  items: { barcode: string; type: string; weight: number; stone_weight: number }[];
+  items: { barcode?: string; type: string; description?: string; weight: number; stone_weight: number }[];
   date: string;
   totalWeight: number;
 }

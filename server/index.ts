@@ -84,6 +84,8 @@ app.get('/api/sales', async (req, res) => {
       date: s.date,
       weight: s.weight,
       type: s.item.type,
+      stone_weight: s.item.stone_weight,
+      description: s.item.description,
     }));
     
     res.json(flatSales);

@@ -197,7 +197,7 @@ const Vault: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-400 mb-1">Description</label>
+                <label className="block text-sm font-medium text-slate-400 mb-1">Model</label>
                 <div className="flex gap-2">
                   <div className="relative flex-1" ref={descDropdownRef}>
                     <input
@@ -212,12 +212,12 @@ const Vault: React.FC = () => {
                         setIsDescDropdownOpen(true);
                       }}
                       className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-slate-100 focus:outline-none focus:border-gold-500 focus:ring-1 focus:ring-gold-500 transition-colors"
-                      placeholder="Search or select description..."
+                      placeholder="Search or select model..."
                     />
                     {isDescDropdownOpen && (
                       <div className="absolute z-50 w-full mt-1 bg-slate-900 border border-slate-700 rounded-lg shadow-xl max-h-60 overflow-y-auto">
                         {descriptions.filter(d => d.name.toLowerCase().includes(descSearch.toLowerCase())).length === 0 ? (
-                          <div className="p-3 text-slate-500 text-sm text-center">No matching descriptions.</div>
+                          <div className="p-3 text-slate-500 text-sm text-center">No matching models.</div>
                         ) : (
                           descriptions
                             .filter(d => d.name.toLowerCase().includes(descSearch.toLowerCase()))
@@ -243,7 +243,7 @@ const Vault: React.FC = () => {
                     type="button"
                     onClick={() => setIsManageDescOpen(true)}
                     className="bg-slate-900 border border-slate-700 hover:border-gold-500 text-slate-400 hover:text-gold-500 rounded-lg px-3 flex items-center justify-center transition-colors"
-                    title="Manage Descriptions"
+                    title="Manage Models"
                   >
                     <Settings className="w-5 h-5" />
                   </button>
@@ -326,7 +326,7 @@ const Vault: React.FC = () => {
                     <tr className="border-b border-slate-800 text-sm text-slate-400">
                       <th className="pb-3 px-4 font-medium">Barcode</th>
                       <th className="pb-3 px-4 font-medium">Type</th>
-                      <th className="pb-3 px-4 font-medium hidden md:table-cell">Description</th>
+                      <th className="pb-3 px-4 font-medium hidden md:table-cell">Model</th>
                       <th className="pb-3 px-4 font-medium">Gr. Wt</th>
                       <th className="pb-3 px-4 font-medium">St. Wt</th>
                       <th className="pb-3 px-4 font-medium">Net Wt</th>
@@ -587,7 +587,7 @@ const Vault: React.FC = () => {
             <div className="p-6 border-b border-slate-800 flex justify-between items-center bg-slate-950/50 shrink-0">
               <h3 className="text-xl font-bold text-slate-100 flex items-center gap-2">
                 <Settings className="w-6 h-6 text-gold-500" />
-                Manage Descriptions
+                Manage Models
               </h3>
               <button 
                 onClick={() => setIsManageDescOpen(false)}
@@ -600,7 +600,7 @@ const Vault: React.FC = () => {
             <div className="p-6 overflow-y-auto flex-1">
               <div className="space-y-2 mb-6">
                 {descriptions.length === 0 ? (
-                  <p className="text-slate-500 text-sm text-center py-4">No descriptions found.</p>
+                  <p className="text-slate-500 text-sm text-center py-4">No models found.</p>
                 ) : (
                   descriptions.map(d => (
                     <div key={d.id} className="flex justify-between items-center bg-slate-950 border border-slate-800 rounded-lg p-3">
@@ -651,7 +651,7 @@ const Vault: React.FC = () => {
                                 setEditingDescName(d.name);
                               }}
                               className="p-2 text-slate-500 hover:text-blue-400 hover:bg-blue-400/10 rounded-lg transition-colors"
-                              title="Edit description"
+                              title="Edit model"
                             >
                               <Settings className="w-4 h-4" />
                             </button>
@@ -669,7 +669,7 @@ const Vault: React.FC = () => {
                                 setDialogConfig({
                                   isOpen: true,
                                   type: 'confirm',
-                                  title: 'Delete Description',
+                                  title: 'Delete Model',
                                   message: `Are you sure you want to delete '${d.name}'?`,
                                   onConfirm: async () => {
                                     const success = await deleteDescription(d.id);
@@ -683,7 +683,7 @@ const Vault: React.FC = () => {
                                 });
                               }}
                               className="p-2 text-slate-500 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors"
-                              title="Delete description"
+                              title="Delete model"
                             >
                               <Trash2 className="w-4 h-4" />
                             </button>
@@ -697,7 +697,7 @@ const Vault: React.FC = () => {
 
               <div className="border-t border-slate-800 pt-6">
                 <label className="block text-sm font-bold tracking-wide text-slate-400 uppercase mb-2">
-                  Add New Description
+                  Add New Model
                 </label>
                 <div className="flex gap-2">
                   <input 
@@ -761,7 +761,7 @@ const Vault: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-400 mb-1">Description</label>
+                <label className="block text-sm font-medium text-slate-400 mb-1">Model</label>
                 <select
                   value={editingItem.description}
                   onChange={(e) => setEditingItem({ ...editingItem, description: e.target.value })}
