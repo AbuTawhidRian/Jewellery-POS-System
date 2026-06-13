@@ -1,5 +1,4 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { supabase } from './supabaseClient';
 
 export type ItemStatus = 'In Stock' | 'Sold';
 
@@ -10,7 +9,7 @@ export interface Item {
   description: string;
   weight: number;
   status: ItemStatus;
-  date_added?: string; // Supabase uses snake_case usually if not specified otherwise
+  date_added?: string;
 }
 
 export interface ItemType {
@@ -61,6 +60,9 @@ interface InventoryContextType {
 
 const InventoryContext = createContext<InventoryContextType | undefined>(undefined);
 
+// API Base URL - empty means relative to current domain (since backend serves static files)
+const API_URL = '/api';
+
 export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [items, setItems] = useState<Item[]>([]);
   const [buyers, setBuyers] = useState<Buyer[]>([]);
@@ -76,10 +78,10 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       setIsLoading(true);
       try {
         const [itemsRes, buyersRes, salesRes, typesRes] = await Promise.all([
-          supabase.from('items').select('*').order('date_added', { ascending: true }),
-          supabase.from('buyers').select('*'),
-          supabase.from('sales').select('*').order('date', { ascending: false }),
-          supabase.from('item_types').select('*').order('name', { ascending: true })
+          fetch(`${API_URL}/items`).then(res => res.json()),
+          fetch(`${API_URL}/buyers`).then(res => res.json()),
+          fetch(`${API_URL}/sales`).then(res => res.json()),
+          fetch(`${API_URL}/item_types`).then(res => res.json())
         ]);
 
         if (itemsRes.data) setItems(itemsRes.data);
@@ -96,140 +98,118 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   }, []);
 
   const addItem = async (itemData: Omit<Item, 'id' | 'status' | 'dateAdded' | 'date_added'>) => {
-    const { data, error } = await supabase
-      .from('items')
-      .insert([{
-        barcode: itemData.barcode,
-        type: itemData.type,
-        description: itemData.description,
-        weight: itemData.weight,
-        status: 'In Stock'
-      }])
-      .select()
-      .single();
-
-    if (error) {
-      console.error("Error adding item:", error);
+    try {
+      const res = await fetch(`${API_URL}/items`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(itemData)
+      });
+      const result = await res.json();
+      
+      if (res.ok && result.data) {
+        setItems(prev => [...prev, result.data]);
+        return { success: true, data: result.data };
+      }
+      return { success: false, error: result.error || 'Failed to add item' };
+    } catch (error: any) {
       return { success: false, error: error.message };
     }
-
-    if (data) {
-      setItems(prev => [...prev, data]);
-      return { success: true, data };
-    }
-    
-    return { success: false, error: "Unknown error" };
   };
 
   const addBuyer = async (name: string) => {
-    const { data, error } = await supabase
-      .from('buyers')
-      .insert([{ name }])
-      .select()
-      .single();
-
-    if (error) {
+    try {
+      const res = await fetch(`${API_URL}/buyers`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name })
+      });
+      const result = await res.json();
+      
+      if (res.ok && result.data) {
+        setBuyers(prev => [...prev, result.data]);
+        return result.data;
+      }
+      return null;
+    } catch (error) {
       console.error("Error adding buyer:", error);
       return null;
     }
-    if (data) {
-      setBuyers(prev => [...prev, data]);
-      return data;
-    }
-    return null;
   };
 
   const deleteBuyer = async (id: string) => {
-    const { error } = await supabase
-      .from('buyers')
-      .delete()
-      .eq('id', id);
-
-    if (error) {
+    try {
+      const res = await fetch(`${API_URL}/buyers/${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        setBuyers(prev => prev.filter(b => b.id !== id));
+        return true;
+      }
+      return false;
+    } catch (error) {
       console.error("Error deleting buyer:", error);
       return false;
     }
-    setBuyers(prev => prev.filter(b => b.id !== id));
-    return true;
   };
 
   const addItemType = async (name: string) => {
-    const { data, error } = await supabase
-      .from('item_types')
-      .insert([{ name }])
-      .select()
-      .single();
-
-    if (error) {
+    try {
+      const res = await fetch(`${API_URL}/item_types`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name })
+      });
+      const result = await res.json();
+      
+      if (res.ok && result.data) {
+        setItemTypes(prev => [...prev, result.data].sort((a, b) => a.name.localeCompare(b.name)));
+        return result.data;
+      }
+      return null;
+    } catch (error) {
       console.error("Error adding item type:", error);
       return null;
     }
-    if (data) {
-      setItemTypes(prev => [...prev, data].sort((a, b) => a.name.localeCompare(b.name)));
-      return data;
-    }
-    return null;
   };
 
   const deleteItemType = async (id: string) => {
-    const { error } = await supabase
-      .from('item_types')
-      .delete()
-      .eq('id', id);
-
-    if (error) {
+    try {
+      const res = await fetch(`${API_URL}/item_types/${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        setItemTypes(prev => prev.filter(t => t.id !== id));
+        return true;
+      }
+      return false;
+    } catch (error) {
       console.error("Error deleting item type:", error);
       return false;
     }
-    setItemTypes(prev => prev.filter(t => t.id !== id));
-    return true;
   };
 
   const processBulkSale = async (barcodes: string[], buyerId: string) => {
     const buyer = buyers.find(b => b.id === buyerId);
     if (!buyer) return { success: false, message: 'Buyer not found.' };
 
-    const itemsToUpdate = items.filter(i => barcodes.includes(i.barcode) && i.status === 'In Stock');
-    if (itemsToUpdate.length === 0) {
-      return { success: false, message: 'No valid items found to process.' };
-    }
-
-    const saleRecords = itemsToUpdate.map(item => ({
-      item_id: item.id,
-      buyer_id: buyer.id,
-      buyer_name: buyer.name,
-      weight: item.weight,
-      type: item.type,
-      barcode: item.barcode
-    }));
-
     try {
-      // 1. Mark items as sold
-      const { error: updateError } = await supabase
-        .from('items')
-        .update({ status: 'Sold' })
-        .in('id', itemsToUpdate.map(i => i.id));
-        
-      if (updateError) throw updateError;
+      const res = await fetch(`${API_URL}/sales`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ barcodes, buyerId })
+      });
+      
+      const result = await res.json();
+      
+      if (res.ok && result.success) {
+        // Update local state
+        setItems(prevItems => prevItems.map(item => 
+          barcodes.includes(item.barcode) ? { ...item, status: 'Sold' } : item
+        ));
 
-      // 2. Insert sales
-      const { data: newSales, error: insertError } = await supabase
-        .from('sales')
-        .insert(saleRecords)
-        .select();
-
-      if (insertError) throw insertError;
-
-      // Update local state
-      setItems(prevItems => prevItems.map(item => 
-        barcodes.includes(item.barcode) ? { ...item, status: 'Sold' } : item
-      ));
-
-      if (newSales) {
-        setSales(prev => [...newSales, ...prev]);
+        if (result.data) {
+          setSales(prev => [...result.data, ...prev]);
+        }
+        return { success: true, message: result.message };
       }
-
-      return { success: true, message: `Successfully processed ${itemsToUpdate.length} items for ${buyer.name}.` };
+      
+      return { success: false, message: result.message || 'Failed to process sale' };
     } catch (error: any) {
       console.error("Error processing bulk sale:", error);
       return { success: false, message: error.message || "Failed to process sale" };

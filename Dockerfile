@@ -1,17 +1,17 @@
-# Stage 1: Build the React application
-FROM node:22-alpine AS build
+FROM node:22-alpine
+
 WORKDIR /app
+
+# Install dependencies first
 COPY package*.json ./
 RUN npm install
+
+# Copy application code
 COPY . .
+
+# Build the React frontend
 RUN npm run build
 
-# Stage 2: Serve the application with Nginx
-FROM nginx:alpine
-# Copy the built files from Stage 1
-COPY --from=build /app/dist /usr/share/nginx/html
-# Copy custom Nginx configuration
-COPY nginx.conf /etc/nginx/conf.d/default.conf
-
+# Start the Express server which serves the built React app + API
 EXPOSE 80
-CMD ["nginx", "-g", "daemon off;"]
+CMD ["npm", "start"]
