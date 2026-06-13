@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { useInventory } from '../store/InventoryContext';
-import { Download, FileText, Filter } from 'lucide-react';
+import { Download, FileText, Filter, Printer } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import Dialog from '../components/Dialog';
 
 const Ledger: React.FC = () => {
-  const { sales, buyers } = useInventory();
+  const { sales, buyers, setPrintInvoiceData } = useInventory();
   const [filterBuyerId, setFilterBuyerId] = useState<string>('all');
   
   const [dialogConfig, setDialogConfig] = useState<{isOpen: boolean, message: string}>({ isOpen: false, message: '' });
@@ -51,6 +51,29 @@ const Ledger: React.FC = () => {
     document.body.removeChild(link);
   };
 
+  const printInvoice = () => {
+    if (filterBuyerId === 'all') {
+      setDialogConfig({ isOpen: true, message: "Please select a specific Buyer Company from the dropdown to print an invoice." });
+      return;
+    }
+    if (filteredSales.length === 0) {
+      setDialogConfig({ isOpen: true, message: "No sales found for this buyer to print." });
+      return;
+    }
+
+    const buyerName = buyers.find(b => b.id === filterBuyerId)?.name || 'Unknown Buyer';
+    const totalWeight = filteredSales.reduce((acc, sale) => acc + Math.max(0, (Number(sale.weight) || 0) - (Number(sale.stone_weight) || 0)), 0);
+
+    setPrintInvoiceData({
+      buyerName,
+      items: filteredSales as any,
+      date: new Date().toISOString(),
+      totalWeight
+    });
+
+    setTimeout(() => window.print(), 100);
+  };
+
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 ease-out h-full flex flex-col">
       <header className="mb-8 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
@@ -76,6 +99,14 @@ const Ledger: React.FC = () => {
               ))}
             </select>
           </div>
+          
+          <button 
+            onClick={printInvoice}
+            className="inline-flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-100 font-semibold py-2 px-4 rounded-lg border border-slate-700 transition-colors shadow-sm"
+          >
+            <Printer className="w-4 h-4 text-gold-500" />
+            Print Invoice
+          </button>
           
           <button 
             onClick={exportToCSV}
