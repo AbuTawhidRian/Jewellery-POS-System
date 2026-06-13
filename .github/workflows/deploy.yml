@@ -18,7 +18,7 @@ jobs:
         username: ${{ secrets.SERVER_USERNAME }}
         key: ${{ secrets.SERVER_SSH_KEY }}
         source: "."
-        target: "/var/www/jewellery-pos"
+        target: "jewellery-pos"
         rm: true
 
     - name: Build and Restart Docker Container
@@ -28,7 +28,7 @@ jobs:
         username: ${{ secrets.SERVER_USERNAME }}
         key: ${{ secrets.SERVER_SSH_KEY }}
         script: |
-          cd /var/www/jewellery-pos
+          cd ~/jewellery-pos
           docker build -t jewellery-pos-app .
           docker stop jewellery-pos-container || true
           docker rm jewellery-pos-container || true
