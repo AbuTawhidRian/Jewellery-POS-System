@@ -7,32 +7,63 @@ generator client {
   provider = "prisma-client-js"
 }
 
+model Shop {
+  id        String   @id @default(uuid())
+  name      String
+  createdAt DateTime @default(now())
+  
+  users     User[]
+  items     Item[]
+  buyers    Buyer[]
+  sales     Sale[]
+}
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String
+  name         String?
+  shopId       String
+  createdAt    DateTime @default(now())
+
+  shop         Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
+}
+
 model Item {
   id          String   @id @default(uuid())
-  barcode     String   @unique
+  shopId      String
+  barcode     String
   type        String
+  stone_weight Float?
   description String
   weight      Float
   status      String   @default("In Stock")
   dateAdded   DateTime @default(now())
   
+  shop        Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
   sales       Sale[]
+
+  @@unique([barcode, shopId])
 }
 
 model Buyer {
   id          String   @id @default(uuid())
+  shopId      String
   name        String
   
+  shop        Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
   sales       Sale[]
 }
 
 model Sale {
   id          String   @id @default(uuid())
+  shopId      String
   itemId      String
   buyerId     String
   date        DateTime @default(now())
   weight      Float
 
+  shop        Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
   item        Item     @relation(fields: [itemId], references: [id])
   buyer       Buyer    @relation(fields: [buyerId], references: [id])
 }

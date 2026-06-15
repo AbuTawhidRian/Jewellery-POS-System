@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
+import { useAuth } from '../contexts/AuthContext';
 
 export type ItemStatus = 'In Stock' | 'Sold';
 
@@ -77,10 +78,10 @@ interface InventoryContextType {
 
 const InventoryContext = createContext<InventoryContextType | undefined>(undefined);
 
-// API Base URL - empty means relative to current domain (since backend serves static files)
-const API_URL = '/api';
+const API_URL = 'http://localhost:3001/api';
 
 export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { token, isAuthenticated } = useAuth();
   const [items, setItems] = useState<Item[]>([]);
   const [buyers, setBuyers] = useState<Buyer[]>([]);
   const [sales, setSales] = useState<Sale[]>([]);
@@ -90,24 +91,39 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const [printInvoiceData, setPrintInvoiceData] = useState<InvoiceData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Fetch initial data
+  const authFetch = async (url: string, options: RequestInit = {}) => {
+    const headers = new Headers(options.headers || {});
+    if (token) headers.set('Authorization', `Bearer ${token}`);
+    
+    // Default to application/json if no Content-Type is provided and we have a body
+    if (options.body && !headers.has('Content-Type')) {
+      headers.set('Content-Type', 'application/json');
+    }
+
+    return fetch(url, { ...options, headers });
+  };
+
   useEffect(() => {
+    if (!isAuthenticated) return;
+    
     const fetchData = async () => {
       setIsLoading(true);
       try {
         const [itemsRes, buyersRes, salesRes, typesRes, descRes] = await Promise.all([
-          fetch(`${API_URL}/items`).then(res => res.json()),
-          fetch(`${API_URL}/buyers`).then(res => res.json()),
-          fetch(`${API_URL}/sales`).then(res => res.json()),
-          fetch(`${API_URL}/item_types`).then(res => res.json()),
-          fetch(`${API_URL}/descriptions`).then(res => res.json())
+          authFetch(`${API_URL}/inventory`).then(res => res.json()),
+          authFetch(`${API_URL}/buyers`).then(res => res.json()),
+          authFetch(`${API_URL}/sales`).then(res => res.json()),
+          // The backend might not have item_types and descriptions endpoints right now,
+          // but we will keep them as is and handle errors gracefully
+          authFetch(`${API_URL}/item_types`).then(res => res.ok ? res.json() : []),
+          authFetch(`${API_URL}/descriptions`).then(res => res.ok ? res.json() : [])
         ]);
 
-        if (itemsRes.data) setItems(itemsRes.data);
-        if (buyersRes.data) setBuyers(buyersRes.data);
-        if (salesRes.data) setSales(salesRes.data);
-        if (typesRes.data) setItemTypes(typesRes.data);
-        if (descRes.data) setDescriptions(descRes.data);
+        if (Array.isArray(itemsRes)) setItems(itemsRes);
+        if (Array.isArray(buyersRes)) setBuyers(buyersRes);
+        if (Array.isArray(salesRes)) setSales(salesRes);
+        if (Array.isArray(typesRes)) setItemTypes(typesRes);
+        if (Array.isArray(descRes)) setDescriptions(descRes);
       } catch (error) {
         console.error("Error fetching data:", error);
       } finally {
@@ -115,20 +131,19 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       }
     };
     fetchData();
-  }, []);
+  }, [isAuthenticated, token]);
 
   const addItem = async (itemData: Partial<Pick<Item, 'barcode'>> & Omit<Item, 'id' | 'status' | 'dateAdded' | 'date_added' | 'barcode'>) => {
     try {
-      const res = await fetch(`${API_URL}/items`, {
+      const res = await authFetch(`${API_URL}/inventory`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(itemData)
       });
       const result = await res.json();
       
-      if (res.ok && result.data) {
-        setItems(prev => [...prev, result.data]);
-        return { success: true, data: result.data };
+      if (res.ok) {
+        setItems(prev => [...prev, result]);
+        return { success: true, data: result };
       }
       return { success: false, error: result.error || 'Failed to add item' };
     } catch (error: any) {
@@ -138,16 +153,15 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
   const editItem = async (id: string, updatedData: Partial<Item>) => {
     try {
-      const res = await fetch(`${API_URL}/items/${id}`, {
+      const res = await authFetch(`${API_URL}/inventory/${id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updatedData)
       });
       const result = await res.json();
       
-      if (res.ok && result.data) {
-        setItems(prev => prev.map(item => item.id === id ? result.data : item));
-        return { success: true, data: result.data };
+      if (res.ok) {
+        setItems(prev => prev.map(item => item.id === id ? result : item));
+        return { success: true, data: result };
       }
       return { success: false, error: result.error || 'Failed to update item' };
     } catch (error: any) {
@@ -157,7 +171,7 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
   const deleteItem = async (id: string) => {
     try {
-      const res = await fetch(`${API_URL}/items/${id}`, { method: 'DELETE' });
+      const res = await authFetch(`${API_URL}/inventory/${id}`, { method: 'DELETE' });
       if (res.ok) {
         setItems(prev => prev.filter(i => i.id !== id));
         return true;
@@ -171,16 +185,15 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
   const addBuyer = async (name: string) => {
     try {
-      const res = await fetch(`${API_URL}/buyers`, {
+      const res = await authFetch(`${API_URL}/buyers`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name })
       });
       const result = await res.json();
       
-      if (res.ok && result.data) {
-        setBuyers(prev => [...prev, result.data]);
-        return result.data;
+      if (res.ok) {
+        setBuyers(prev => [...prev, result]);
+        return result;
       }
       return null;
     } catch (error) {
@@ -191,14 +204,13 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
   const editBuyer = async (id: string, name: string) => {
     try {
-      const res = await fetch(`${API_URL}/buyers/${id}`, {
+      const res = await authFetch(`${API_URL}/buyers/${id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name })
       });
       const result = await res.json();
-      if (res.ok && result.data) {
-        setBuyers(prev => prev.map(b => b.id === id ? result.data : b));
+      if (res.ok) {
+        setBuyers(prev => prev.map(b => b.id === id ? result : b));
         setSales(prev => prev.map(s => s.buyer_id === id ? { ...s, buyer_name: name } : s));
         return true;
       }
@@ -211,7 +223,7 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
   const deleteBuyer = async (id: string) => {
     try {
-      const res = await fetch(`${API_URL}/buyers/${id}`, { method: 'DELETE' });
+      const res = await authFetch(`${API_URL}/buyers/${id}`, { method: 'DELETE' });
       if (res.ok) {
         setBuyers(prev => prev.filter(b => b.id !== id));
         return true;
@@ -225,16 +237,15 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
   const addItemType = async (name: string) => {
     try {
-      const res = await fetch(`${API_URL}/item_types`, {
+      const res = await authFetch(`${API_URL}/item_types`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name })
       });
       const result = await res.json();
       
-      if (res.ok && result.data) {
-        setItemTypes(prev => [...prev, result.data].sort((a, b) => a.name.localeCompare(b.name)));
-        return result.data;
+      if (res.ok) {
+        setItemTypes(prev => [...prev, result].sort((a, b) => a.name.localeCompare(b.name)));
+        return result;
       }
       return null;
     } catch (error) {
@@ -246,14 +257,13 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const editItemType = async (id: string, name: string) => {
     try {
       const oldTypeObj = itemTypes.find(t => t.id === id);
-      const res = await fetch(`${API_URL}/item_types/${id}`, {
+      const res = await authFetch(`${API_URL}/item_types/${id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name })
       });
       const result = await res.json();
-      if (res.ok && result.data) {
-        setItemTypes(prev => prev.map(t => t.id === id ? result.data : t).sort((a, b) => a.name.localeCompare(b.name)));
+      if (res.ok) {
+        setItemTypes(prev => prev.map(t => t.id === id ? result : t).sort((a, b) => a.name.localeCompare(b.name)));
         if (oldTypeObj) {
           setItems(prev => prev.map(i => i.type === oldTypeObj.name ? { ...i, type: name } : i));
           setSales(prev => prev.map(s => s.type === oldTypeObj.name ? { ...s, type: name } : s));
@@ -269,7 +279,7 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
   const deleteItemType = async (id: string) => {
     try {
-      const res = await fetch(`${API_URL}/item_types/${id}`, { method: 'DELETE' });
+      const res = await authFetch(`${API_URL}/item_types/${id}`, { method: 'DELETE' });
       if (res.ok) {
         setItemTypes(prev => prev.filter(t => t.id !== id));
         return true;
@@ -283,16 +293,15 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
   const addDescription = async (name: string) => {
     try {
-      const res = await fetch(`${API_URL}/descriptions`, {
+      const res = await authFetch(`${API_URL}/descriptions`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name })
       });
       const result = await res.json();
       
-      if (res.ok && result.data) {
-        setDescriptions(prev => [...prev, result.data].sort((a, b) => a.name.localeCompare(b.name)));
-        return result.data;
+      if (res.ok) {
+        setDescriptions(prev => [...prev, result].sort((a, b) => a.name.localeCompare(b.name)));
+        return result;
       }
       return null;
     } catch (error) {
@@ -304,14 +313,13 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const editDescription = async (id: string, name: string) => {
     try {
       const oldDescObj = descriptions.find(d => d.id === id);
-      const res = await fetch(`${API_URL}/descriptions/${id}`, {
+      const res = await authFetch(`${API_URL}/descriptions/${id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name })
       });
       const result = await res.json();
-      if (res.ok && result.data) {
-        setDescriptions(prev => prev.map(d => d.id === id ? result.data : d).sort((a, b) => a.name.localeCompare(b.name)));
+      if (res.ok) {
+        setDescriptions(prev => prev.map(d => d.id === id ? result : d).sort((a, b) => a.name.localeCompare(b.name)));
         if (oldDescObj) {
           setItems(prev => prev.map(i => i.description === oldDescObj.name ? { ...i, description: name } : i));
         }
@@ -326,7 +334,7 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
   const deleteDescription = async (id: string) => {
     try {
-      const res = await fetch(`${API_URL}/descriptions/${id}`, { method: 'DELETE' });
+      const res = await authFetch(`${API_URL}/descriptions/${id}`, { method: 'DELETE' });
       if (res.ok) {
         setDescriptions(prev => prev.filter(d => d.id !== id));
         return true;
@@ -343,23 +351,23 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     if (!buyer) return { success: false, message: 'Buyer not found.' };
 
     try {
-      const res = await fetch(`${API_URL}/sales`, {
+      const res = await authFetch(`${API_URL}/sales/bulk`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ barcodes, buyerId })
       });
       
       const result = await res.json();
       
       if (res.ok && result.success) {
-        // Update local state
         setItems(prevItems => prevItems.map(item => 
           barcodes.includes(item.barcode) ? { ...item, status: 'Sold' } : item
         ));
-
-        if (result.data) {
-          setSales(prev => [...result.data, ...prev]);
-        }
+        
+        // Refetch sales since bulk endpoint doesn't return full objects in our backend right now
+        authFetch(`${API_URL}/sales`).then(res => res.json()).then(data => {
+            if(Array.isArray(data)) setSales(data);
+        });
+        
         return { success: true, message: result.message };
       }
       
@@ -372,19 +380,16 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
   const voidTransaction = async (buyerId: string, date: string) => {
     try {
-      const res = await fetch(`${API_URL}/sales/void`, {
+      const res = await authFetch(`${API_URL}/sales/void`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ buyerId, date })
       });
       const result = await res.json();
       
       if (res.ok && result.success) {
-        // Remove voided sales from the local state
         setSales(prev => prev.filter(s => !(s.buyer_id === buyerId && s.date === date)));
-        // Re-fetch items to get the voided ones back 'In Stock'
-        fetch(`${API_URL}/items`).then(res => res.json()).then(data => {
-          if (data.data) setItems(data.data);
+        authFetch(`${API_URL}/inventory`).then(res => res.json()).then(data => {
+          if (Array.isArray(data)) setItems(data);
         });
         return { success: true, message: result.message };
       }
