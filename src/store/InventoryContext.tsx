@@ -78,7 +78,7 @@ interface InventoryContextType {
 
 const InventoryContext = createContext<InventoryContextType | undefined>(undefined);
 
-const API_URL = 'http://localhost:3001/api';
+const API_URL = '/api';
 
 export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { token, isAuthenticated } = useAuth();
