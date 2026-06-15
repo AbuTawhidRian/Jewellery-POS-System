@@ -4,6 +4,7 @@ import { PrismaClient } from '@prisma/client';
 import dotenv from 'dotenv';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
+import path from 'path';
 
 dotenv.config();
 
@@ -242,6 +243,16 @@ app.post('/api/sales/bulk', authenticateToken, async (req: AuthRequest, res) => 
   }
 });
 
+// --- Serve React Frontend ---
+// Determine the correct dist path regardless of where the server is started from.
+// If started from root using 'node server/dist/index.js', process.cwd() is the root, so dist is 'dist'.
+// Let's use path.join(process.cwd(), 'dist') which assumes it's run from the root directory.
+const distPath = path.join(process.cwd(), 'dist');
+app.use(express.static(distPath));
+app.use((req, res) => {
+  res.sendFile(path.join(distPath, 'index.html'));
+});
+
 app.listen(port, () => {
-  console.log(`API Server running on http://localhost:${port}`);
+  console.log(`API Server running on port ${port}`);
 });
