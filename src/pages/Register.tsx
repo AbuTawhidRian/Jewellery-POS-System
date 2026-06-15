@@ -32,7 +32,7 @@ export default function Register() {
       }
 
       login(data.token, data.user);
-      navigate('/');
+      navigate('/dashboard');
     } catch (err: any) {
       setError(err.message);
     } finally {

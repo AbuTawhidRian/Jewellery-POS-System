@@ -11,6 +11,8 @@ import Settings from './pages/Settings';
 import SuperAdmin from './pages/SuperAdmin';
 import { useAuth } from './contexts/AuthContext';
 
+import Landing from './pages/Landing';
+
 const ProtectedRoute = () => {
   const { isAuthenticated } = useAuth();
   if (!isAuthenticated) {
@@ -22,11 +24,12 @@ const ProtectedRoute = () => {
 const App: React.FC = () => {
   return (
     <Routes>
+      <Route path="/" element={<Landing />} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
       
       <Route element={<ProtectedRoute />}>
-        <Route path="/" element={<Layout />}>
+        <Route path="/dashboard" element={<Layout />}>
           <Route index element={<Dashboard />} />
           <Route path="vault" element={<Vault />} />
           <Route path="pos" element={<POS />} />

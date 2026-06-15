@@ -45,7 +45,7 @@ export default function Login() {
       }
 
       login(data.token, data.user);
-      navigate(data.user.role === 'SUPERADMIN' ? '/admin' : '/');
+      navigate(data.user.role === 'SUPERADMIN' ? '/dashboard/admin' : '/dashboard');
     } catch (err: any) {
       setError(err.message);
     } finally {

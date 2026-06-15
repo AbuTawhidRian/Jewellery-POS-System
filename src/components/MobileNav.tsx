@@ -7,17 +7,17 @@ import { useAuth } from '../contexts/AuthContext';
 const MobileNav: React.FC = () => {
   const { user } = useAuth();
   let links = [
-    { to: '/', icon: LayoutDashboard, label: 'Dash' },
-    { to: '/vault', icon: Lock, label: 'Vault' },
-    { to: '/pos', icon: Barcode, label: 'POS' },
-    { to: '/ledger', icon: BookOpen, label: 'Ledger' },
+    { to: '/dashboard', icon: LayoutDashboard, label: 'Dash' },
+    { to: '/dashboard/vault', icon: Lock, label: 'Vault' },
+    { to: '/dashboard/pos', icon: Barcode, label: 'POS' },
+    { to: '/dashboard/ledger', icon: BookOpen, label: 'Ledger' },
   ];
 
   if (user?.role === 'OWNER') {
-    links.push({ to: '/settings', icon: SettingsIcon, label: 'Set' });
+    links.push({ to: '/dashboard/settings', icon: SettingsIcon, label: 'Set' });
   } else if (user?.role === 'SUPERADMIN') {
     links = [
-      { to: '/admin', icon: ShieldCheck, label: 'Admin' }
+      { to: '/dashboard/admin', icon: ShieldCheck, label: 'Admin' }
     ];
   }
 

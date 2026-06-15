@@ -7,17 +7,17 @@ import { useAuth } from '../contexts/AuthContext';
 const Sidebar: React.FC = () => {
   const { user } = useAuth();
   let links = [
-    { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
-    { to: '/vault', icon: Lock, label: 'The Vault' },
-    { to: '/pos', icon: Barcode, label: 'POS Terminal' },
-    { to: '/ledger', icon: BookOpen, label: 'Sales Ledger' },
+    { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+    { to: '/dashboard/vault', icon: Lock, label: 'The Vault' },
+    { to: '/dashboard/pos', icon: Barcode, label: 'POS Terminal' },
+    { to: '/dashboard/ledger', icon: BookOpen, label: 'Sales Ledger' },
   ];
 
   if (user?.role === 'OWNER') {
-    links.push({ to: '/settings', icon: SettingsIcon, label: 'Settings' });
+    links.push({ to: '/dashboard/settings', icon: SettingsIcon, label: 'Settings' });
   } else if (user?.role === 'SUPERADMIN') {
     links = [
-      { to: '/admin', icon: ShieldCheck, label: 'Super Admin' }
+      { to: '/dashboard/admin', icon: ShieldCheck, label: 'Super Admin' }
     ];
   }
 
