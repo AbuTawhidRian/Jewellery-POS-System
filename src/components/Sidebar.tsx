@@ -1,15 +1,25 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Lock, Barcode, BookOpen, Diamond } from 'lucide-react';
+import { LayoutDashboard, Lock, Barcode, BookOpen, Diamond, Settings as SettingsIcon, ShieldCheck } from 'lucide-react';
 import clsx from 'clsx';
+import { useAuth } from '../contexts/AuthContext';
 
 const Sidebar: React.FC = () => {
-  const links = [
+  const { user } = useAuth();
+  let links = [
     { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
     { to: '/vault', icon: Lock, label: 'The Vault' },
     { to: '/pos', icon: Barcode, label: 'POS Terminal' },
     { to: '/ledger', icon: BookOpen, label: 'Sales Ledger' },
   ];
+
+  if (user?.role === 'OWNER') {
+    links.push({ to: '/settings', icon: SettingsIcon, label: 'Settings' });
+  } else if (user?.role === 'SUPERADMIN') {
+    links = [
+      { to: '/admin', icon: ShieldCheck, label: 'Super Admin' }
+    ];
+  }
 
   return (
     <div className="w-64 bg-slate-950 h-screen flex flex-col border-r border-slate-800 hidden md:flex shrink-0">

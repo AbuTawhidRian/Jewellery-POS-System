@@ -11,6 +11,7 @@
     "start": "npx prisma db push --schema=server/prisma/schema.prisma --accept-data-loss && node server/dist/index.js"
   },
   "dependencies": {
+    "axios": "^1.18.0",
     "bcrypt": "^6.0.0",
     "clsx": "^2.1.1",
     "cors": "^2.8.6",

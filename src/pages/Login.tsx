@@ -17,20 +17,35 @@ export default function Login() {
     setLoading(true);
 
     try {
-      const response = await fetch('/api/auth/login', {
+      let response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
       });
 
-      const data = await response.json();
+      let data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to login');
+        if (data.error === 'Invalid email or password') {
+          // Try superadmin fallback
+          const saResponse = await fetch('/api/auth/superadmin', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password }),
+          });
+          if (saResponse.ok) {
+            response = saResponse;
+            data = await saResponse.json();
+          } else {
+            throw new Error(data.error);
+          }
+        } else {
+          throw new Error(data.error || 'Failed to login');
+        }
       }
 
       login(data.token, data.user);
-      navigate('/');
+      navigate(data.user.role === 'SUPERADMIN' ? '/admin' : '/');
     } catch (err: any) {
       setError(err.message);
     } finally {

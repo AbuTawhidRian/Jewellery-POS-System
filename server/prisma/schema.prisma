@@ -7,15 +7,30 @@ generator client {
   provider = "prisma-client-js"
 }
 
+enum Role {
+  OWNER
+  MANAGER
+  CASHIER
+}
+
+enum SubStatus {
+  TRIAL
+  PENDING
+  ACTIVE
+  EXPIRED
+  CANCELLED
+}
+
 model Shop {
   id        String   @id @default(uuid())
   name      String
   createdAt DateTime @default(now())
 
-  users  User[]
-  items  Item[]
-  buyers Buyer[]
-  sales  Sale[]
+  users        User[]
+  items        Item[]
+  buyers       Buyer[]
+  sales        Sale[]
+  subscription Subscription?
 }
 
 model User {
@@ -23,8 +38,24 @@ model User {
   email        String   @unique
   passwordHash String
   name         String?
+  role         Role     @default(CASHIER)
   shopId       String
   createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  shop Shop @relation(fields: [shopId], references: [id], onDelete: Cascade)
+}
+
+model Subscription {
+  id            String    @id @default(uuid())
+  shopId        String    @unique
+  status        SubStatus @default(TRIAL)
+  trialEndsAt   DateTime  @default(dbgenerated("NOW() + INTERVAL '14 days'"))
+  startedAt     DateTime?
+  endsAt        DateTime?
+  voucherNumber String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
   shop Shop @relation(fields: [shopId], references: [id], onDelete: Cascade)
 }

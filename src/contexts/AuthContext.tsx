@@ -6,6 +6,7 @@ interface User {
   email: string;
   shopId: string;
   shopName: string;
+  role: string;
 }
 
 interface AuthContextType {

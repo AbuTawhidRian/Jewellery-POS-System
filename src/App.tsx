@@ -7,6 +7,8 @@ import POS from './pages/POS';
 import Ledger from './pages/Ledger';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import Settings from './pages/Settings';
+import SuperAdmin from './pages/SuperAdmin';
 import { useAuth } from './contexts/AuthContext';
 
 const ProtectedRoute = () => {
@@ -29,6 +31,8 @@ const App: React.FC = () => {
           <Route path="vault" element={<Vault />} />
           <Route path="pos" element={<POS />} />
           <Route path="ledger" element={<Ledger />} />
+          <Route path="settings" element={<Settings />} />
+          <Route path="admin" element={<SuperAdmin />} />
         </Route>
       </Route>
     </Routes>

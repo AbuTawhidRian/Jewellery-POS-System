@@ -1,15 +1,25 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Lock, Barcode, BookOpen } from 'lucide-react';
+import { LayoutDashboard, Lock, Barcode, BookOpen, Settings as SettingsIcon, ShieldCheck } from 'lucide-react';
 import clsx from 'clsx';
+import { useAuth } from '../contexts/AuthContext';
 
 const MobileNav: React.FC = () => {
-  const links = [
+  const { user } = useAuth();
+  let links = [
     { to: '/', icon: LayoutDashboard, label: 'Dash' },
     { to: '/vault', icon: Lock, label: 'Vault' },
     { to: '/pos', icon: Barcode, label: 'POS' },
     { to: '/ledger', icon: BookOpen, label: 'Ledger' },
   ];
+
+  if (user?.role === 'OWNER') {
+    links.push({ to: '/settings', icon: SettingsIcon, label: 'Set' });
+  } else if (user?.role === 'SUPERADMIN') {
+    links = [
+      { to: '/admin', icon: ShieldCheck, label: 'Admin' }
+    ];
+  }
 
   return (
     <div className="md:hidden fixed bottom-0 left-0 right-0 bg-slate-950 border-t border-slate-800 z-50 px-2 pb-safe">

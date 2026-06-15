@@ -1,6 +1,6 @@
 import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Role, SubStatus } from '@prisma/client';
 import dotenv from 'dotenv';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
@@ -12,13 +12,15 @@ const app = express();
 const prisma = new PrismaClient();
 const port = process.env.PORT || 80;
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret_key_123';
+const SUPERADMIN_EMAIL = process.env.SUPERADMIN_EMAIL || 'abutawhidrian@gmail.com';
+const SUPERADMIN_PASSWORD = process.env.SUPERADMIN_PASSWORD || '*Rian*143#';
 
 app.use(cors());
 app.use(express.json());
 
-// --- Authentication Middleware ---
-interface AuthRequest extends Request {
-  user?: { id: string; shopId: string; email: string };
+// --- Authentication & Authorization Middleware ---
+export interface AuthRequest extends Request {
+  user?: { id?: string; shopId?: string | null; email: string; role: Role | 'SUPERADMIN' };
 }
 
 const authenticateToken = (req: AuthRequest, res: Response, next: NextFunction) => {
@@ -32,6 +34,36 @@ const authenticateToken = (req: AuthRequest, res: Response, next: NextFunction) 
     req.user = user;
     next();
   });
+};
+
+const requireRole = (...allowedRoles: (Role | 'SUPERADMIN')[]) => {
+  return (req: AuthRequest, res: Response, next: NextFunction) => {
+    if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
+    if (!allowedRoles.includes(req.user.role)) {
+      return res.status(403).json({ error: 'Forbidden: Insufficient role' });
+    }
+    next();
+  };
+};
+
+const requireSuperAdmin = requireRole('SUPERADMIN');
+
+const requireActiveOrTrial = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
+  if (req.user.role === 'SUPERADMIN') return next();
+  if (!req.user.shopId) return res.status(403).json({ error: 'No shop associated' });
+
+  try {
+    const sub = await prisma.subscription.findUnique({ where: { shopId: req.user.shopId } });
+    if (!sub) return res.status(403).json({ error: 'Subscription not found' });
+
+    if (sub.status === SubStatus.ACTIVE) return next();
+    if (sub.status === SubStatus.TRIAL && new Date() <= sub.trialEndsAt) return next();
+
+    return res.status(403).json({ error: 'Trial expired or subscription inactive. Please contact admin.' });
+  } catch (error) {
+    return res.status(500).json({ error: 'Internal Server Error' });
+  }
 };
 
 // --- Auth Routes ---
@@ -53,6 +85,13 @@ app.post('/api/auth/register', async (req, res) => {
             name: userName,
             email,
             passwordHash,
+            role: Role.OWNER
+          }
+        },
+        subscription: {
+          create: {
+            status: SubStatus.TRIAL
+            // trialEndsAt defaults to 14 days from now in Prisma schema
           }
         }
       },
@@ -60,9 +99,9 @@ app.post('/api/auth/register', async (req, res) => {
     });
 
     const user = newShop.users[0];
-    const token = jwt.sign({ id: user.id, shopId: newShop.id, email: user.email }, JWT_SECRET, { expiresIn: '7d' });
+    const token = jwt.sign({ id: user.id, shopId: newShop.id, email: user.email, role: user.role }, JWT_SECRET, { expiresIn: '7d' });
     
-    res.json({ token, user: { id: user.id, name: user.name, email: user.email, shopId: newShop.id, shopName: newShop.name } });
+    res.json({ token, user: { id: user.id, name: user.name, email: user.email, shopId: newShop.id, shopName: newShop.name, role: user.role } });
   } catch (error) {
     console.error("Register error:", error);
     res.status(500).json({ error: 'Internal Server Error' });
@@ -79,35 +118,194 @@ app.post('/api/auth/login', async (req, res) => {
     const validPassword = await bcrypt.compare(password, user.passwordHash);
     if (!validPassword) return res.status(400).json({ error: 'Invalid email or password' });
 
-    const token = jwt.sign({ id: user.id, shopId: user.shopId, email: user.email }, JWT_SECRET, { expiresIn: '7d' });
+    const token = jwt.sign({ id: user.id, shopId: user.shopId, email: user.email, role: user.role }, JWT_SECRET, { expiresIn: '7d' });
     
-    res.json({ token, user: { id: user.id, name: user.name, email: user.email, shopId: user.shopId, shopName: user.shop.name } });
+    res.json({ token, user: { id: user.id, name: user.name, email: user.email, shopId: user.shopId, shopName: user.shop?.name, role: user.role } });
   } catch (error) {
     console.error("Login error:", error);
     res.status(500).json({ error: 'Internal Server Error' });
   }
 });
 
-app.get('/api/auth/me', authenticateToken, async (req: AuthRequest, res) => {
+app.post('/api/auth/superadmin', async (req, res) => {
   try {
-    const user = await prisma.user.findUnique({ 
-      where: { id: req.user!.id },
-      include: { shop: true }
-    });
-    if (!user) return res.status(404).json({ error: 'User not found' });
-    
-    res.json({ id: user.id, name: user.name, email: user.email, shopId: user.shopId, shopName: user.shop.name });
+    const { email, password } = req.body;
+    if (email === SUPERADMIN_EMAIL && password === SUPERADMIN_PASSWORD) {
+      const token = jwt.sign({ email, role: 'SUPERADMIN' }, JWT_SECRET, { expiresIn: '7d' });
+      return res.json({ token, user: { name: 'Super Admin', email, role: 'SUPERADMIN' } });
+    }
+    return res.status(400).json({ error: 'Invalid super admin credentials' });
   } catch (error) {
     res.status(500).json({ error: 'Internal Server Error' });
   }
 });
 
-// --- Protected API Routes ---
+app.get('/api/auth/me', authenticateToken, async (req: AuthRequest, res) => {
+  try {
+    if (req.user?.role === 'SUPERADMIN') {
+      return res.json({ name: 'Super Admin', email: req.user.email, role: 'SUPERADMIN' });
+    }
+    
+    const user = await prisma.user.findUnique({ 
+      where: { id: req.user!.id! },
+      include: { shop: true }
+    });
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    
+    res.json({ id: user.id, name: user.name, email: user.email, shopId: user.shopId, shopName: user.shop?.name, role: user.role });
+  } catch (error) {
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
 
-app.get('/api/inventory', authenticateToken, async (req: AuthRequest, res) => {
+// --- Owner Staff Management Routes ---
+
+app.get('/api/users', authenticateToken, requireRole(Role.OWNER), async (req: AuthRequest, res) => {
+  try {
+    const users = await prisma.user.findMany({
+      where: { shopId: req.user!.shopId! },
+      select: { id: true, name: true, email: true, role: true, createdAt: true }
+    });
+    res.json(users);
+  } catch (error) {
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+app.post('/api/users', authenticateToken, requireRole(Role.OWNER), async (req: AuthRequest, res) => {
+  try {
+    const { name, email, password, role } = req.body;
+    const existingUser = await prisma.user.findUnique({ where: { email } });
+    if (existingUser) return res.status(400).json({ error: 'Email already exists' });
+
+    const passwordHash = await bcrypt.hash(password, 10);
+    const newUser = await prisma.user.create({
+      data: {
+        name,
+        email,
+        passwordHash,
+        role: role as Role,
+        shopId: req.user!.shopId!
+      },
+      select: { id: true, name: true, email: true, role: true, createdAt: true }
+    });
+    res.json(newUser);
+  } catch (error) {
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+app.patch('/api/users/:id', authenticateToken, requireRole(Role.OWNER), async (req: AuthRequest, res) => {
+  try {
+    const { name, role } = req.body;
+    const userId = String(req.params.id);
+    // Don't allow modifying other shop's users
+    const existing = await prisma.user.findUnique({ where: { id: userId } });
+    if (!existing || existing.shopId !== req.user!.shopId) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    const updated = await prisma.user.update({
+      where: { id: userId },
+      data: { name, role: role as Role },
+      select: { id: true, name: true, email: true, role: true, createdAt: true }
+    });
+    res.json(updated);
+  } catch (error) {
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+app.delete('/api/users/:id', authenticateToken, requireRole(Role.OWNER), async (req: AuthRequest, res) => {
+  try {
+    const userId = String(req.params.id);
+    const existing = await prisma.user.findUnique({ where: { id: userId } });
+    if (!existing || existing.shopId !== req.user!.shopId) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    if (existing.id === req.user!.id) {
+      return res.status(400).json({ error: 'Cannot delete yourself' });
+    }
+    await prisma.user.delete({ where: { id: userId } });
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+// --- Subscription Routes ---
+
+app.get('/api/subscription', authenticateToken, requireRole(Role.OWNER), async (req: AuthRequest, res) => {
+  try {
+    const sub = await prisma.subscription.findUnique({ where: { shopId: req.user!.shopId! } });
+    res.json(sub);
+  } catch (error) {
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+app.post('/api/subscription/voucher-number', authenticateToken, requireRole(Role.OWNER), async (req: AuthRequest, res) => {
+  try {
+    const { voucherNumber } = req.body;
+    const sub = await prisma.subscription.update({
+      where: { shopId: req.user!.shopId! },
+      data: {
+        voucherNumber,
+        status: SubStatus.PENDING
+      }
+    });
+    res.json(sub);
+  } catch (error) {
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+// --- Super-Admin Routes ---
+
+app.get('/api/admin/shops', authenticateToken, requireSuperAdmin, async (req: AuthRequest, res) => {
+  try {
+    const shops = await prisma.shop.findMany({
+      include: {
+        subscription: true,
+        users: {
+          where: { role: Role.OWNER },
+          select: { name: true, email: true }
+        }
+      }
+    });
+    res.json(shops);
+  } catch (error) {
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+app.patch('/api/admin/subscriptions/:shopId', authenticateToken, requireSuperAdmin, async (req: AuthRequest, res) => {
+  try {
+    const shopId = String(req.params.shopId);
+    const { status, voucherNumber, endsAt } = req.body;
+    
+    const updateData: any = { status: status as SubStatus };
+    if (voucherNumber !== undefined) updateData.voucherNumber = voucherNumber;
+    if (endsAt !== undefined) updateData.endsAt = new Date(endsAt);
+    if (status === SubStatus.ACTIVE) {
+      updateData.startedAt = new Date();
+    }
+
+    const sub = await prisma.subscription.update({
+      where: { shopId },
+      data: updateData
+    });
+    res.json(sub);
+  } catch (error) {
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+// --- Protected API Routes (Requires Active/Trial) ---
+
+app.get('/api/inventory', authenticateToken, requireActiveOrTrial, async (req: AuthRequest, res) => {
   try {
     const items = await prisma.item.findMany({
-      where: { shopId: req.user!.shopId },
+      where: { shopId: req.user!.shopId! },
       orderBy: { dateAdded: 'asc' }
     });
     res.json(items);
@@ -117,10 +315,10 @@ app.get('/api/inventory', authenticateToken, async (req: AuthRequest, res) => {
   }
 });
 
-app.post('/api/inventory', authenticateToken, async (req: AuthRequest, res) => {
+app.post('/api/inventory', authenticateToken, requireActiveOrTrial, requireRole(Role.OWNER, Role.MANAGER), async (req: AuthRequest, res) => {
   try {
     const { barcode, type, description, weight, stone_weight } = req.body;
-    const shopId = req.user!.shopId;
+    const shopId = req.user!.shopId!;
     
     const existing = await prisma.item.findUnique({ 
       where: { barcode_shopId: { barcode, shopId } } 
@@ -149,10 +347,10 @@ app.post('/api/inventory', authenticateToken, async (req: AuthRequest, res) => {
   }
 });
 
-app.get('/api/buyers', authenticateToken, async (req: AuthRequest, res) => {
+app.get('/api/buyers', authenticateToken, requireActiveOrTrial, async (req: AuthRequest, res) => {
   try {
     const buyers = await prisma.buyer.findMany({
-      where: { shopId: req.user!.shopId }
+      where: { shopId: req.user!.shopId! }
     });
     res.json(buyers);
   } catch (error) {
@@ -160,10 +358,10 @@ app.get('/api/buyers', authenticateToken, async (req: AuthRequest, res) => {
   }
 });
 
-app.get('/api/sales', authenticateToken, async (req: AuthRequest, res) => {
+app.get('/api/sales', authenticateToken, requireActiveOrTrial, async (req: AuthRequest, res) => {
   try {
     const sales = await prisma.sale.findMany({
-      where: { shopId: req.user!.shopId },
+      where: { shopId: req.user!.shopId! },
       orderBy: { date: 'desc' },
       include: {
         item: true,
@@ -191,14 +389,14 @@ app.get('/api/sales', authenticateToken, async (req: AuthRequest, res) => {
   }
 });
 
-app.post('/api/sales/bulk', authenticateToken, async (req: AuthRequest, res) => {
+app.post('/api/sales/bulk', authenticateToken, requireActiveOrTrial, requireRole(Role.OWNER, Role.MANAGER, Role.CASHIER), async (req: AuthRequest, res) => {
   try {
     const { barcodes, buyerId } = req.body;
-    const shopId = req.user!.shopId;
+    const shopId = req.user!.shopId!;
     
     let actualBuyerId = buyerId;
     
-    // Validate buyer or create if they sent a name but no ID (assuming UI might do this)
+    // Validate buyer or create if they sent a name but no ID
     if (buyerId) {
       const buyer = await prisma.buyer.findUnique({ where: { id: buyerId } });
       if (!buyer || buyer.shopId !== shopId) return res.status(400).json({ error: 'Buyer not found in your shop' });
@@ -244,9 +442,6 @@ app.post('/api/sales/bulk', authenticateToken, async (req: AuthRequest, res) => 
 });
 
 // --- Serve React Frontend ---
-// Determine the correct dist path regardless of where the server is started from.
-// If started from root using 'node server/dist/index.js', process.cwd() is the root, so dist is 'dist'.
-// Let's use path.join(process.cwd(), 'dist') which assumes it's run from the root directory.
 const distPath = path.join(process.cwd(), 'dist');
 app.use(express.static(distPath));
 app.use((req, res) => {
