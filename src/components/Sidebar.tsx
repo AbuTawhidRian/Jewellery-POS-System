@@ -16,7 +16,7 @@ const Sidebar: React.FC = () => {
       <div className="p-6 flex items-center gap-3">
         <Diamond className="text-gold-500 w-8 h-8" />
         <h1 className="text-xl font-bold text-slate-100 tracking-wider">
-          ALEX GOLD <span className="text-gold-500">FZC</span>
+          RIAN <span className="text-gold-500">JEWELLERY</span>
         </h1>
       </div>
       
