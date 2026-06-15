@@ -8,7 +8,7 @@
     "build": "npx prisma generate --schema=server/prisma/schema.prisma && tsc -b && vite build && cd server && npx tsc",
     "lint": "eslint .",
     "preview": "vite preview",
-    "start": "npx prisma db push --accept-data-loss && node server/dist/index.js"
+    "start": "npx prisma db push --schema=server/prisma/schema.prisma --accept-data-loss && node server/dist/index.js"
   },
   "dependencies": {
     "bcrypt": "^6.0.0",
