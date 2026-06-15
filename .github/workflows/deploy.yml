@@ -29,7 +29,7 @@ jobs:
         key: ${{ secrets.SERVER_SSH_KEY }}
         script: |
           cd ~/jewellery-pos
-          docker build -t jewellery-pos-app .
+          docker build --no-cache -t jewellery-pos-app .
           docker stop jewellery-pos-container || true
           docker rm jewellery-pos-container || true
           docker run -d -p 9999:80 --name jewellery-pos-container --network rxsheba_app-network -e DATABASE_URL="postgresql://rxsheba143:*rian*iloveu*shefa%23@postgres:5432/jewellery_pos" --restart always jewellery-pos-app
