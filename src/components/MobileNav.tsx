@@ -22,7 +22,7 @@ const MobileNav: React.FC = () => {
   }
 
   return (
-    <div className="md:hidden fixed bottom-0 left-0 right-0 bg-slate-950 border-t border-slate-800 z-50 px-2 pb-safe">
+    <div className="md:hidden fixed bottom-0 left-0 right-0 bg-[#0B0F19]/95 backdrop-blur-xl border-t border-[#334155]/50 z-50 px-2 pb-safe shadow-[0_-10px_40px_rgba(0,0,0,0.5)]">
       <nav className="flex justify-around items-center h-16">
         {links.map((link) => {
           const Icon = link.icon;
@@ -32,15 +32,22 @@ const MobileNav: React.FC = () => {
               to={link.to}
               className={({ isActive }) =>
                 clsx(
-                  'flex flex-col items-center justify-center w-full h-full space-y-1 transition-colors',
+                  'flex flex-col items-center justify-center w-full h-full space-y-1 transition-colors relative',
                   isActive 
-                    ? 'text-gold-500' 
-                    : 'text-slate-500 hover:text-slate-300'
+                    ? 'text-[#C28C46]' 
+                    : 'text-[#94A3B8] hover:text-white'
                 )
               }
             >
-              <Icon className="w-6 h-6" />
-              <span className="text-[10px] font-bold uppercase tracking-wider">{link.label}</span>
+              {({ isActive }) => (
+                <>
+                  {isActive && (
+                    <div className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-[#C28C46] rounded-b-full shadow-[0_2px_10px_rgba(194,140,70,0.5)]"></div>
+                  )}
+                  <Icon className="w-6 h-6" />
+                  <span className="text-[10px] font-bold uppercase tracking-wider">{link.label}</span>
+                </>
+              )}
             </NavLink>
           );
         })}

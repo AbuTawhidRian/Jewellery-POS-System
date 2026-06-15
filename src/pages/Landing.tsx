@@ -1,189 +1,324 @@
-import React, { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Diamond, Moon, Check, MessageCircle, TrendingUp, Lock, BarChart3 } from 'lucide-react';
+import { Moon, Sun, Check, MessageCircle, Lock, ChevronDown, CheckCircle2 } from 'lucide-react';
 
 export default function Landing() {
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
+  const [isLangMenuOpen, setIsLangMenuOpen] = useState(false);
+  const [activeLang, setActiveLang] = useState('en');
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme) {
+      return savedTheme === 'dark';
+    }
+    return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+  });
+
+  const handleLanguageChange = (langCode: string) => {
+    setIsLangMenuOpen(false);
+    
+    if (langCode === 'en') {
+      // Clear translation cookie and completely reset DOM for English
+      document.cookie = "googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+      document.cookie = `googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; domain=.${window.location.hostname}; path=/;`;
+      window.location.reload();
+      return;
+    }
+
+    setActiveLang(langCode);
+    
+    // Inject translator ONLY when needed
+    if (!document.getElementById('google-translate-script')) {
+      const script = document.createElement('script');
+      script.id = 'google-translate-script';
+      script.src = "//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit";
+      script.async = true;
+      document.body.appendChild(script);
+
+      (window as any).googleTranslateElementInit = () => {
+        new (window as any).google.translate.TranslateElement(
+          { pageLanguage: 'en', includedLanguages: 'en,hi,ar,bn,hy', autoDisplay: false },
+          'google_translate_element'
+        );
+        // Wait for widget to inject, then trigger translation
+        setTimeout(() => {
+          const select = document.querySelector('.goog-te-combo') as HTMLSelectElement;
+          if (select) {
+            select.value = langCode;
+            select.dispatchEvent(new Event('change'));
+          }
+        }, 1000);
+      };
+    } else {
+      // Trigger Google Translate immediately if already loaded
+      const select = document.querySelector('.goog-te-combo') as HTMLSelectElement;
+      if (select) {
+        select.value = langCode;
+        select.dispatchEvent(new Event('change'));
+      }
+    }
+  };
+
+  useEffect(() => {
+    localStorage.setItem('theme', isDarkMode ? 'dark' : 'light');
+  }, [isDarkMode]);
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] font-sans selection:bg-amber-100 selection:text-amber-900">
+    <div className={`min-h-screen flex flex-col font-sans selection:bg-amber-100 selection:text-amber-900 transition-colors duration-300 ${isDarkMode ? 'dark bg-[#0B0F19]' : 'bg-[#F8FAFC]'} ${activeLang === 'en' ? 'lg:h-screen lg:overflow-hidden' : ''}`}>
       {/* Navigation */}
-      <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div className="bg-amber-600 rounded-lg p-1.5 shadow-sm">
-            <Diamond className="w-6 h-6 text-white" />
+      <nav className="max-w-[1200px] w-full mx-auto px-4 sm:px-6 lg:px-8 h-20 shrink-0 flex items-center justify-between mt-4 sm:mt-6">
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-12 bg-gradient-to-br from-[#B48346] to-[#8C622C] rounded-xl flex items-center justify-center shadow-lg shadow-[#B48346]/20">
+            {/* Abstract X Logo */}
+            <svg className="w-6 h-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="3" y="3" width="18" height="18" rx="4" />
+              <path d="M9 9l6 6" />
+              <path d="M15 9l-6 6" />
+            </svg>
           </div>
-          <div>
-            <span className="text-xl font-bold text-slate-900 tracking-tight">GoldVault</span>
-            <div className="text-[10px] uppercase tracking-widest text-amber-600 font-semibold leading-none">Secure · Grow · Track</div>
+          <div className="flex flex-col justify-center notranslate">
+            <span className="text-[22px] font-extrabold text-[#1E293B] dark:text-white tracking-tight leading-none mb-1">GoldVault</span>
+            <div className="text-[10px] uppercase tracking-[0.2em] text-[#B48346] dark:text-[#C28C46] font-bold leading-none">Secure · Grow · Track</div>
           </div>
         </div>
         
-        <div className="flex items-center gap-6">
-          <div className="hidden md:flex items-center gap-2 text-sm font-medium text-slate-600 hover:text-slate-900 cursor-pointer">
-            <span className="text-slate-400">GB</span> English
-            <svg className="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+        <div className="flex items-center gap-5 sm:gap-6">
+          {/* Language Selector */}
+          <div className="relative hidden md:block">
+            {/* Hidden Google Translate Element */}
+            <div id="google_translate_element" className="absolute opacity-0 pointer-events-none -z-10"></div>
+            
+            <button 
+              onClick={() => setIsLangMenuOpen(!isLangMenuOpen)}
+              className="flex items-center gap-1.5 py-2 text-[15px] font-bold text-[#64748B] dark:text-[#94A3B8] hover:text-[#1E293B] dark:hover:text-white transition-colors"
+            >
+              <span className="text-[12px] font-extrabold text-[#94A3B8] dark:text-[#64748B] tracking-wide">
+                {activeLang === 'en' ? 'GB' : activeLang.toUpperCase()}
+              </span> 
+              <span>
+                {activeLang === 'en' ? 'English' : 
+                 activeLang === 'hi' ? 'हिंदी' :
+                 activeLang === 'ar' ? 'العربية' :
+                 activeLang === 'bn' ? 'বাংলা' : 'Հայերեն'}
+              </span>
+              <ChevronDown className={`w-4 h-4 text-[#94A3B8] dark:text-[#64748B] transition-transform ${isLangMenuOpen ? 'rotate-180' : ''}`} />
+            </button>
+            
+            {/* Language Dropdown Menu */}
+            {isLangMenuOpen && (
+              <div className="absolute top-full right-0 mt-2 w-40 bg-white dark:bg-[#151B23] rounded-[16px] shadow-xl border border-[#E2E8F0] dark:border-[#1E293B] overflow-hidden z-50">
+                <div className="py-1.5 flex flex-col">
+                  {[
+                    { code: 'en', displayCode: 'GB', name: 'English' },
+                    { code: 'hi', displayCode: 'IN', name: 'हिंदी' },
+                    { code: 'ar', displayCode: 'AE', name: 'العربية' },
+                    { code: 'bn', displayCode: 'BD', name: 'বাংলা' },
+                    { code: 'hy', displayCode: 'AM', name: 'Հայերեն' },
+                  ].map((lang) => {
+                    const isActive = activeLang === lang.code;
+                    return (
+                      <button 
+                        key={lang.code}
+                        onClick={() => handleLanguageChange(lang.code)}
+                        className={`flex items-center gap-3 px-4 py-2.5 transition-colors w-full text-left ${isActive ? 'bg-[#FFFBF0] dark:bg-[#1E293B]/50' : 'hover:bg-[#F8FAFC] dark:hover:bg-[#1E293B]'}`}
+                      >
+                        <span className={`text-[12px] font-extrabold tracking-wide w-5 ${isActive ? 'text-[#C28C46]' : 'text-[#94A3B8] dark:text-[#64748B]'}`}>
+                          {lang.displayCode}
+                        </span>
+                        <span className={`text-[15px] font-medium ${isActive ? 'text-[#C28C46]' : 'text-[#475569] dark:text-[#E2E8F0]'}`}>
+                          {lang.name}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
-          <button className="text-slate-400 hover:text-slate-600 transition-colors">
-            <Moon className="w-5 h-5" />
+
+          <button 
+            onClick={() => setIsDarkMode(!isDarkMode)}
+            className="text-[#64748B] dark:text-slate-400 hover:text-[#1E293B] dark:hover:text-white transition-colors"
+          >
+            {isDarkMode ? <Sun className="w-5 h-5" strokeWidth={2.5} /> : <Moon className="w-5 h-5" strokeWidth={2.5} />}
           </button>
-          <div className="flex items-center gap-3">
-            <Link to="/login" className="text-sm font-bold text-amber-600 hover:text-amber-700 transition-colors">
+          
+          <div className="flex items-center gap-3 ml-2">
+            <Link to="/login" className="hidden sm:inline-flex items-center justify-center px-5 py-2.5 text-[15px] font-bold text-[#B48346] dark:text-[#C28C46] bg-transparent border border-[#E8D4B4] dark:border-[#C28C46]/40 rounded-[12px] hover:bg-[#FFFBF0] dark:hover:bg-[#C28C46]/10 transition-colors">
               Client Login
             </Link>
-            <Link to="/register" className="hidden sm:inline-flex items-center justify-center px-5 py-2 text-sm font-bold text-white bg-slate-800 hover:bg-slate-700 rounded-lg shadow-md transition-colors">
+            <Link to="/register" className="inline-flex items-center justify-center px-6 py-2.5 text-[15px] font-bold text-white bg-gradient-to-r from-[#C28C46] via-[#334155] to-[#1E293B] dark:from-[#C28C46] dark:to-[#475569] dark:via-[#9A7135] rounded-[12px] shadow-md shadow-[#C28C46]/20 dark:shadow-[0_0_15px_rgba(194,140,70,0.4)] hover:opacity-90 transition-opacity">
               Start Free Trial
             </Link>
           </div>
         </div>
       </nav>
 
-      {/* Hero Section */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 pb-24">
-        <div className="grid lg:grid-cols-2 gap-16 lg:gap-8 items-center">
+      {/* Main Content */}
+      <main className="flex-1 flex flex-col max-w-[1200px] w-full mx-auto px-4 sm:px-6 lg:px-8 pt-4 lg:pt-6 pb-8 lg:pb-4 min-h-0">
+        <div className="flex flex-col lg:flex-row items-start justify-between w-full gap-12 lg:gap-8">
           
-          {/* Left Column - Copy */}
-          <div className="max-w-2xl">
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-50 border border-amber-200/50 text-amber-800 text-sm font-medium mb-8 shadow-sm">
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
-              </span>
+          {/* Left Column - Text Content */}
+          <div className="max-w-xl lg:max-w-2xl xl:max-w-3xl lg:pr-8 pt-2">
+            {/* Trust Badge */}
+            <div className="inline-flex items-center gap-2.5 px-3 py-1.5 rounded-full bg-[#FCF8F1] dark:bg-[#C28C46]/10 border border-[#F3E5C8] dark:border-[#C28C46]/20 text-[#9A7135] dark:text-[#C28C46] text-xs font-bold mb-3 shadow-sm">
+              <div className="flex items-center gap-1">
+                <div className="w-1.5 h-1.5 rounded-full bg-[#D4AF37]"></div>
+                <div className="w-1.5 h-1.5 rounded-full bg-[#D4AF37]"></div>
+              </div>
               Trusted by 500+ investors across the UAE
             </div>
 
-            <h1 className="text-5xl lg:text-7xl font-extrabold text-slate-900 tracking-tight leading-[1.1] mb-6">
-              Secure Your <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-500 to-amber-700">Gold & Assets</span> Effortlessly
+            <h1 className="text-[48px] lg:text-[56px] font-extrabold text-[#1E293B] dark:text-white tracking-normal leading-[1.1] mb-2">
+              Secure Your <span className="text-[#B48346] dark:text-[#C28C46]">Gold &</span><br />
+              <span className="text-[#1E293B] dark:text-[#94A3B8]">Assets</span><br />
+              <span className="text-[#1E293B] dark:text-white">Effortlessly</span>
             </h1>
 
-            <p className="text-lg text-slate-500 mb-8 leading-relaxed max-w-xl">
+            <p className="text-[15px] text-[#64748B] dark:text-[#94A3B8] mb-5 leading-relaxed max-w-lg font-medium">
               GoldVault is your all-in-one digital platform for tracking gold investments, managing your vault, and growing your portfolio with real-time insights.
             </p>
 
-            <div className="flex flex-wrap gap-4 mb-10">
-              <div className="flex items-center gap-1.5 text-sm font-medium text-slate-600 bg-white px-3 py-1.5 rounded-md border border-slate-200 shadow-sm">
-                <Lock className="w-4 h-4 text-amber-500" /> 7-day free trial
+            {/* Feature Badges */}
+            <div className="flex flex-wrap gap-2.5 mb-8">
+              <div className="flex items-center gap-1.5 text-[12px] font-bold text-[#64748B] dark:text-[#94A3B8] bg-white dark:bg-transparent px-3 py-1.5 rounded-xl border border-[#E2E8F0] dark:border-[#1E293B] shadow-sm">
+                <Lock className="w-3.5 h-3.5 text-[#B48346] dark:text-[#C28C46]" strokeWidth={3} /> 14-day free trial
               </div>
-              <div className="flex items-center gap-1.5 text-sm font-medium text-slate-600 bg-white px-3 py-1.5 rounded-md border border-slate-200 shadow-sm">
-                <Check className="w-4 h-4 text-amber-500" /> No credit card required
+              <div className="flex items-center gap-1.5 text-[12px] font-bold text-[#64748B] dark:text-[#94A3B8] bg-white dark:bg-transparent px-3 py-1.5 rounded-xl border border-[#E2E8F0] dark:border-[#1E293B] shadow-sm whitespace-nowrap">
+                <svg className="w-3.5 h-3.5 text-[#B48346] dark:text-[#C28C46]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect><line x1="1" y1="10" x2="23" y2="10"></line></svg>
+                No credit card
               </div>
-              <div className="flex items-center gap-1.5 text-sm font-medium text-slate-600 bg-white px-3 py-1.5 rounded-md border border-slate-200 shadow-sm">
-                <Check className="w-4 h-4 text-amber-500" /> Cancel anytime
+              <div className="flex items-center gap-1.5 text-[12px] font-bold text-[#64748B] dark:text-[#94A3B8] bg-white dark:bg-transparent px-3 py-1.5 rounded-xl border border-[#E2E8F0] dark:border-[#1E293B] shadow-sm whitespace-nowrap">
+                <svg className="w-3.5 h-3.5 text-[#B48346] dark:text-[#C28C46]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>
+                Cancel anytime
               </div>
             </div>
 
-            <div className="flex flex-col sm:flex-row gap-4 mb-16">
-              <Link to="/register" className="inline-flex items-center justify-center px-8 py-3.5 text-base font-bold text-white bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 rounded-xl shadow-lg shadow-amber-500/20 transition-all">
-                Start Free Trial →
+            {/* CTA Buttons */}
+            <div className="flex flex-col sm:flex-row gap-3 mb-8">
+              <Link to="/register" className="inline-flex items-center justify-center gap-2 px-6 py-3.5 text-[15px] font-bold text-white bg-gradient-to-r from-[#C28C46] via-[#334155] to-[#1E293B] dark:from-[#C28C46] dark:to-[#475569] dark:via-[#9A7135] rounded-xl shadow-lg shadow-[#C28C46]/20 dark:shadow-[0_0_30px_rgba(194,140,70,0.3)] hover:opacity-90 transition-all whitespace-nowrap">
+                Start Free Trial 
+                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
               </Link>
-              <button className="inline-flex items-center justify-center gap-2 px-8 py-3.5 text-base font-bold text-emerald-600 bg-white border border-emerald-200 hover:bg-emerald-50 rounded-xl shadow-sm transition-all">
-                <MessageCircle className="w-5 h-5" /> Chat on WhatsApp
+              <button className="inline-flex items-center justify-center gap-2 px-6 py-3.5 text-[15px] font-bold text-[#10B981] dark:text-[#10B981] bg-white dark:bg-transparent border-2 border-[#A7F3D0] dark:border-[#10B981]/30 hover:bg-[#ECFDF5] dark:hover:bg-[#10B981]/10 rounded-xl shadow-sm transition-all whitespace-nowrap">
+                <MessageCircle className="w-5 h-5 fill-current" /> Chat on WhatsApp
               </button>
             </div>
 
-            {/* Bottom Features Cards */}
-            <div className="grid grid-cols-3 gap-4">
-              <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm text-center transform transition hover:-translate-y-1">
-                <div className="w-10 h-10 mx-auto bg-amber-50 rounded-full flex items-center justify-center mb-3">
-                  <TrendingUp className="w-5 h-5 text-amber-600" />
+            {/* Bottom Info Cards */}
+            <div className="grid grid-cols-3 gap-3 max-w-lg">
+              <div className="bg-white dark:bg-[#111827] p-3 rounded-[16px] border border-[#E2E8F0] dark:border-[#1E293B] shadow-sm text-center">
+                <div className="w-8 h-8 mx-auto bg-[#FFFBF0] dark:bg-transparent rounded-xl flex items-center justify-center mb-1.5">
+                  <svg className="w-4 h-4 text-[#C28C46]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"></polyline><polyline points="16 7 22 7 22 13"></polyline></svg>
                 </div>
-                <h3 className="text-xs font-bold text-slate-800">Real-time Rates</h3>
+                <h3 className="text-[10px] font-bold text-[#64748B] dark:text-[#94A3B8] uppercase tracking-wide">Real-time Rates</h3>
               </div>
-              <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm text-center transform transition hover:-translate-y-1">
-                <div className="w-10 h-10 mx-auto bg-amber-50 rounded-full flex items-center justify-center mb-3">
-                  <Lock className="w-5 h-5 text-amber-600" />
+              <div className="bg-white dark:bg-[#111827] p-3 rounded-[16px] border border-[#E2E8F0] dark:border-[#1E293B] shadow-sm text-center">
+                <div className="w-8 h-8 mx-auto bg-[#FFFBF0] dark:bg-transparent rounded-xl flex items-center justify-center mb-1.5">
+                  <Lock className="w-4 h-4 text-[#C28C46]" strokeWidth={2.5} />
                 </div>
-                <h3 className="text-xs font-bold text-slate-800">Bank-grade Security</h3>
+                <h3 className="text-[10px] font-bold text-[#64748B] dark:text-[#94A3B8] uppercase tracking-wide">Bank-grade Security</h3>
               </div>
-              <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm text-center transform transition hover:-translate-y-1">
-                <div className="w-10 h-10 mx-auto bg-amber-50 rounded-full flex items-center justify-center mb-3">
-                  <BarChart3 className="w-5 h-5 text-amber-600" />
+              <div className="bg-white dark:bg-[#111827] p-3 rounded-[16px] border border-[#E2E8F0] dark:border-[#1E293B] shadow-sm text-center">
+                <div className="w-8 h-8 mx-auto bg-[#FFFBF0] dark:bg-transparent rounded-xl flex items-center justify-center mb-1.5">
+                  <svg className="w-4 h-4 text-[#C28C46]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
                 </div>
-                <h3 className="text-xs font-bold text-slate-800">Smart Analytics</h3>
+                <h3 className="text-[10px] font-bold text-[#64748B] dark:text-[#94A3B8] uppercase tracking-wide">Smart Analytics</h3>
               </div>
             </div>
           </div>
 
           {/* Right Column - Pricing */}
-          <div className="lg:pl-10">
+          <div className="lg:pl-8 relative w-full lg:w-auto flex flex-col items-center">
+            
             {/* Toggle */}
-            <div className="flex justify-center mb-8">
-              <div className="bg-slate-200/50 p-1 rounded-full inline-flex items-center relative">
+            <div className="mt-4 mb-4 relative z-10">
+              <div className="bg-[#F1F5F9] dark:bg-[#1E293B] p-1.5 rounded-full inline-flex items-center border border-[#E2E8F0] dark:border-[#334155]/50 shadow-sm">
                 <button 
                   onClick={() => setBillingCycle('monthly')}
-                  className={`relative z-10 px-6 py-2 rounded-full text-sm font-bold transition-all ${billingCycle === 'monthly' ? 'text-slate-900 bg-white shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                  className={`relative px-6 py-2 rounded-full text-[14px] font-bold transition-all whitespace-nowrap ${billingCycle === 'monthly' ? 'text-[#1E293B] dark:text-white bg-white dark:bg-[#334155] shadow-sm border border-[#C28C46] dark:border-transparent' : 'text-[#64748B] dark:text-[#94A3B8] hover:text-[#1E293B] dark:hover:text-white border border-transparent'}`}
                 >
                   Monthly
                 </button>
                 <button 
                   onClick={() => setBillingCycle('yearly')}
-                  className={`relative z-10 px-6 py-2 rounded-full text-sm font-bold transition-all flex items-center gap-2 ${billingCycle === 'yearly' ? 'text-slate-900 bg-white shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                  className={`relative px-4 py-2 rounded-full text-[14px] font-bold transition-all flex items-center gap-1.5 whitespace-nowrap ${billingCycle === 'yearly' ? 'text-[#1E293B] dark:text-white bg-white dark:bg-[#334155] shadow-sm border border-[#C28C46] dark:border-transparent' : 'text-[#64748B] dark:text-[#94A3B8] hover:text-[#1E293B] dark:hover:text-white border border-transparent'}`}
                 >
                   Yearly
-                  <span className="bg-amber-500 text-white text-[10px] px-2 py-0.5 rounded-full uppercase tracking-wider">Save DH 30</span>
+                  <span className={`${billingCycle === 'yearly' ? 'bg-[#C28C46]' : 'bg-[#475569] dark:bg-[#C28C46]'} text-white text-[9px] px-1.5 py-0.5 rounded-full uppercase tracking-wider font-extrabold whitespace-nowrap transition-colors`}>Save DH 30</span>
                 </button>
               </div>
             </div>
 
-            <div className="grid sm:grid-cols-2 gap-6 relative">
+            <div className="w-full max-w-[700px] grid sm:grid-cols-2 gap-4 items-stretch relative">
+              
               {/* Monthly Card */}
-              <div className="bg-slate-50 border-2 border-amber-500 rounded-3xl p-6 relative shadow-xl shadow-amber-500/10 transform md:-translate-y-4 bg-gradient-to-b from-amber-50/50 to-white">
-                <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-slate-700 text-white text-[10px] font-bold uppercase tracking-widest py-1 px-4 rounded-full">
-                  Most Popular
+              <div className={`flex flex-col h-full rounded-[24px] p-5 relative transition-all duration-300 ${billingCycle === 'monthly' ? 'bg-[#FFFCF6] dark:bg-[#151B23] border-2 border-[#C28C46] shadow-2xl shadow-[#C28C46]/20 dark:shadow-[0_0_30px_rgba(194,140,70,0.15)] scale-105 z-10' : 'bg-white dark:bg-[#151B23] border-2 border-[#E2E8F0] dark:border-[#1E293B] shadow-sm scale-100 z-0'}`}>
+                {billingCycle === 'monthly' && (
+                  <div className="absolute -top-[14px] left-1/2 -translate-x-1/2 bg-[#475569] dark:bg-[#64748B] text-white text-[10px] font-bold uppercase tracking-[0.1em] py-1 px-4 rounded-full whitespace-nowrap shadow-md">
+                    Most Popular
+                  </div>
+                )}
+                
+                <div className={`w-8 h-8 rounded-lg flex items-center justify-center mb-3 transition-colors ${billingCycle === 'monthly' ? 'bg-white dark:bg-[#C28C46]/20 border border-[#F3E5C8] dark:border-[#C28C46]/30 shadow-sm' : 'bg-[#F1F5F9] dark:bg-[#1E293B] border border-[#E2E8F0] dark:border-[#334155]'}`}>
+                  <svg className={`w-4 h-4 transition-colors ${billingCycle === 'monthly' ? 'text-[#C28C46]' : 'text-[#94A3B8] dark:text-[#94A3B8]'}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="4" /><path d="M9 9l6 6" /><path d="M15 9l-6 6" /></svg>
                 </div>
                 
-                <div className="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center mb-4">
-                  <Diamond className="w-4 h-4 text-amber-600" />
+                <h3 className="text-lg font-extrabold text-[#1E293B] dark:text-white mb-0.5">Monthly</h3>
+                <p className="text-[12px] text-[#64748B] dark:text-[#94A3B8] mb-3 font-medium leading-tight">Best for individual investors</p>
+                
+                <div className="mb-4 flex items-baseline">
+                  <span className={`text-3xl font-black transition-colors notranslate ${billingCycle === 'monthly' ? 'text-[#C28C46]' : 'text-[#1E293B] dark:text-white'}`}>DH 29.99</span>
+                  <span className="text-[11px] font-bold text-[#64748B] dark:text-[#94A3B8] ml-1">/month</span>
                 </div>
                 
-                <h3 className="text-lg font-bold text-slate-900 mb-1">Monthly</h3>
-                <p className="text-xs text-slate-500 mb-6">Best for individual investors</p>
-                
-                <div className="mb-6 flex items-baseline">
-                  <span className="text-3xl font-extrabold text-slate-900">DH 29.99</span>
-                  <span className="text-sm font-medium text-slate-500 ml-1">/month</span>
-                </div>
-                
-                <ul className="space-y-3 mb-8">
+                <ul className="space-y-2.5 mb-6">
                   {[
-                    'Unlimited gold & asset tracking',
-                    'Real-time price alerts',
-                    'Portfolio analytics & reports',
+                    'Unlimited gold & tracking',
+                    'Automated cloud backup',
+                    'Portfolio analytics',
                     'Secure vault management',
                     'PDF statements & exports',
                     'Transaction history',
                     'Multi-currency support',
                     'Priority email support'
                   ].map((feature, i) => (
-                    <li key={i} className="flex items-start gap-3">
-                      <div className="mt-1 flex-shrink-0 w-4 h-4 rounded-full bg-amber-100 flex items-center justify-center">
-                        <Check className="w-2.5 h-2.5 text-amber-600" strokeWidth={3} />
+                    <li key={i} className="flex items-start gap-2">
+                      <div className="mt-0.5 flex-shrink-0">
+                        <CheckCircle2 className={`w-3 h-3 transition-colors ${billingCycle === 'monthly' ? 'text-[#C28C46] fill-[#FFF3D9] dark:fill-[#C28C46]/20' : 'text-[#CBD5E1] dark:text-[#334155] fill-[#F1F5F9] dark:fill-[#1E293B]'}`} strokeWidth={2.5} />
                       </div>
-                      <span className="text-xs font-medium text-slate-600 leading-tight">{feature}</span>
+                      <span className="text-[11px] font-bold text-[#64748B] dark:text-[#94A3B8] leading-tight">{feature}</span>
                     </li>
                   ))}
                 </ul>
                 
-                <Link to="/register" className="block w-full text-center py-3 px-4 rounded-xl font-bold text-white bg-gradient-to-r from-amber-600 to-slate-800 hover:from-amber-700 hover:to-slate-900 shadow-md transition-all">
-                  Start Free Trial →
+                <Link to="/register" className={`mt-auto flex items-center justify-center gap-1 w-full py-2.5 px-3 rounded-xl font-bold transition-all text-[13px] ${billingCycle === 'monthly' ? 'text-white bg-gradient-to-r from-[#C28C46] via-[#334155] to-[#1E293B] dark:from-[#C28C46] dark:to-[#475569] dark:via-[#9A7135] shadow-lg shadow-[#C28C46]/20 hover:opacity-90' : 'text-[#334155] dark:text-white bg-[#F1F5F9] dark:bg-[#1E293B] hover:bg-[#E2E8F0] dark:hover:bg-[#334155]'}`}>
+                  Start Free Trial 
+                  <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
                 </Link>
               </div>
 
               {/* Yearly Card */}
-              <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm">
-                <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center mb-4">
-                  <Diamond className="w-4 h-4 text-slate-500" />
+              <div className={`flex flex-col h-full rounded-[20px] p-5 relative transition-all duration-300 ${billingCycle === 'yearly' ? 'bg-[#FFFCF6] dark:bg-[#151B23] border-2 border-[#C28C46] shadow-2xl shadow-[#C28C46]/20 dark:shadow-[0_0_30px_rgba(194,140,70,0.15)] scale-105 z-10' : 'bg-white dark:bg-[#151B23] border-2 border-[#E2E8F0] dark:border-[#1E293B] shadow-sm scale-100 z-0'}`}>
+                {billingCycle === 'yearly' && (
+                  <div className="absolute -top-[12px] left-1/2 -translate-x-1/2 bg-[#C28C46] text-white text-[9px] font-bold uppercase tracking-[0.1em] py-0.5 px-3 rounded-full whitespace-nowrap shadow-md">
+                    Best Value
+                  </div>
+                )}
+
+                <div className={`w-7 h-7 rounded-lg flex items-center justify-center mb-2 transition-colors ${billingCycle === 'yearly' ? 'bg-white dark:bg-[#C28C46]/20 border border-[#F3E5C8] dark:border-[#C28C46]/30 shadow-sm' : 'bg-[#F1F5F9] dark:bg-[#1E293B] border border-[#E2E8F0] dark:border-[#334155]'}`}>
+                  <svg className={`w-3.5 h-3.5 transition-colors ${billingCycle === 'yearly' ? 'text-[#C28C46]' : 'text-[#94A3B8] dark:text-[#94A3B8]'}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="4" /><path d="M9 9l6 6" /><path d="M15 9l-6 6" /></svg>
                 </div>
                 
-                <h3 className="text-lg font-bold text-slate-900 mb-1">Yearly</h3>
-                <p className="text-xs text-slate-500 mb-6">Best value for serious investors</p>
+                <h3 className="text-[15px] font-extrabold text-[#1E293B] dark:text-white mb-0">Yearly</h3>
+                <p className="text-[11px] text-[#64748B] dark:text-[#94A3B8] mb-2 font-medium leading-tight">Best value for serious investors</p>
                 
-                <div className="mb-6 flex items-baseline">
-                  <span className="text-3xl font-extrabold text-slate-900">DH 329.99</span>
-                  <span className="text-sm font-medium text-slate-500 ml-1">/year</span>
+                <div className="mb-3 flex items-baseline">
+                  <span className={`text-2xl font-black transition-colors notranslate ${billingCycle === 'yearly' ? 'text-[#C28C46]' : 'text-[#1E293B] dark:text-white'}`}>DH 329.99</span>
+                  <span className="text-[10px] font-bold text-[#64748B] dark:text-[#94A3B8] ml-1">/year</span>
                 </div>
                 
-                <ul className="space-y-3 mb-8">
+                <ul className="space-y-1.5 mb-4">
                   {[
                     'Everything in Monthly',
                     '24/7 priority phone support',
@@ -191,28 +326,29 @@ export default function Landing() {
                     'Save DH 29.89 vs monthly',
                     'Dedicated account manager'
                   ].map((feature, i) => (
-                    <li key={i} className="flex items-start gap-3">
-                      <div className="mt-1 flex-shrink-0 w-4 h-4 rounded-full bg-slate-100 flex items-center justify-center">
-                        <Check className="w-2.5 h-2.5 text-slate-500" strokeWidth={3} />
+                    <li key={i} className="flex items-start gap-2">
+                      <div className="mt-0.5 flex-shrink-0">
+                        <CheckCircle2 className={`w-3.5 h-3.5 transition-colors ${billingCycle === 'yearly' ? 'text-[#C28C46] fill-[#FFF3D9] dark:fill-[#C28C46]/20' : 'text-[#CBD5E1] dark:text-[#334155] fill-[#F1F5F9] dark:fill-[#1E293B]'}`} strokeWidth={2.5} />
                       </div>
-                      <span className="text-xs font-medium text-slate-600 leading-tight">{feature}</span>
+                      <span className="text-[12px] font-bold text-[#64748B] dark:text-[#94A3B8] leading-tight">{feature}</span>
                     </li>
                   ))}
                 </ul>
                 
-                <Link to="/register" className="block w-full text-center py-3 px-4 rounded-xl font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 transition-all mt-auto">
-                  Start Free Trial →
+                <Link to="/register" className={`mt-auto flex items-center justify-center gap-1.5 w-full py-3.5 px-3 rounded-xl font-bold transition-all text-[14px] ${billingCycle === 'yearly' ? 'text-white bg-gradient-to-r from-[#C28C46] via-[#334155] to-[#1E293B] dark:from-[#C28C46] dark:to-[#475569] dark:via-[#9A7135] shadow-lg shadow-[#C28C46]/20 hover:opacity-90' : 'text-[#334155] dark:text-white bg-[#F1F5F9] dark:bg-[#1E293B] hover:bg-[#E2E8F0] dark:hover:bg-[#334155]'}`}>
+                  Start Free Trial
+                  <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
                 </Link>
               </div>
             </div>
 
-            <div className="mt-8 text-center text-xs font-medium text-slate-400">
+            <div className="mt-4 text-center text-[11px] font-bold text-[#94A3B8] dark:text-slate-500">
               <span className="flex items-center justify-center gap-2">
-                <Check className="w-3 h-3" /> 7-day free trial 
-                <span>•</span> 
-                <Check className="w-3 h-3" /> Cancel anytime 
-                <span>•</span> 
-                <Check className="w-3 h-3" /> No hidden fees
+                <Check className="w-3 h-3 text-[#94A3B8] dark:text-slate-500" strokeWidth={3} /> 14-day free trial 
+                <span className="text-[#CBD5E1] dark:text-slate-600">•</span> 
+                <Check className="w-3 h-3 text-[#94A3B8] dark:text-slate-500" strokeWidth={3} /> Cancel anytime 
+                <span className="text-[#CBD5E1] dark:text-slate-600">•</span> 
+                <Check className="w-3 h-3 text-[#94A3B8] dark:text-slate-500" strokeWidth={3} /> No hidden fees
               </span>
             </div>
 

@@ -54,21 +54,25 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-zinc-950 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
+    <div className="min-h-screen flex items-center justify-center bg-[#0B0F19] px-4 sm:px-6 lg:px-8 relative overflow-hidden">
       {/* Background blobs for premium glassmorphism effect */}
-      <div className="absolute top-0 -left-4 w-72 h-72 bg-purple-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob"></div>
-      <div className="absolute top-0 -right-4 w-72 h-72 bg-fuchsia-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-2000"></div>
-      <div className="absolute -bottom-8 left-20 w-72 h-72 bg-pink-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-4000"></div>
+      <div className="absolute top-0 -left-4 w-72 h-72 bg-[#C28C46] rounded-full mix-blend-screen filter blur-[100px] opacity-10 animate-blob"></div>
+      <div className="absolute top-0 -right-4 w-72 h-72 bg-[#334155] rounded-full mix-blend-screen filter blur-[100px] opacity-20 animate-blob animation-delay-2000"></div>
+      <div className="absolute -bottom-8 left-20 w-72 h-72 bg-[#B48346] rounded-full mix-blend-screen filter blur-[100px] opacity-10 animate-blob animation-delay-4000"></div>
 
-      <div className="max-w-md w-full space-y-8 relative z-10 p-10 bg-zinc-900/50 backdrop-blur-xl border border-zinc-800 rounded-3xl shadow-2xl">
+      <div className="max-w-md w-full space-y-8 relative z-10 p-10 bg-[#151B23]/80 backdrop-blur-2xl border border-[#334155]/50 rounded-3xl shadow-2xl">
         <div className="text-center">
           <div className="flex justify-center">
-            <div className="h-16 w-16 bg-gradient-to-tr from-fuchsia-600 to-pink-500 rounded-2xl flex items-center justify-center shadow-lg shadow-fuchsia-500/20 mb-4 transform transition hover:scale-105">
-              <Gem className="h-8 w-8 text-white" />
+            <div className="h-16 w-16 bg-gradient-to-br from-[#B48346] to-[#8C622C] rounded-2xl flex items-center justify-center shadow-lg shadow-[#B48346]/20 mb-4 transform transition hover:scale-105">
+              <svg className="w-8 h-8 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="3" width="18" height="18" rx="4" />
+                <path d="M9 9l6 6" />
+                <path d="M15 9l-6 6" />
+              </svg>
             </div>
           </div>
           <h2 className="mt-2 text-3xl font-extrabold text-white tracking-tight">Welcome back</h2>
-          <p className="mt-2 text-sm text-zinc-400">
+          <p className="mt-2 text-sm text-[#94A3B8]">
             Log in to manage your jewellery business
           </p>
         </div>
@@ -82,7 +86,7 @@ export default function Login() {
           
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-zinc-300 mb-1" htmlFor="email">Email address</label>
+              <label className="block text-sm font-medium text-[#94A3B8] mb-1" htmlFor="email">Email address</label>
               <input
                 id="email"
                 name="email"
@@ -90,12 +94,12 @@ export default function Login() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="appearance-none block w-full px-4 py-3 bg-zinc-800/50 border border-zinc-700 rounded-xl placeholder-zinc-500 text-white focus:outline-none focus:ring-2 focus:ring-fuchsia-500 focus:border-transparent transition-all"
+                className="appearance-none block w-full px-4 py-3 bg-[#0B0F19]/50 border border-[#334155] rounded-xl placeholder-[#64748B] text-white focus:outline-none focus:ring-2 focus:ring-[#C28C46] focus:border-transparent transition-all"
                 placeholder="you@example.com"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-zinc-300 mb-1" htmlFor="password">Password</label>
+              <label className="block text-sm font-medium text-[#94A3B8] mb-1" htmlFor="password">Password</label>
               <input
                 id="password"
                 name="password"
@@ -103,7 +107,7 @@ export default function Login() {
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="appearance-none block w-full px-4 py-3 bg-zinc-800/50 border border-zinc-700 rounded-xl placeholder-zinc-500 text-white focus:outline-none focus:ring-2 focus:ring-fuchsia-500 focus:border-transparent transition-all"
+                className="appearance-none block w-full px-4 py-3 bg-[#0B0F19]/50 border border-[#334155] rounded-xl placeholder-[#64748B] text-white focus:outline-none focus:ring-2 focus:ring-[#C28C46] focus:border-transparent transition-all"
                 placeholder="••••••••"
               />
             </div>
@@ -113,7 +117,7 @@ export default function Login() {
             <button
               type="submit"
               disabled={loading}
-              className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-xl text-white bg-gradient-to-r from-fuchsia-600 to-pink-600 hover:from-fuchsia-500 hover:to-pink-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-zinc-900 focus:ring-fuchsia-500 transition-all shadow-lg shadow-fuchsia-500/25 disabled:opacity-50"
+              className="group relative w-full flex justify-center py-3.5 px-4 text-sm font-bold rounded-xl text-white bg-gradient-to-r from-[#C28C46] to-[#8C622C] hover:from-[#B48346] hover:to-[#7A5526] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-[#0B0F19] focus:ring-[#C28C46] transition-all shadow-lg shadow-[#C28C46]/30 disabled:opacity-50"
             >
               {loading ? (
                 <Loader2 className="w-5 h-5 animate-spin" />
@@ -126,9 +130,9 @@ export default function Login() {
             </button>
           </div>
           
-          <div className="text-center text-sm text-zinc-400">
+          <div className="text-center text-sm text-[#94A3B8]">
             Don't have an account?{' '}
-            <Link to="/register" className="font-medium text-fuchsia-400 hover:text-fuchsia-300 transition-colors">
+            <Link to="/register" className="font-bold text-[#C28C46] hover:text-[#B48346] transition-colors">
               Start your free trial
             </Link>
           </div>
