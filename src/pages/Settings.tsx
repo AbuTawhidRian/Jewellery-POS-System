@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { Users, CreditCard, Plus, Edit2, Trash2, ShieldAlert, Building2, CheckCircle, XCircle } from 'lucide-react';
+import { Users, CreditCard, Plus, Edit2, Trash2, ShieldAlert, Building2, CheckCircle, XCircle, X } from 'lucide-react';
 import Dialog from '../components/Dialog';
 import api from '../lib/api';
 
