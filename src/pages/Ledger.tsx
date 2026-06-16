@@ -11,6 +11,20 @@ const Ledger: React.FC = () => {
   const [customStartDate, setCustomStartDate] = useState<string>('');
   const [customEndDate, setCustomEndDate] = useState<string>('');
   
+  const [buyerDropdownOpen, setBuyerDropdownOpen] = useState(false);
+  const [dateDropdownOpen, setDateDropdownOpen] = useState(false);
+  const buyerRef = React.useRef<HTMLDivElement>(null);
+  const dateRef = React.useRef<HTMLDivElement>(null);
+  
+  React.useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (buyerRef.current && !buyerRef.current.contains(e.target as Node)) setBuyerDropdownOpen(false);
+      if (dateRef.current && !dateRef.current.contains(e.target as Node)) setDateDropdownOpen(false);
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+  
   const [expandedTx, setExpandedTx] = useState<string | null>(null);
   
   const [dialogConfig, setDialogConfig] = useState<{
@@ -162,34 +176,82 @@ const Ledger: React.FC = () => {
           <p className="text-slate-400 mt-1">Complete history of all checkout transactions.</p>
         </div>
         
-        <div className="flex flex-col sm:flex-row gap-2 flex-wrap md:flex-nowrap">
-          <div className="flex items-center gap-2 bg-slate-900 border border-slate-700 rounded-lg px-3 py-2">
-            <Filter className="w-4 h-4 text-slate-400" />
-            <select 
-              value={filterBuyerId}
-              onChange={(e) => setFilterBuyerId(e.target.value)}
-              className="bg-transparent text-sm text-slate-200 focus:outline-none appearance-none cursor-pointer pr-4"
+        <div className="flex flex-col sm:flex-row gap-3 flex-wrap md:flex-nowrap">
+          {/* Custom Buyer Dropdown */}
+          <div className="relative" ref={buyerRef}>
+            <button 
+              onClick={() => { setBuyerDropdownOpen(!buyerDropdownOpen); setDateDropdownOpen(false); }}
+              className="flex items-center justify-between gap-2 bg-slate-900 hover:bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 transition-colors w-full sm:w-56 text-left"
             >
-              <option value="all" className="bg-slate-900 text-slate-200">All Buyers Report</option>
-              {buyers.map(b => (
-                <option key={b.id} value={b.id} className="bg-slate-900 text-slate-200">{b.name}</option>
-              ))}
-            </select>
+              <div className="flex items-center gap-2 overflow-hidden">
+                <Filter className="w-4 h-4 text-slate-400 shrink-0" />
+                <span className="text-sm text-slate-200 truncate font-medium">
+                  {filterBuyerId === 'all' ? 'All Buyers Report' : buyers.find(b => b.id === filterBuyerId)?.name}
+                </span>
+              </div>
+              <ChevronDown className="w-4 h-4 text-slate-500 shrink-0" />
+            </button>
+            
+            {buyerDropdownOpen && (
+              <div className="absolute top-full left-0 mt-2 w-full sm:w-64 bg-slate-800 border border-slate-700 rounded-xl shadow-xl z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+                <div className="max-h-64 overflow-y-auto py-1">
+                  <button
+                    onClick={() => { setFilterBuyerId('all'); setBuyerDropdownOpen(false); }}
+                    className={`w-full text-left px-4 py-2.5 text-sm transition-colors ${filterBuyerId === 'all' ? 'bg-gold-500/10 text-gold-500 font-bold border-l-2 border-gold-500' : 'text-slate-300 hover:bg-slate-700/50 hover:text-white border-l-2 border-transparent'}`}
+                  >
+                    All Buyers Report
+                  </button>
+                  {buyers.map(b => (
+                    <button
+                      key={b.id}
+                      onClick={() => { setFilterBuyerId(b.id); setBuyerDropdownOpen(false); }}
+                      className={`w-full text-left px-4 py-2.5 text-sm transition-colors ${filterBuyerId === b.id ? 'bg-gold-500/10 text-gold-500 font-bold border-l-2 border-gold-500' : 'text-slate-300 hover:bg-slate-700/50 hover:text-white border-l-2 border-transparent'}`}
+                    >
+                      {b.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
-          <div className="flex items-center gap-2 bg-slate-900 border border-slate-700 rounded-lg px-3 py-2">
-            <Calendar className="w-4 h-4 text-slate-400" />
-            <select 
-              value={filterDateRange}
-              onChange={(e) => setFilterDateRange(e.target.value)}
-              className="bg-transparent text-sm text-slate-200 focus:outline-none appearance-none cursor-pointer pr-4"
+          {/* Custom Date Dropdown */}
+          <div className="relative" ref={dateRef}>
+            <button 
+              onClick={() => { setDateDropdownOpen(!dateDropdownOpen); setBuyerDropdownOpen(false); }}
+              className="flex items-center justify-between gap-2 bg-slate-900 hover:bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 transition-colors w-full sm:w-48 text-left"
             >
-              <option value="all" className="bg-slate-900 text-slate-200">All Time</option>
-              <option value="today" className="bg-slate-900 text-slate-200">Today</option>
-              <option value="week" className="bg-slate-900 text-slate-200">Last 7 Days</option>
-              <option value="month" className="bg-slate-900 text-slate-200">This Month</option>
-              <option value="custom" className="bg-slate-900 text-slate-200">Custom Range</option>
-            </select>
+              <div className="flex items-center gap-2 overflow-hidden">
+                <Calendar className="w-4 h-4 text-slate-400 shrink-0" />
+                <span className="text-sm text-slate-200 truncate font-medium">
+                  {filterDateRange === 'all' ? 'All Time' :
+                   filterDateRange === 'today' ? 'Today' :
+                   filterDateRange === 'week' ? 'Last 7 Days' :
+                   filterDateRange === 'month' ? 'This Month' : 'Custom Range'}
+                </span>
+              </div>
+              <ChevronDown className="w-4 h-4 text-slate-500 shrink-0" />
+            </button>
+            
+            {dateDropdownOpen && (
+              <div className="absolute top-full left-0 mt-2 w-full sm:w-48 bg-slate-800 border border-slate-700 rounded-xl shadow-xl z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200 py-1">
+                {[
+                  { id: 'all', label: 'All Time' },
+                  { id: 'today', label: 'Today' },
+                  { id: 'week', label: 'Last 7 Days' },
+                  { id: 'month', label: 'This Month' },
+                  { id: 'custom', label: 'Custom Range' },
+                ].map(opt => (
+                  <button
+                    key={opt.id}
+                    onClick={() => { setFilterDateRange(opt.id); setDateDropdownOpen(false); }}
+                    className={`w-full text-left px-4 py-2.5 text-sm transition-colors ${filterDateRange === opt.id ? 'bg-gold-500/10 text-gold-500 font-bold border-l-2 border-gold-500' : 'text-slate-300 hover:bg-slate-700/50 hover:text-white border-l-2 border-transparent'}`}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
           
           {filterDateRange === 'custom' && (

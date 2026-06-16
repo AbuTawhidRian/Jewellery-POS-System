@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { Users, CreditCard, Plus, Edit2, Trash2, Check, X, ShieldAlert, Building2, CheckCircle, XCircle } from 'lucide-react';
+import Dialog from '../components/Dialog';
 import api from '../lib/api';
 
 interface ShopUser {
@@ -26,13 +27,19 @@ const Settings: React.FC = () => {
   const [loadingStaff, setLoadingStaff] = useState(true);
   const [showAddStaff, setShowAddStaff] = useState(false);
   const [newStaff, setNewStaff] = useState({ name: '', email: '', password: '', role: 'CASHIER' });
-  const [editingStaffId, setEditingStaffId] = useState<number | null>(null);
-  const [editRole, setEditRole] = useState('');
   
   // Sub State
   const [subscription, setSubscription] = useState<any>(null);
   const [voucherNumber, setVoucherNumber] = useState('');
   const [submittingVoucher, setSubmittingVoucher] = useState(false);
+  
+  const [dialogConfig, setDialogConfig] = useState<{
+    isOpen: boolean; 
+    type: 'alert' | 'confirm' | 'prompt'; 
+    title: string; 
+    message: string;
+    onConfirm?: (inputValue?: string) => void;
+  }>({ isOpen: false, type: 'alert', title: '', message: '' });
 
   // Company State
   const [shopInfo, setShopInfo] = useState({ name: '', trn: '', address: '', email: '', phone: '' });
@@ -110,26 +117,46 @@ const Settings: React.FC = () => {
     }
   };
 
-  const handleUpdateRole = async (id: number) => {
-    try {
-      await api.patch(`/users/${id}`, { role: editRole });
-      setEditingStaffId(null);
-      fetchStaff();
-      showNotification('success', 'Role updated successfully');
-    } catch (err) {
-      showNotification('error', 'Failed to update role');
-    }
+  const handleEditRole = (id: number, currentRole: string) => {
+    setDialogConfig({
+      isOpen: true,
+      type: 'prompt',
+      title: 'Edit Staff Role',
+      message: 'Enter new role (MANAGER or CASHIER):',
+      onConfirm: async (inputValue) => {
+        if (!inputValue) return;
+        const roleUpper = inputValue.toUpperCase();
+        if (!['MANAGER', 'CASHIER'].includes(roleUpper)) {
+          showNotification('error', 'Invalid role. Please enter MANAGER or CASHIER.');
+          return;
+        }
+        try {
+          await api.put(`/users/${id}/role`, { role: roleUpper });
+          fetchStaff();
+          showNotification('success', 'Role updated successfully');
+        } catch (err) {
+          showNotification('error', 'Failed to update role');
+        }
+      }
+    });
   };
 
-  const handleDeleteStaff = async (id: number) => {
-    if (!confirm('Are you sure you want to remove this staff member?')) return;
-    try {
-      await api.delete(`/users/${id}`);
-      fetchStaff();
-      showNotification('success', 'Staff member removed');
-    } catch (err: any) {
-      showNotification('error', err.response?.data?.error || 'Failed to delete staff');
-    }
+  const handleDeleteStaff = (id: number) => {
+    setDialogConfig({
+      isOpen: true,
+      type: 'confirm',
+      title: 'Remove Staff',
+      message: 'Are you sure you want to remove this staff member?',
+      onConfirm: async () => {
+        try {
+          await api.delete(`/users/${id}`);
+          fetchStaff();
+          showNotification('success', 'Staff member removed');
+        } catch (err: any) {
+          showNotification('error', err.response?.data?.error || 'Failed to delete staff');
+        }
+      }
+    });
   };
 
   const handleSubmitVoucher = async (e: React.FormEvent) => {
