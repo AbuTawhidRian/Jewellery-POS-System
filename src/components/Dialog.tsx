@@ -1,15 +1,15 @@
-import React, { useEffect } from 'react';
-import { XCircle, AlertTriangle, Info } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { XCircle, AlertTriangle, Info, Edit3 } from 'lucide-react';
 import clsx from 'clsx';
 
 interface DialogProps {
   isOpen: boolean;
-  type?: 'alert' | 'confirm';
+  type?: 'alert' | 'confirm' | 'prompt';
   title: string;
   message: string;
   confirmText?: string;
   cancelText?: string;
-  onConfirm: () => void;
+  onConfirm: (value?: string) => void;
   onCancel: () => void;
 }
 
@@ -23,13 +23,21 @@ const Dialog: React.FC<DialogProps> = ({
   onConfirm, 
   onCancel 
 }) => {
+  const [inputValue, setInputValue] = useState('');
+
+  useEffect(() => {
+    if (isOpen) {
+      setInputValue(''); // Reset on open
+    }
+  }, [isOpen]);
+
   useEffect(() => {
     if (!isOpen) return;
     
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Enter') {
         e.preventDefault();
-        onConfirm();
+        onConfirm(type === 'prompt' ? inputValue : undefined);
         if (type === 'alert') onCancel();
       } else if (e.key === 'Escape') {
         e.preventDefault();
@@ -39,7 +47,7 @@ const Dialog: React.FC<DialogProps> = ({
     
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, onConfirm, onCancel, type]);
+  }, [isOpen, onConfirm, onCancel, type, inputValue]);
 
   if (!isOpen) return null;
 
@@ -50,6 +58,8 @@ const Dialog: React.FC<DialogProps> = ({
           <h3 className="text-lg font-bold text-slate-100 flex items-center gap-2">
             {type === 'confirm' ? (
               <AlertTriangle className="w-5 h-5 text-gold-500" />
+            ) : type === 'prompt' ? (
+              <Edit3 className="w-5 h-5 text-blue-400" />
             ) : (
               <Info className="w-5 h-5 text-blue-400" />
             )}
@@ -64,11 +74,21 @@ const Dialog: React.FC<DialogProps> = ({
         </div>
         
         <div className="p-6">
-          <p className="text-slate-300 text-sm leading-relaxed">{message}</p>
+          <p className="text-slate-300 text-sm leading-relaxed mb-4">{message}</p>
+          {type === 'prompt' && (
+            <input
+              type="text"
+              autoFocus
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              className="w-full bg-slate-950 border border-slate-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-gold-500 transition-colors"
+              placeholder="Type here..."
+            />
+          )}
         </div>
 
         <div className="p-4 border-t border-slate-800 bg-slate-950/30 flex gap-3 justify-end">
-          {type === 'confirm' && (
+          {(type === 'confirm' || type === 'prompt') && (
             <button
               onClick={onCancel}
               className="px-4 py-2 rounded-xl font-bold text-sm text-slate-300 bg-slate-800 hover:bg-slate-700 transition-colors"
@@ -78,7 +98,7 @@ const Dialog: React.FC<DialogProps> = ({
           )}
           <button
             onClick={() => {
-              onConfirm();
+              onConfirm(type === 'prompt' ? inputValue : undefined);
               if (type === 'alert') onCancel(); // Auto-close alerts on OK
             }}
             className={clsx(
