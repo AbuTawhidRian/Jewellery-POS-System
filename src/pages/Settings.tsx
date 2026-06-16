@@ -325,35 +325,15 @@ const Settings: React.FC = () => {
                       <td className="p-4 text-white font-medium">{s.name}</td>
                       <td className="p-4 text-slate-400">{s.email}</td>
                       <td className="p-4">
-                        {editingStaffId === s.id ? (
-                          <select 
-                            value={editRole} 
-                            onChange={(e) => setEditRole(e.target.value)}
-                            className="bg-slate-950 border border-slate-700 text-white rounded px-2 py-1 focus:outline-none focus:border-gold-500 text-sm"
-                          >
-                            <option value="MANAGER">MANAGER</option>
-                            <option value="CASHIER">CASHIER</option>
-                          </select>
-                        ) : (
-                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${s.role === 'OWNER' ? 'bg-gold-500/10 text-gold-400 border-gold-500/20' : s.role === 'MANAGER' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' : 'bg-slate-800 text-slate-300 border-slate-700'}`}>
-                            {s.role}
-                          </span>
-                        )}
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${s.role === 'OWNER' ? 'bg-gold-500/10 text-gold-400 border-gold-500/20' : s.role === 'MANAGER' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' : 'bg-slate-800 text-slate-300 border-slate-700'}`}>
+                          {s.role}
+                        </span>
                       </td>
                       <td className="p-4 text-right">
                         {s.role !== 'OWNER' && (
                           <div className="flex items-center justify-end gap-2">
-                            {editingStaffId === s.id ? (
-                              <>
-                                <button onClick={() => handleUpdateRole(s.id)} className="p-2 text-emerald-400 hover:bg-emerald-400/10 rounded-lg transition-colors"><Check className="w-4 h-4" /></button>
-                                <button onClick={() => setEditingStaffId(null)} className="p-2 text-slate-400 hover:bg-slate-800 rounded-lg transition-colors"><X className="w-4 h-4" /></button>
-                              </>
-                            ) : (
-                              <>
-                                <button onClick={() => { setEditingStaffId(s.id); setEditRole(s.role); }} className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"><Edit2 className="w-4 h-4" /></button>
-                                <button onClick={() => handleDeleteStaff(s.id)} className="p-2 text-red-400 hover:bg-red-400/10 rounded-lg transition-colors"><Trash2 className="w-4 h-4" /></button>
-                              </>
-                            )}
+                            <button onClick={() => handleEditRole(s.id, s.role)} className="p-2 text-slate-400 hover:bg-gold-500/20 hover:text-gold-400 rounded-lg transition-colors" title="Edit Role"><Edit2 className="w-4 h-4" /></button>
+                            <button onClick={() => handleDeleteStaff(s.id)} className="p-2 text-slate-400 hover:bg-red-500/20 hover:text-red-400 rounded-lg transition-colors" title="Remove Staff"><Trash2 className="w-4 h-4" /></button>
                           </div>
                         )}
                       </td>
