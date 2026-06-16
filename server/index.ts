@@ -462,7 +462,17 @@ app.post('/api/inventory', authenticateToken, requireActiveOrTrial, requireRole(
     const shopId = req.user!.shopId!;
     
     if (!barcode) {
-      barcode = Math.floor(1000000000 + Math.random() * 9000000000).toString(); // 10 digit random barcode
+      let prefix = 'XX';
+      const shop = await prisma.shop.findUnique({ where: { id: shopId } });
+      if (shop && shop.name) {
+        const words = shop.name.trim().split(/\s+/).filter(w => w.length > 0);
+        if (words.length >= 2) {
+          prefix = (words[0][0] + words[1][0]).toUpperCase();
+        } else if (words.length === 1) {
+          prefix = words[0].substring(0, 2).toUpperCase();
+        }
+      }
+      barcode = `${prefix}${Math.floor(100000000 + Math.random() * 900000000)}`;
     }
 
     const existing = await prisma.item.findUnique({ 
