@@ -279,11 +279,11 @@ const POS: React.FC = () => {
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 ease-out h-full flex flex-col relative">
       <header className="mb-8">
-        <h1 className="text-3xl font-bold text-slate-100 flex items-center gap-3">
+        <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-3">
           <ShoppingCart className="w-8 h-8 text-gold-500" />
           Point of Sale
         </h1>
-        <p className="text-slate-400 mt-1">Scan items into the cart and review before completing the sale.</p>
+        <p className="text-slate-600 dark:text-slate-400 mt-1">Scan items into the cart and review before completing the sale.</p>
       </header>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 flex-1 min-h-0 pb-8">
@@ -291,8 +291,8 @@ const POS: React.FC = () => {
         {/* Left Column: Scanner and Buyer */}
         <div className="lg:col-span-5 flex flex-col gap-6">
           
-          <div className="bg-slate-950 p-6 rounded-2xl border border-slate-800 shadow-lg">
-            <label className="block text-sm font-bold tracking-wide text-slate-400 uppercase mb-3">
+          <div className="bg-white dark:bg-slate-950 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-lg">
+            <label className="block text-sm font-bold tracking-wide text-slate-600 dark:text-slate-400 uppercase mb-3">
               1. Select Buyer Company
             </label>
             <div className="flex gap-2 relative">
@@ -307,15 +307,15 @@ const POS: React.FC = () => {
                     setSelectedBuyer(''); // Clear selection if user types
                   }}
                   onFocus={() => setIsDropdownOpen(true)}
-                  className="w-full bg-slate-900 border-2 border-slate-700 rounded-xl px-5 py-4 text-lg text-slate-100 focus:outline-none focus:border-gold-500 transition-colors"
+                  className="w-full bg-slate-50 dark:bg-slate-900 border-2 border-slate-300 dark:border-slate-700 rounded-xl px-5 py-4 text-lg text-slate-900 dark:text-slate-100 focus:outline-none focus:border-gold-500 transition-colors"
                   placeholder="-- Search or Select a Buyer --"
                   autoComplete="off"
                 />
                 
                 {isDropdownOpen && (
-                  <div className="absolute z-50 w-full mt-2 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl overflow-hidden max-h-60 overflow-y-auto">
+                  <div className="absolute z-50 w-full mt-2 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl shadow-2xl overflow-hidden max-h-60 overflow-y-auto">
                     {buyers.filter(b => b.name.toLowerCase().includes(buyerSearch.toLowerCase())).length === 0 ? (
-                      <div className="px-5 py-4 text-slate-400 text-sm text-center">No buyers found. Click "+ New" to add one.</div>
+                      <div className="px-5 py-4 text-slate-600 dark:text-slate-400 text-sm text-center">No buyers found. Click "+ New" to add one.</div>
                     ) : (
                       buyers
                         .filter(b => b.name.toLowerCase().includes(buyerSearch.toLowerCase()))
@@ -329,8 +329,8 @@ const POS: React.FC = () => {
                               setTimeout(() => inputRef.current?.focus(), 10);
                             }}
                             className={clsx(
-                              "px-5 py-4 cursor-pointer transition-colors border-b border-slate-700/50 last:border-0",
-                              selectedBuyer === b.id ? "bg-gold-500/20 text-gold-500 font-bold" : "text-slate-200 hover:bg-slate-700 hover:text-white"
+                              "px-5 py-4 cursor-pointer transition-colors border-b border-slate-300 dark:border-slate-700/50 last:border-0",
+                              selectedBuyer === b.id ? "bg-gold-500/20 text-gold-500 font-bold" : "text-slate-800 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 hover:text-white"
                             )}
                           >
                             {b.name}
@@ -343,7 +343,7 @@ const POS: React.FC = () => {
               {hasPermission('manage_buyers') && (
                 <button
                   onClick={() => setIsBuyerModalOpen(true)}
-                  className="bg-slate-900 hover:bg-slate-800 border-2 border-slate-700 hover:border-gold-500 text-gold-500 rounded-xl px-4 flex flex-col items-center justify-center transition-all"
+                  className="bg-slate-50 dark:bg-slate-900 hover:bg-slate-100 dark:bg-slate-800 border-2 border-slate-300 dark:border-slate-700 hover:border-gold-500 text-gold-500 rounded-xl px-4 flex flex-col items-center justify-center transition-all"
                   title="Manage Buyers"
                 >
                   <Building2 className="w-6 h-6" />
@@ -353,7 +353,7 @@ const POS: React.FC = () => {
             </div>
           </div>
 
-          <div className="bg-slate-950 p-6 rounded-2xl border border-slate-800 shadow-xl relative overflow-hidden flex flex-col items-center">
+          <div className="bg-white dark:bg-slate-950 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xl relative overflow-hidden flex flex-col items-center">
             <div className="w-full flex justify-between items-center mb-6">
               <label className="flex items-center gap-2 text-sm font-bold tracking-widest text-gold-500 uppercase">
                 <ScanLine className="w-5 h-5" />
@@ -376,7 +376,7 @@ const POS: React.FC = () => {
             </div>
             
             {isScanning ? (
-              <div className="w-full h-auto overflow-hidden rounded-xl border-2 border-gold-500/50 bg-slate-900">
+              <div className="w-full h-auto overflow-hidden rounded-xl border-2 border-gold-500/50 bg-slate-50 dark:bg-slate-900">
                 <div id="reader" className="w-full"></div>
               </div>
             ) : (
@@ -387,7 +387,7 @@ const POS: React.FC = () => {
                   value={barcode}
                   onChange={(e) => setBarcode(e.target.value)}
                   onKeyDown={handleScan}
-                  className="w-full bg-slate-900 border-b-4 border-slate-700 focus:border-gold-500 px-6 py-6 text-4xl text-center text-slate-100 font-mono focus:outline-none transition-colors rounded-t-xl"
+                  className="w-full bg-slate-50 dark:bg-slate-900 border-b-4 border-slate-300 dark:border-slate-700 focus:border-gold-500 px-6 py-6 text-4xl text-center text-slate-900 dark:text-slate-100 font-mono focus:outline-none transition-colors rounded-t-xl"
                   placeholder="WAITING..."
                   autoComplete="off"
                 />
@@ -415,10 +415,10 @@ const POS: React.FC = () => {
         </div>
 
         {/* Right Column: Cart */}
-        <div className="lg:col-span-7 bg-slate-950 rounded-2xl border border-slate-800 shadow-lg flex flex-col h-[600px] lg:h-auto overflow-hidden relative">
-          <div className="p-6 border-b border-slate-800 flex justify-between items-center bg-slate-900/50">
-            <h2 className="text-xl font-bold text-slate-100">Shopping Cart</h2>
-            <span className="px-3 py-1 bg-slate-800 text-slate-300 rounded-full text-sm font-semibold">
+        <div className="lg:col-span-7 bg-white dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-lg flex flex-col h-[600px] lg:h-auto overflow-hidden relative">
+          <div className="p-6 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-slate-900/50">
+            <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">Shopping Cart</h2>
+            <span className="px-3 py-1 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-full text-sm font-semibold">
               {cart.length} Items
             </span>
           </div>
@@ -432,8 +432,8 @@ const POS: React.FC = () => {
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse min-w-[500px]">
-                <thead className="sticky top-0 bg-slate-950 z-10 shadow-sm">
-                  <tr className="text-sm text-slate-400 border-b border-slate-800">
+                <thead className="sticky top-0 bg-white dark:bg-slate-950 z-10 shadow-sm">
+                  <tr className="text-sm text-slate-600 dark:text-slate-400 border-b border-slate-200 dark:border-slate-800">
                     <th className="py-3 px-4 font-medium">Barcode</th>
                     <th className="py-3 px-4 font-medium">Type</th>
                     <th className="py-3 px-4 font-medium text-right">Gr. Wt</th>
@@ -448,11 +448,11 @@ const POS: React.FC = () => {
                       const gw = Number(item.weight) || 0;
                       const nw = Math.max(0, gw - sw);
                       return (
-                      <tr key={item.id} className="border-b border-slate-800/50 hover:bg-slate-900/50 transition-colors">
-                        <td className="py-3 px-4 font-mono text-slate-300">{item.barcode}</td>
-                        <td className="py-3 px-4 text-slate-200">{item.type}</td>
-                        <td className="py-3 px-4 text-slate-300 font-medium text-right">{gw.toFixed(2)}g</td>
-                        <td className="py-3 px-4 text-slate-400 text-right">{sw > 0 ? sw.toFixed(2) + 'g' : '-'}</td>
+                      <tr key={item.id} className="border-b border-slate-200 dark:border-slate-800/50 hover:bg-slate-50 dark:bg-slate-900/50 transition-colors">
+                        <td className="py-3 px-4 font-mono text-slate-700 dark:text-slate-300">{item.barcode}</td>
+                        <td className="py-3 px-4 text-slate-800 dark:text-slate-200">{item.type}</td>
+                        <td className="py-3 px-4 text-slate-700 dark:text-slate-300 font-medium text-right">{gw.toFixed(2)}g</td>
+                        <td className="py-3 px-4 text-slate-600 dark:text-slate-400 text-right">{sw > 0 ? sw.toFixed(2) + 'g' : '-'}</td>
                         <td className="py-3 px-4 text-gold-400 font-medium text-right">{nw.toFixed(2)}g</td>
                         <td className="py-3 px-4 text-center">
                           <button 
@@ -472,15 +472,15 @@ const POS: React.FC = () => {
             )}
           </div>
 
-          <div className="p-6 bg-slate-900 border-t border-slate-800 mt-auto shrink-0">
+          <div className="p-6 bg-slate-50 dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 mt-auto shrink-0">
             <div className="flex justify-between items-center mb-6">
-              <span className="text-slate-400 font-medium text-lg">Total Net Weight</span>
+              <span className="text-slate-600 dark:text-slate-400 font-medium text-lg">Total Net Weight</span>
               <span className="text-3xl font-bold text-gold-500">{totalWeight.toFixed(2)}<span className="text-xl ml-1">g</span></span>
             </div>
             <button 
               onClick={handleCheckout}
               disabled={cart.length === 0}
-              className="w-full bg-gold-500 hover:bg-gold-400 disabled:bg-slate-800 disabled:text-slate-500 text-slate-950 font-bold py-4 px-4 rounded-xl transition-all shadow-[0_0_15px_rgba(212,175,55,0.3)] disabled:shadow-none text-lg flex justify-center items-center gap-2"
+              className="w-full bg-gold-500 hover:bg-gold-400 disabled:bg-slate-100 dark:bg-slate-800 disabled:text-slate-500 text-slate-950 font-bold py-4 px-4 rounded-xl transition-all shadow-[0_0_15px_rgba(212,175,55,0.3)] disabled:shadow-none text-lg flex justify-center items-center gap-2"
             >
               <CheckCircle className="w-6 h-6" />
               Complete Sale
@@ -492,16 +492,16 @@ const POS: React.FC = () => {
 
       {/* Manage Buyers Modal */}
       {isBuyerModalOpen && (
-        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[80vh]">
-            <div className="p-6 border-b border-slate-800 flex justify-between items-center bg-slate-950/50 shrink-0">
-              <h3 className="text-xl font-bold text-slate-100 flex items-center gap-2">
+        <div className="fixed inset-0 bg-white dark:bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-md shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[80vh]">
+            <div className="p-6 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center bg-white dark:bg-slate-950/50 shrink-0">
+              <h3 className="text-xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
                 <Building2 className="w-6 h-6 text-gold-500" />
                 Manage Buyers
               </h3>
               <button 
                 onClick={() => setIsBuyerModalOpen(false)}
-                className="text-slate-500 hover:text-slate-300 transition-colors"
+                className="text-slate-500 hover:text-slate-700 dark:text-slate-300 transition-colors"
               >
                 <XCircle className="w-6 h-6" />
               </button>
@@ -513,17 +513,17 @@ const POS: React.FC = () => {
                   <p className="text-slate-500 text-sm text-center py-4">No buyers found.</p>
                 ) : (
                   buyers.map(b => (
-                    <div key={b.id} className="flex justify-between items-center bg-slate-950 border border-slate-800 rounded-lg p-3">
+                    <div key={b.id} className="flex justify-between items-center bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-3">
                       {editingBuyerId === b.id ? (
                         <input
                           type="text"
                           value={editingBuyerName}
                           onChange={(e) => setEditingBuyerName(e.target.value)}
-                          className="flex-1 bg-slate-900 border border-gold-500 rounded px-2 py-1 text-slate-100 text-sm focus:outline-none mr-2"
+                          className="flex-1 bg-slate-50 dark:bg-slate-900 border border-gold-500 rounded px-2 py-1 text-slate-900 dark:text-slate-100 text-sm focus:outline-none mr-2"
                           autoFocus
                         />
                       ) : (
-                        <span className="text-slate-200 font-medium">{b.name}</span>
+                        <span className="text-slate-800 dark:text-slate-200 font-medium">{b.name}</span>
                       )}
                       
                       <div className="flex items-center">
@@ -547,7 +547,7 @@ const POS: React.FC = () => {
                             </button>
                             <button
                               onClick={() => setEditingBuyerId(null)}
-                              className="p-2 text-slate-500 hover:text-slate-300 hover:bg-slate-800 rounded-lg transition-colors"
+                              className="p-2 text-slate-500 hover:text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:bg-slate-800 rounded-lg transition-colors"
                             >
                               <XCircle className="w-4 h-4" />
                             </button>
@@ -603,8 +603,8 @@ const POS: React.FC = () => {
                 )}
               </div>
 
-              <div className="border-t border-slate-800 pt-6">
-                <label className="block text-sm font-bold tracking-wide text-slate-400 uppercase mb-2">
+              <div className="border-t border-slate-200 dark:border-slate-800 pt-6">
+                <label className="block text-sm font-bold tracking-wide text-slate-600 dark:text-slate-400 uppercase mb-2">
                   Add New Buyer
                 </label>
                 <div className="flex gap-2">
@@ -612,7 +612,7 @@ const POS: React.FC = () => {
                     type="text"
                     value={newBuyerName}
                     onChange={(e) => setNewBuyerName(e.target.value)}
-                    className="flex-1 bg-slate-950 border-2 border-slate-700 focus:border-gold-500 rounded-xl px-4 py-2 text-slate-100 focus:outline-none transition-colors"
+                    className="flex-1 bg-white dark:bg-slate-950 border-2 border-slate-300 dark:border-slate-700 focus:border-gold-500 rounded-xl px-4 py-2 text-slate-900 dark:text-slate-100 focus:outline-none transition-colors"
                     placeholder="e.g. Al Futtaim Jewelry"
                   />
                   <button
@@ -628,7 +628,7 @@ const POS: React.FC = () => {
                       }
                     }}
                     disabled={isAddingBuyer || !newBuyerName.trim()}
-                    className="bg-gold-500 hover:bg-gold-400 disabled:bg-slate-800 disabled:text-slate-500 text-slate-950 font-bold px-4 rounded-xl transition-colors shrink-0"
+                    className="bg-gold-500 hover:bg-gold-400 disabled:bg-slate-100 dark:bg-slate-800 disabled:text-slate-500 text-slate-950 font-bold px-4 rounded-xl transition-colors shrink-0"
                   >
                     {isAddingBuyer ? '...' : 'Add'}
                   </button>

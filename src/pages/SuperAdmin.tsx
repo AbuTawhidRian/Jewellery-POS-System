@@ -62,28 +62,28 @@ const SuperAdmin: React.FC = () => {
     <div className="space-y-6">
       <div className="flex justify-between items-end">
         <div>
-          <h2 className="text-3xl font-bold text-white tracking-tight flex items-center gap-3">
+          <h2 className="text-3xl font-bold text-slate-900 dark:text-white tracking-tight flex items-center gap-3">
             <ShieldCheck className="text-gold-500 w-8 h-8" />
             Super Admin Dashboard
           </h2>
-          <p className="text-slate-400 mt-2">Manage all shops and subscriptions</p>
+          <p className="text-slate-600 dark:text-slate-400 mt-2">Manage all shops and subscriptions</p>
         </div>
       </div>
 
       {error && <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400">{error}</div>}
 
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
+      <div className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-xl">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="bg-slate-950/50">
-                <th className="p-4 text-sm font-semibold text-slate-300 border-b border-slate-800">Shop ID</th>
-                <th className="p-4 text-sm font-semibold text-slate-300 border-b border-slate-800">Shop Name</th>
-                <th className="p-4 text-sm font-semibold text-slate-300 border-b border-slate-800">Owner</th>
-                <th className="p-4 text-sm font-semibold text-slate-300 border-b border-slate-800">Sub Status</th>
-                <th className="p-4 text-sm font-semibold text-slate-300 border-b border-slate-800">Voucher</th>
-                <th className="p-4 text-sm font-semibold text-slate-300 border-b border-slate-800">Trial Ends</th>
-                <th className="p-4 text-sm font-semibold text-slate-300 border-b border-slate-800 text-right">Actions</th>
+              <tr className="bg-white dark:bg-slate-950/50">
+                <th className="p-4 text-sm font-semibold text-slate-700 dark:text-slate-300 border-b border-slate-200 dark:border-slate-800">Shop ID</th>
+                <th className="p-4 text-sm font-semibold text-slate-700 dark:text-slate-300 border-b border-slate-200 dark:border-slate-800">Shop Name</th>
+                <th className="p-4 text-sm font-semibold text-slate-700 dark:text-slate-300 border-b border-slate-200 dark:border-slate-800">Owner</th>
+                <th className="p-4 text-sm font-semibold text-slate-700 dark:text-slate-300 border-b border-slate-200 dark:border-slate-800">Sub Status</th>
+                <th className="p-4 text-sm font-semibold text-slate-700 dark:text-slate-300 border-b border-slate-200 dark:border-slate-800">Voucher</th>
+                <th className="p-4 text-sm font-semibold text-slate-700 dark:text-slate-300 border-b border-slate-200 dark:border-slate-800">Trial Ends</th>
+                <th className="p-4 text-sm font-semibold text-slate-700 dark:text-slate-300 border-b border-slate-200 dark:border-slate-800 text-right">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -93,10 +93,10 @@ const SuperAdmin: React.FC = () => {
                 <tr><td colSpan={7} className="p-8 text-center text-slate-500">No shops found.</td></tr>
               ) : (
                 shops.map((shop) => (
-                  <tr key={shop.id} className="border-b border-slate-800/50 hover:bg-slate-800/20 transition-colors">
-                    <td className="p-4 text-slate-300">{shop.id}</td>
-                    <td className="p-4 font-medium text-white">{shop.name}</td>
-                    <td className="p-4 text-slate-400">
+                  <tr key={shop.id} className="border-b border-slate-200 dark:border-slate-800/50 hover:bg-slate-100 dark:bg-slate-800/20 transition-colors">
+                    <td className="p-4 text-slate-700 dark:text-slate-300">{shop.id}</td>
+                    <td className="p-4 font-medium text-slate-900 dark:text-white">{shop.name}</td>
+                    <td className="p-4 text-slate-600 dark:text-slate-400">
                       {shop.users[0]?.name} <br/>
                       <span className="text-xs">{shop.users[0]?.email}</span>
                     </td>
@@ -113,8 +113,8 @@ const SuperAdmin: React.FC = () => {
                         {shop.subscription?.status || 'NONE'}
                       </span>
                     </td>
-                    <td className="p-4 text-slate-300">{shop.subscription?.voucherNumber || '-'}</td>
-                    <td className="p-4 text-slate-400 text-sm">
+                    <td className="p-4 text-slate-700 dark:text-slate-300">{shop.subscription?.voucherNumber || '-'}</td>
+                    <td className="p-4 text-slate-600 dark:text-slate-400 text-sm">
                       {new Date(shop.subscription?.trialEndsAt || '').toLocaleDateString()}
                     </td>
                     <td className="p-4 text-right">
@@ -125,17 +125,17 @@ const SuperAdmin: React.FC = () => {
                             placeholder="Voucher #" 
                             value={voucher}
                             onChange={(e) => setVoucher(e.target.value)}
-                            className="bg-slate-950 border border-slate-700 text-white text-sm rounded-lg px-2 py-1.5 w-24 focus:outline-none focus:border-gold-500"
+                            className="bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white text-sm rounded-lg px-2 py-1.5 w-24 focus:outline-none focus:border-gold-500"
                           />
                           <button 
                             onClick={() => handleActivate(shop.id)}
-                            className="bg-emerald-500 hover:bg-emerald-600 text-white px-3 py-1.5 rounded-lg text-sm font-medium transition-colors"
+                            className="bg-emerald-500 hover:bg-emerald-600 text-slate-900 dark:text-white px-3 py-1.5 rounded-lg text-sm font-medium transition-colors"
                           >
                             Save
                           </button>
                           <button 
                             onClick={() => setActivatingShop(null)}
-                            className="bg-slate-800 hover:bg-slate-700 text-white px-3 py-1.5 rounded-lg text-sm font-medium transition-colors"
+                            className="bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-900 dark:text-white px-3 py-1.5 rounded-lg text-sm font-medium transition-colors"
                           >
                             Cancel
                           </button>

@@ -127,26 +127,26 @@ const Vault: React.FC = () => {
   return (
     <div className="h-full flex flex-col space-y-6 animate-in fade-in duration-500">
       <div>
-        <h1 className="text-3xl font-bold text-slate-100 flex items-center gap-3">
+        <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-3">
           <Lock className="w-8 h-8 text-gold-500" />
           The Vault
         </h1>
-        <p className="text-slate-400 mt-2 text-sm">Manage your active jewelry inventory.</p>
+        <p className="text-slate-600 dark:text-slate-400 mt-2 text-sm">Manage your active jewelry inventory.</p>
       </div>
 
       <div className={`grid grid-cols-1 gap-8 ${canEditVault ? 'xl:grid-cols-3' : ''}`}>
         {/* Entry Form */}
         {canEditVault && (
           <div className="xl:col-span-1">
-            <div className="bg-slate-950 p-4 md:p-8 rounded-2xl border border-slate-800 shadow-xl relative overflow-hidden">
-              <h2 className="text-xl font-bold text-slate-100 mb-6 flex items-center gap-2">
+            <div className="bg-white dark:bg-slate-950 p-4 md:p-8 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xl relative overflow-hidden">
+              <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 mb-6 flex items-center gap-2">
               <Plus className="w-5 h-5 text-gold-500" />
               Add New Item
             </h2>
             
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-slate-400 mb-1">Item Type</label>
+                <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">Item Type</label>
                 <div className="flex gap-2">
                   <div className="relative flex-1" ref={typeDropdownRef}>
                     <input
@@ -160,11 +160,11 @@ const Vault: React.FC = () => {
                         setTypeSearch('');
                         setIsTypeDropdownOpen(true);
                       }}
-                      className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-slate-100 focus:outline-none focus:border-gold-500 focus:ring-1 focus:ring-gold-500 transition-colors"
+                      className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg px-4 py-2 text-slate-900 dark:text-slate-100 focus:outline-none focus:border-gold-500 focus:ring-1 focus:ring-gold-500 transition-colors"
                       placeholder="Search or select type..."
                     />
                     {isTypeDropdownOpen && (
-                      <div className="absolute z-50 w-full mt-1 bg-slate-900 border border-slate-700 rounded-lg shadow-xl max-h-60 overflow-y-auto">
+                      <div className="absolute z-50 w-full mt-1 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg shadow-xl max-h-60 overflow-y-auto">
                         {itemTypes.filter(t => t.name.toLowerCase().includes(typeSearch.toLowerCase())).length === 0 ? (
                           <div className="p-3 text-slate-500 text-sm text-center">No matching types.</div>
                         ) : (
@@ -179,7 +179,7 @@ const Vault: React.FC = () => {
                                   setTypeSearch(t.name);
                                   setIsTypeDropdownOpen(false);
                                 }}
-                                className="w-full text-left px-4 py-3 text-sm text-slate-200 hover:bg-slate-800 transition-colors border-b border-slate-800/50 last:border-0"
+                                className="w-full text-left px-4 py-3 text-sm text-slate-800 dark:text-slate-200 hover:bg-slate-100 dark:bg-slate-800 transition-colors border-b border-slate-200 dark:border-slate-800/50 last:border-0"
                               >
                                 {t.name}
                               </button>
@@ -191,7 +191,7 @@ const Vault: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setIsManageTypesOpen(true)}
-                    className="bg-slate-900 border border-slate-700 hover:border-gold-500 text-slate-400 hover:text-gold-500 rounded-lg px-3 flex items-center justify-center transition-colors"
+                    className="bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 hover:border-gold-500 text-slate-600 dark:text-slate-400 hover:text-gold-500 rounded-lg px-3 flex items-center justify-center transition-colors"
                     title="Manage Item Types"
                   >
                     <Settings className="w-5 h-5" />
@@ -200,7 +200,7 @@ const Vault: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-400 mb-1">Model</label>
+                <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">Model</label>
                 <div className="flex gap-2">
                   <div className="relative flex-1" ref={descDropdownRef}>
                     <input
@@ -214,11 +214,11 @@ const Vault: React.FC = () => {
                         setModelSearch('');
                         setIsModelDropdownOpen(true);
                       }}
-                      className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-slate-100 focus:outline-none focus:border-gold-500 focus:ring-1 focus:ring-gold-500 transition-colors"
+                      className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg px-4 py-2 text-slate-900 dark:text-slate-100 focus:outline-none focus:border-gold-500 focus:ring-1 focus:ring-gold-500 transition-colors"
                       placeholder="Search or select model..."
                     />
                     {isModelDropdownOpen && (
-                      <div className="absolute z-50 w-full mt-1 bg-slate-900 border border-slate-700 rounded-lg shadow-xl max-h-60 overflow-y-auto">
+                      <div className="absolute z-50 w-full mt-1 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg shadow-xl max-h-60 overflow-y-auto">
                         {models.filter(d => d.name.toLowerCase().includes(modelSearch.toLowerCase())).length === 0 ? (
                           <div className="p-3 text-slate-500 text-sm text-center">No matching models.</div>
                         ) : (
@@ -233,7 +233,7 @@ const Vault: React.FC = () => {
                                   setModelSearch(d.name);
                                   setIsModelDropdownOpen(false);
                                 }}
-                                className="w-full text-left px-4 py-3 text-sm text-slate-200 hover:bg-slate-800 transition-colors border-b border-slate-800/50 last:border-0"
+                                className="w-full text-left px-4 py-3 text-sm text-slate-800 dark:text-slate-200 hover:bg-slate-100 dark:bg-slate-800 transition-colors border-b border-slate-200 dark:border-slate-800/50 last:border-0"
                               >
                                 {d.name}
                               </button>
@@ -245,7 +245,7 @@ const Vault: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setIsManageDescOpen(true)}
-                    className="bg-slate-900 border border-slate-700 hover:border-gold-500 text-slate-400 hover:text-gold-500 rounded-lg px-3 flex items-center justify-center transition-colors"
+                    className="bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 hover:border-gold-500 text-slate-600 dark:text-slate-400 hover:text-gold-500 rounded-lg px-3 flex items-center justify-center transition-colors"
                     title="Manage Models"
                   >
                     <Settings className="w-5 h-5" />
@@ -255,7 +255,7 @@ const Vault: React.FC = () => {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-400 mb-1">Gross Wt (g)</label>
+                  <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">Gross Wt (g)</label>
                   <input 
                     type="number"
                     required
@@ -263,19 +263,19 @@ const Vault: React.FC = () => {
                     min="0"
                     value={weight}
                     onChange={(e) => setWeight(e.target.value)}
-                    className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-slate-100 focus:outline-none focus:border-gold-500 focus:ring-1 focus:ring-gold-500 transition-colors"
+                    className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg px-4 py-2 text-slate-900 dark:text-slate-100 focus:outline-none focus:border-gold-500 focus:ring-1 focus:ring-gold-500 transition-colors"
                     placeholder="0.00"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-400 mb-1">Stone Wt (g)</label>
+                  <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">Stone Wt (g)</label>
                   <input 
                     type="number"
                     step="0.01"
                     min="0"
                     value={stoneWeight}
                     onChange={(e) => setStoneWeight(e.target.value)}
-                    className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-slate-100 focus:outline-none focus:border-gold-500 focus:ring-1 focus:ring-gold-500 transition-colors"
+                    className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg px-4 py-2 text-slate-900 dark:text-slate-100 focus:outline-none focus:border-gold-500 focus:ring-1 focus:ring-gold-500 transition-colors"
                     placeholder="0.00"
                   />
                 </div>
@@ -287,9 +287,9 @@ const Vault: React.FC = () => {
                   id="printTag" 
                   checked={printImmediately}
                   onChange={(e) => setPrintImmediately(e.target.checked)}
-                  className="w-4 h-4 rounded border-slate-700 text-gold-500 focus:ring-gold-500 focus:ring-offset-slate-950 bg-slate-900"
+                  className="w-4 h-4 rounded border-slate-300 dark:border-slate-700 text-gold-500 focus:ring-gold-500 focus:ring-offset-white dark:ring-offset-slate-950 bg-slate-50 dark:bg-slate-900"
                 />
-                <label htmlFor="printTag" className="text-sm text-slate-300 cursor-pointer">
+                <label htmlFor="printTag" className="text-sm text-slate-700 dark:text-slate-300 cursor-pointer">
                   Print tag immediately
                 </label>
               </div>
@@ -307,9 +307,9 @@ const Vault: React.FC = () => {
 
         {/* Inventory List */}
         <div className={canEditVault ? "xl:col-span-2" : ""}>
-          <div className="bg-slate-950 rounded-2xl border border-slate-800 shadow-lg flex-1 overflow-hidden flex flex-col">
-            <div className="p-4 md:p-6 border-b border-slate-800 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-              <h2 className="text-xl font-bold text-slate-100">Active Stock ({activeStock.length})</h2>
+          <div className="bg-white dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-lg flex-1 overflow-hidden flex flex-col">
+            <div className="p-4 md:p-6 border-b border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+              <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">Active Stock ({activeStock.length})</h2>
               
               <div className="relative w-full sm:w-64">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
@@ -318,7 +318,7 @@ const Vault: React.FC = () => {
                   placeholder="Search barcode or type..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full bg-slate-900 border border-slate-800 rounded-lg pl-9 pr-4 py-2 text-sm text-slate-200 focus:outline-none focus:border-gold-500 transition-colors"
+                  className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg pl-9 pr-4 py-2 text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:border-gold-500 transition-colors"
                 />
               </div>
             </div>
@@ -327,7 +327,7 @@ const Vault: React.FC = () => {
               <div className="overflow-x-auto min-h-[300px] pb-16">
                 <table className="w-full text-left border-collapse min-w-[700px]">
                   <thead>
-                    <tr className="border-b border-slate-800 text-sm text-slate-400">
+                    <tr className="border-b border-slate-200 dark:border-slate-800 text-sm text-slate-600 dark:text-slate-400">
                       <th className="pb-3 px-4 font-medium">Barcode</th>
                       <th className="pb-3 px-4 font-medium">Type</th>
                       <th className="pb-3 px-4 font-medium hidden md:table-cell">Model</th>
@@ -350,18 +350,18 @@ const Vault: React.FC = () => {
                         const gw = Number(item.weight) || 0;
                         const nw = Math.max(0, gw - sw);
                         return (
-                        <tr key={item.id} className="border-b border-slate-800/50 hover:bg-slate-900/30 transition-colors group">
-                          <td className="py-3 px-4 font-mono text-slate-300">{item.barcode}</td>
-                          <td className="py-3 px-4 text-slate-200">{item.type}</td>
-                          <td className="py-3 px-4 text-slate-400 hidden md:table-cell truncate max-w-[200px]">{item.model || '-'}</td>
-                          <td className="py-3 px-4 font-medium text-slate-300">{gw.toFixed(2)}g</td>
-                          <td className="py-3 px-4 text-slate-400">{sw > 0 ? sw.toFixed(2) + 'g' : '-'}</td>
+                        <tr key={item.id} className="border-b border-slate-200 dark:border-slate-800/50 hover:bg-slate-50 dark:bg-slate-900/30 transition-colors group">
+                          <td className="py-3 px-4 font-mono text-slate-700 dark:text-slate-300">{item.barcode}</td>
+                          <td className="py-3 px-4 text-slate-800 dark:text-slate-200">{item.type}</td>
+                          <td className="py-3 px-4 text-slate-600 dark:text-slate-400 hidden md:table-cell truncate max-w-[200px]">{item.model || '-'}</td>
+                          <td className="py-3 px-4 font-medium text-slate-700 dark:text-slate-300">{gw.toFixed(2)}g</td>
+                          <td className="py-3 px-4 text-slate-600 dark:text-slate-400">{sw > 0 ? sw.toFixed(2) + 'g' : '-'}</td>
                           <td className="py-3 px-4 font-medium text-gold-400">{nw.toFixed(2)}g</td>
                           <td className="py-3 px-4 text-right relative">
                             <div className="flex gap-2 justify-end items-center">
                               <button 
                                 onClick={() => handlePrint(item)}
-                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-slate-800 text-slate-300 hover:bg-gold-500 hover:text-slate-950 transition-colors text-xs font-semibold"
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-gold-500 hover:text-slate-950 transition-colors text-xs font-semibold"
                               >
                                 <Printer className="w-3.5 h-3.5" />
                                 Print Tag
@@ -370,7 +370,7 @@ const Vault: React.FC = () => {
                               <div className="relative">
                                 <button
                                   onClick={() => setActiveMenuId(activeMenuId === item.id ? null : item.id)}
-                                  className="p-1.5 rounded-md bg-slate-800 text-slate-400 hover:text-white transition-colors border border-slate-700"
+                                  className="p-1.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-white transition-colors border border-slate-300 dark:border-slate-700"
                                 >
                                   <MoreVertical className="w-4 h-4" />
                                 </button>
@@ -381,7 +381,7 @@ const Vault: React.FC = () => {
                                       className="fixed inset-0 z-40" 
                                       onClick={() => setActiveMenuId(null)}
                                     ></div>
-                                    <div className="absolute right-0 top-full mt-1 w-32 bg-slate-800 border border-slate-700 rounded-lg shadow-xl z-50 overflow-hidden">
+                                    <div className="absolute right-0 top-full mt-1 w-32 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg shadow-xl z-50 overflow-hidden">
                                       <button 
                                         onClick={() => {
                                           setActiveMenuId(null);
@@ -394,7 +394,7 @@ const Vault: React.FC = () => {
                                           });
                                           setIsEditItemModalOpen(true);
                                         }}
-                                        className="w-full text-left px-4 py-2 text-sm text-blue-400 hover:bg-slate-700 transition-colors flex items-center gap-2"
+                                        className="w-full text-left px-4 py-2 text-sm text-blue-400 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors flex items-center gap-2"
                                       >
                                         <Edit2 className="w-3.5 h-3.5" />
                                         Edit
@@ -413,7 +413,7 @@ const Vault: React.FC = () => {
                                             }
                                           });
                                         }}
-                                        className="w-full text-left px-4 py-2 text-sm text-red-400 hover:bg-slate-700 transition-colors flex items-center gap-2 border-t border-slate-700"
+                                        className="w-full text-left px-4 py-2 text-sm text-red-400 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors flex items-center gap-2 border-t border-slate-300 dark:border-slate-700"
                                       >
                                         <Trash2 className="w-3.5 h-3.5" />
                                         Delete
@@ -437,16 +437,16 @@ const Vault: React.FC = () => {
       </div>
       {/* Manage Types Modal */}
       {isManageTypesOpen && (
-        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[80vh]">
-            <div className="p-6 border-b border-slate-800 flex justify-between items-center bg-slate-950/50 shrink-0">
-              <h3 className="text-xl font-bold text-slate-100 flex items-center gap-2">
+        <div className="fixed inset-0 bg-white dark:bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-md shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[80vh]">
+            <div className="p-6 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center bg-white dark:bg-slate-950/50 shrink-0">
+              <h3 className="text-xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
                 <Settings className="w-6 h-6 text-gold-500" />
                 Manage Item Types
               </h3>
               <button 
                 onClick={() => setIsManageTypesOpen(false)}
-                className="text-slate-500 hover:text-slate-300 transition-colors"
+                className="text-slate-500 hover:text-slate-700 dark:text-slate-300 transition-colors"
               >
                 <XCircle className="w-6 h-6" />
               </button>
@@ -458,17 +458,17 @@ const Vault: React.FC = () => {
                   <p className="text-slate-500 text-sm text-center py-4">No item types found.</p>
                 ) : (
                   itemTypes.map(t => (
-                    <div key={t.id} className="flex justify-between items-center bg-slate-950 border border-slate-800 rounded-lg p-3">
+                    <div key={t.id} className="flex justify-between items-center bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-3">
                       {editingTypeId === t.id ? (
                         <input
                           type="text"
                           value={editingTypeName}
                           onChange={(e) => setEditingTypeName(e.target.value)}
-                          className="flex-1 bg-slate-900 border border-gold-500 rounded px-2 py-1 text-slate-100 text-sm focus:outline-none mr-2"
+                          className="flex-1 bg-slate-50 dark:bg-slate-900 border border-gold-500 rounded px-2 py-1 text-slate-900 dark:text-slate-100 text-sm focus:outline-none mr-2"
                           autoFocus
                         />
                       ) : (
-                        <span className="text-slate-200 font-medium">{t.name}</span>
+                        <span className="text-slate-800 dark:text-slate-200 font-medium">{t.name}</span>
                       )}
                       
                       <div className="flex items-center">
@@ -493,7 +493,7 @@ const Vault: React.FC = () => {
                             </button>
                             <button
                               onClick={() => setEditingTypeId(null)}
-                              className="p-2 text-slate-500 hover:text-slate-300 hover:bg-slate-800 rounded-lg transition-colors"
+                              className="p-2 text-slate-500 hover:text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:bg-slate-800 rounded-lg transition-colors"
                             >
                               <XCircle className="w-4 h-4" />
                             </button>
@@ -550,8 +550,8 @@ const Vault: React.FC = () => {
                 )}
               </div>
 
-              <div className="border-t border-slate-800 pt-6">
-                <label className="block text-sm font-bold tracking-wide text-slate-400 uppercase mb-2">
+              <div className="border-t border-slate-200 dark:border-slate-800 pt-6">
+                <label className="block text-sm font-bold tracking-wide text-slate-600 dark:text-slate-400 uppercase mb-2">
                   Add New Type
                 </label>
                 <div className="flex gap-2">
@@ -559,7 +559,7 @@ const Vault: React.FC = () => {
                     type="text"
                     value={newTypeName}
                     onChange={(e) => setNewTypeName(e.target.value)}
-                    className="flex-1 bg-slate-950 border-2 border-slate-700 focus:border-gold-500 rounded-xl px-4 py-2 text-slate-100 focus:outline-none transition-colors"
+                    className="flex-1 bg-white dark:bg-slate-950 border-2 border-slate-300 dark:border-slate-700 focus:border-gold-500 rounded-xl px-4 py-2 text-slate-900 dark:text-slate-100 focus:outline-none transition-colors"
                     placeholder="e.g. 21k Gold Bar"
                   />
                   <button
@@ -573,7 +573,7 @@ const Vault: React.FC = () => {
                       }
                     }}
                     disabled={!newTypeName.trim()}
-                    className="bg-gold-500 hover:bg-gold-400 disabled:bg-slate-800 disabled:text-slate-500 text-slate-950 font-bold px-4 rounded-xl transition-colors shrink-0"
+                    className="bg-gold-500 hover:bg-gold-400 disabled:bg-slate-100 dark:bg-slate-800 disabled:text-slate-500 text-slate-950 font-bold px-4 rounded-xl transition-colors shrink-0"
                   >
                     Add
                   </button>
@@ -586,16 +586,16 @@ const Vault: React.FC = () => {
 
       {/* Manage Desc Modal */}
       {isManageDescOpen && (
-        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[80vh]">
-            <div className="p-6 border-b border-slate-800 flex justify-between items-center bg-slate-950/50 shrink-0">
-              <h3 className="text-xl font-bold text-slate-100 flex items-center gap-2">
+        <div className="fixed inset-0 bg-white dark:bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-md shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[80vh]">
+            <div className="p-6 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center bg-white dark:bg-slate-950/50 shrink-0">
+              <h3 className="text-xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
                 <Settings className="w-6 h-6 text-gold-500" />
                 Manage Models
               </h3>
               <button 
                 onClick={() => setIsManageDescOpen(false)}
-                className="text-slate-500 hover:text-slate-300 transition-colors"
+                className="text-slate-500 hover:text-slate-700 dark:text-slate-300 transition-colors"
               >
                 <XCircle className="w-6 h-6" />
               </button>
@@ -607,17 +607,17 @@ const Vault: React.FC = () => {
                   <p className="text-slate-500 text-sm text-center py-4">No models found.</p>
                 ) : (
                   models.map(d => (
-                    <div key={d.id} className="flex justify-between items-center bg-slate-950 border border-slate-800 rounded-lg p-3">
+                    <div key={d.id} className="flex justify-between items-center bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-3">
                       {editingDescId === d.id ? (
                         <input
                           type="text"
                           value={editingModelName}
                           onChange={(e) => setEditingModelName(e.target.value)}
-                          className="flex-1 bg-slate-900 border border-gold-500 rounded px-2 py-1 text-slate-100 text-sm focus:outline-none mr-2"
+                          className="flex-1 bg-slate-50 dark:bg-slate-900 border border-gold-500 rounded px-2 py-1 text-slate-900 dark:text-slate-100 text-sm focus:outline-none mr-2"
                           autoFocus
                         />
                       ) : (
-                        <span className="text-slate-200 font-medium">{d.name}</span>
+                        <span className="text-slate-800 dark:text-slate-200 font-medium">{d.name}</span>
                       )}
                       
                       <div className="flex items-center">
@@ -642,7 +642,7 @@ const Vault: React.FC = () => {
                             </button>
                             <button
                               onClick={() => setEditingDescId(null)}
-                              className="p-2 text-slate-500 hover:text-slate-300 hover:bg-slate-800 rounded-lg transition-colors"
+                              className="p-2 text-slate-500 hover:text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:bg-slate-800 rounded-lg transition-colors"
                             >
                               <XCircle className="w-4 h-4" />
                             </button>
@@ -699,8 +699,8 @@ const Vault: React.FC = () => {
                 )}
               </div>
 
-              <div className="border-t border-slate-800 pt-6">
-                <label className="block text-sm font-bold tracking-wide text-slate-400 uppercase mb-2">
+              <div className="border-t border-slate-200 dark:border-slate-800 pt-6">
+                <label className="block text-sm font-bold tracking-wide text-slate-600 dark:text-slate-400 uppercase mb-2">
                   Add New Model
                 </label>
                 <div className="flex gap-2">
@@ -708,7 +708,7 @@ const Vault: React.FC = () => {
                     type="text"
                     value={newModelName}
                     onChange={(e) => setNewModelName(e.target.value)}
-                    className="flex-1 bg-slate-950 border-2 border-slate-700 focus:border-gold-500 rounded-xl px-4 py-2 text-slate-100 focus:outline-none transition-colors"
+                    className="flex-1 bg-white dark:bg-slate-950 border-2 border-slate-300 dark:border-slate-700 focus:border-gold-500 rounded-xl px-4 py-2 text-slate-900 dark:text-slate-100 focus:outline-none transition-colors"
                     placeholder="e.g. Laser Cut Bridal Ring"
                   />
                   <button
@@ -722,7 +722,7 @@ const Vault: React.FC = () => {
                       }
                     }}
                     disabled={!newModelName.trim()}
-                    className="bg-gold-500 hover:bg-gold-400 disabled:bg-slate-800 disabled:text-slate-500 text-slate-950 font-bold px-4 rounded-xl transition-colors shrink-0"
+                    className="bg-gold-500 hover:bg-gold-400 disabled:bg-slate-100 dark:bg-slate-800 disabled:text-slate-500 text-slate-950 font-bold px-4 rounded-xl transition-colors shrink-0"
                   >
                     Add
                   </button>
@@ -735,16 +735,16 @@ const Vault: React.FC = () => {
 
       {/* Edit Item Modal */}
       {isEditItemModalOpen && editingItem && (
-        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col">
-            <div className="p-6 border-b border-slate-800 flex justify-between items-center bg-slate-950/50">
-              <h3 className="text-xl font-bold text-slate-100 flex items-center gap-2">
+        <div className="fixed inset-0 bg-white dark:bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-md shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col">
+            <div className="p-6 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center bg-white dark:bg-slate-950/50">
+              <h3 className="text-xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
                 <Settings className="w-6 h-6 text-gold-500" />
                 Edit Item
               </h3>
               <button 
                 onClick={() => setIsEditItemModalOpen(false)}
-                className="text-slate-500 hover:text-slate-300 transition-colors"
+                className="text-slate-500 hover:text-slate-700 dark:text-slate-300 transition-colors"
               >
                 <XCircle className="w-6 h-6" />
               </button>
@@ -752,11 +752,11 @@ const Vault: React.FC = () => {
             
             <div className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-slate-400 mb-1">Item Type</label>
+                <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">Item Type</label>
                 <select
                   value={editingItem.type}
                   onChange={(e) => setEditingItem({ ...editingItem, type: e.target.value })}
-                  className="w-full bg-slate-950 border border-slate-700 rounded-lg px-4 py-2 text-slate-100 focus:outline-none focus:border-gold-500 focus:ring-1 focus:ring-gold-500 transition-colors"
+                  className="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg px-4 py-2 text-slate-900 dark:text-slate-100 focus:outline-none focus:border-gold-500 focus:ring-1 focus:ring-gold-500 transition-colors"
                 >
                   {itemTypes.map(t => (
                     <option key={t.id} value={t.name}>{t.name}</option>
@@ -765,11 +765,11 @@ const Vault: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-400 mb-1">Model</label>
+                <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">Model</label>
                 <select
                   value={editingItem.model}
                   onChange={(e) => setEditingItem({ ...editingItem, model: e.target.value })}
-                  className="w-full bg-slate-950 border border-slate-700 rounded-lg px-4 py-2 text-slate-100 focus:outline-none focus:border-gold-500 focus:ring-1 focus:ring-gold-500 transition-colors"
+                  className="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg px-4 py-2 text-slate-900 dark:text-slate-100 focus:outline-none focus:border-gold-500 focus:ring-1 focus:ring-gold-500 transition-colors"
                 >
                   {models.map(d => (
                     <option key={d.id} value={d.name}>{d.name}</option>
@@ -779,28 +779,28 @@ const Vault: React.FC = () => {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-400 mb-1">Gross Wt. (g)</label>
+                  <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">Gross Wt. (g)</label>
                   <input 
                     type="number"
                     step="0.01"
                     value={editingItem.weight}
                     onChange={(e) => setEditingItem({ ...editingItem, weight: e.target.value })}
-                    className="w-full bg-slate-950 border border-slate-700 rounded-lg px-4 py-2 text-slate-100 focus:outline-none focus:border-gold-500 focus:ring-1 focus:ring-gold-500 transition-colors"
+                    className="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg px-4 py-2 text-slate-900 dark:text-slate-100 focus:outline-none focus:border-gold-500 focus:ring-1 focus:ring-gold-500 transition-colors"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-400 mb-1">Stone Wt. (g)</label>
+                  <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">Stone Wt. (g)</label>
                   <input 
                     type="number"
                     step="0.01"
                     value={editingItem.stone_weight}
                     onChange={(e) => setEditingItem({ ...editingItem, stone_weight: e.target.value })}
-                    className="w-full bg-slate-950 border border-slate-700 rounded-lg px-4 py-2 text-slate-100 focus:outline-none focus:border-gold-500 focus:ring-1 focus:ring-gold-500 transition-colors"
+                    className="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg px-4 py-2 text-slate-900 dark:text-slate-100 focus:outline-none focus:border-gold-500 focus:ring-1 focus:ring-gold-500 transition-colors"
                   />
                 </div>
               </div>
 
-              <div className="pt-4 border-t border-slate-800">
+              <div className="pt-4 border-t border-slate-200 dark:border-slate-800">
                 <button
                   onClick={async () => {
                     const res = await editItem(editingItem.id, {

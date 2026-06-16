@@ -36,6 +36,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       try {
         setToken(storedToken);
         setUser(JSON.parse(storedUser));
+        
+        // Fetch fresh user data to keep permissions up to date
+        fetch('/api/auth/me', {
+          headers: { 'Authorization': `Bearer ${storedToken}` }
+        })
+        .then(res => {
+          if (res.ok) return res.json();
+        })
+        .then(freshUser => {
+          if (freshUser) {
+            setUser(freshUser);
+            localStorage.setItem('user', JSON.stringify(freshUser));
+          }
+        })
+        .catch(err => console.error("Failed to refresh user data", err));
+        
       } catch (e) {
         console.error("Failed to parse stored user", e);
       }

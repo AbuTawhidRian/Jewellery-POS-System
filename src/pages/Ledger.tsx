@@ -171,11 +171,11 @@ const Ledger: React.FC = () => {
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 ease-out h-full flex flex-col">
       <header className="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-slate-100 flex items-center gap-3">
+          <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-3">
             <FileText className="w-8 h-8 text-gold-500" />
             Sales Ledger
           </h1>
-          <p className="text-slate-400 mt-1">Complete history of all checkout transactions.</p>
+          <p className="text-slate-600 dark:text-slate-400 mt-1">Complete history of all checkout transactions.</p>
         </div>
         
         <div className="flex flex-col sm:flex-row gap-3 flex-wrap md:flex-nowrap">
@@ -183,11 +183,11 @@ const Ledger: React.FC = () => {
           <div className="relative" ref={buyerRef}>
             <button 
               onClick={() => { setBuyerDropdownOpen(!buyerDropdownOpen); setDateDropdownOpen(false); }}
-              className="flex items-center justify-between gap-2 bg-slate-900 hover:bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 transition-colors w-full sm:w-56 text-left"
+              className="flex items-center justify-between gap-2 bg-slate-50 dark:bg-slate-900 hover:bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl px-4 py-2.5 transition-colors w-full sm:w-56 text-left"
             >
               <div className="flex items-center gap-2 overflow-hidden">
-                <Filter className="w-4 h-4 text-slate-400 shrink-0" />
-                <span className="text-sm text-slate-200 truncate font-medium">
+                <Filter className="w-4 h-4 text-slate-600 dark:text-slate-400 shrink-0" />
+                <span className="text-sm text-slate-800 dark:text-slate-200 truncate font-medium">
                   {filterBuyerId === 'all' ? 'All Buyers Report' : buyers.find(b => b.id === filterBuyerId)?.name}
                 </span>
               </div>
@@ -195,11 +195,11 @@ const Ledger: React.FC = () => {
             </button>
             
             {buyerDropdownOpen && (
-              <div className="absolute top-full left-0 mt-2 w-full sm:w-64 bg-slate-800 border border-slate-700 rounded-xl shadow-xl z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+              <div className="absolute top-full left-0 mt-2 w-full sm:w-64 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl shadow-xl z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
                 <div className="max-h-64 overflow-y-auto py-1">
                   <button
                     onClick={() => { setFilterBuyerId('all'); setBuyerDropdownOpen(false); }}
-                    className={`w-full text-left px-4 py-2.5 text-sm transition-colors ${filterBuyerId === 'all' ? 'bg-gold-500/10 text-gold-500 font-bold border-l-2 border-gold-500' : 'text-slate-300 hover:bg-slate-700/50 hover:text-white border-l-2 border-transparent'}`}
+                    className={`w-full text-left px-4 py-2.5 text-sm transition-colors ${filterBuyerId === 'all' ? 'bg-gold-500/10 text-gold-500 font-bold border-l-2 border-gold-500' : 'text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700/50 hover:text-white border-l-2 border-transparent'}`}
                   >
                     All Buyers Report
                   </button>
@@ -207,7 +207,7 @@ const Ledger: React.FC = () => {
                     <button
                       key={b.id}
                       onClick={() => { setFilterBuyerId(b.id); setBuyerDropdownOpen(false); }}
-                      className={`w-full text-left px-4 py-2.5 text-sm transition-colors ${filterBuyerId === b.id ? 'bg-gold-500/10 text-gold-500 font-bold border-l-2 border-gold-500' : 'text-slate-300 hover:bg-slate-700/50 hover:text-white border-l-2 border-transparent'}`}
+                      className={`w-full text-left px-4 py-2.5 text-sm transition-colors ${filterBuyerId === b.id ? 'bg-gold-500/10 text-gold-500 font-bold border-l-2 border-gold-500' : 'text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700/50 hover:text-white border-l-2 border-transparent'}`}
                     >
                       {b.name}
                     </button>
@@ -221,11 +221,11 @@ const Ledger: React.FC = () => {
           <div className="relative" ref={dateRef}>
             <button 
               onClick={() => { setDateDropdownOpen(!dateDropdownOpen); setBuyerDropdownOpen(false); }}
-              className="flex items-center justify-between gap-2 bg-slate-900 hover:bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 transition-colors w-full sm:w-48 text-left"
+              className="flex items-center justify-between gap-2 bg-slate-50 dark:bg-slate-900 hover:bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl px-4 py-2.5 transition-colors w-full sm:w-48 text-left"
             >
               <div className="flex items-center gap-2 overflow-hidden">
-                <Calendar className="w-4 h-4 text-slate-400 shrink-0" />
-                <span className="text-sm text-slate-200 truncate font-medium">
+                <Calendar className="w-4 h-4 text-slate-600 dark:text-slate-400 shrink-0" />
+                <span className="text-sm text-slate-800 dark:text-slate-200 truncate font-medium">
                   {filterDateRange === 'all' ? 'All Time' :
                    filterDateRange === 'today' ? 'Today' :
                    filterDateRange === 'week' ? 'Last 7 Days' :
@@ -236,7 +236,7 @@ const Ledger: React.FC = () => {
             </button>
             
             {dateDropdownOpen && (
-              <div className="absolute top-full left-0 mt-2 w-full sm:w-48 bg-slate-800 border border-slate-700 rounded-xl shadow-xl z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200 py-1">
+              <div className="absolute top-full left-0 mt-2 w-full sm:w-48 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl shadow-xl z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200 py-1">
                 {[
                   { id: 'all', label: 'All Time' },
                   { id: 'today', label: 'Today' },
@@ -247,7 +247,7 @@ const Ledger: React.FC = () => {
                   <button
                     key={opt.id}
                     onClick={() => { setFilterDateRange(opt.id); setDateDropdownOpen(false); }}
-                    className={`w-full text-left px-4 py-2.5 text-sm transition-colors ${filterDateRange === opt.id ? 'bg-gold-500/10 text-gold-500 font-bold border-l-2 border-gold-500' : 'text-slate-300 hover:bg-slate-700/50 hover:text-white border-l-2 border-transparent'}`}
+                    className={`w-full text-left px-4 py-2.5 text-sm transition-colors ${filterDateRange === opt.id ? 'bg-gold-500/10 text-gold-500 font-bold border-l-2 border-gold-500' : 'text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700/50 hover:text-white border-l-2 border-transparent'}`}
                   >
                     {opt.label}
                   </button>
@@ -262,21 +262,21 @@ const Ledger: React.FC = () => {
                 type="date" 
                 value={customStartDate}
                 onChange={(e) => setCustomStartDate(e.target.value)}
-                className="bg-slate-900 border border-slate-700 rounded-lg px-2 py-2 text-sm text-slate-200 focus:outline-none focus:border-gold-500"
+                className="bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg px-2 py-2 text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:border-gold-500"
               />
               <span className="text-slate-500">-</span>
               <input 
                 type="date" 
                 value={customEndDate}
                 onChange={(e) => setCustomEndDate(e.target.value)}
-                className="bg-slate-900 border border-slate-700 rounded-lg px-2 py-2 text-sm text-slate-200 focus:outline-none focus:border-gold-500"
+                className="bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg px-2 py-2 text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:border-gold-500"
               />
             </div>
           )}
           
           <button 
             onClick={exportToCSV}
-            className="inline-flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-100 font-semibold py-2 px-4 rounded-lg border border-slate-700 transition-colors shadow-sm"
+            className="inline-flex items-center justify-center gap-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-900 dark:text-slate-100 font-semibold py-2 px-4 rounded-lg border border-slate-300 dark:border-slate-700 transition-colors shadow-sm"
           >
             <Download className="w-4 h-4 text-gold-500" />
             <span className="hidden sm:inline">Export CSV</span>
@@ -284,12 +284,12 @@ const Ledger: React.FC = () => {
         </div>
       </header>
 
-      <div className="bg-slate-950 rounded-2xl border border-slate-800 shadow-lg flex-1 flex flex-col overflow-hidden">
+      <div className="bg-white dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-lg flex-1 flex flex-col overflow-hidden">
         <div className="flex-1 overflow-auto p-0 md:p-6">
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse min-w-[800px]">
-            <thead className="sticky top-0 bg-slate-950 z-10">
-              <tr className="border-b border-slate-800 text-sm text-slate-400">
+            <thead className="sticky top-0 bg-white dark:bg-slate-950 z-10">
+              <tr className="border-b border-slate-200 dark:border-slate-800 text-sm text-slate-600 dark:text-slate-400">
                 <th className="pb-3 px-4 font-medium w-10"></th>
                 <th className="pb-3 px-4 font-medium">Date/Time Sold</th>
                 <th className="pb-3 px-4 font-medium">Buyer Company</th>
@@ -312,23 +312,23 @@ const Ledger: React.FC = () => {
                     <React.Fragment key={tx.date}>
                       <tr 
                         onClick={() => setExpandedTx(isExpanded ? null : tx.date)}
-                        className="border-b border-slate-800/50 hover:bg-slate-900/50 cursor-pointer transition-colors"
+                        className="border-b border-slate-200 dark:border-slate-800/50 hover:bg-slate-50 dark:bg-slate-900/50 cursor-pointer transition-colors"
                       >
                         <td className="py-4 px-4 text-slate-500">
                           {isExpanded ? <ChevronDown className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
                         </td>
-                        <td className="py-4 px-4 text-slate-300">
+                        <td className="py-4 px-4 text-slate-700 dark:text-slate-300">
                           {format(parseISO(tx.date), 'MMM dd, yyyy')} <br/>
                           <span className="text-xs text-slate-500">{format(parseISO(tx.date), 'hh:mm:ss a')}</span>
                         </td>
-                        <td className="py-4 px-4 text-slate-200 font-bold">{tx.buyerName}</td>
-                        <td className="py-4 px-4 font-medium text-slate-300 text-center">{tx.totalItems}</td>
+                        <td className="py-4 px-4 text-slate-800 dark:text-slate-200 font-bold">{tx.buyerName}</td>
+                        <td className="py-4 px-4 font-medium text-slate-700 dark:text-slate-300 text-center">{tx.totalItems}</td>
                         <td className="py-4 px-4 font-medium text-gold-400 text-right">{tx.totalNet.toFixed(2)}g</td>
                         <td className="py-4 px-4 text-right">
                           <div className="flex justify-end gap-2">
                             <button 
                               onClick={(e) => printTransactionInvoice(tx, e)}
-                              className="inline-flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold py-1.5 px-3 rounded-lg border border-slate-700 transition-colors"
+                              className="inline-flex items-center gap-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-semibold py-1.5 px-3 rounded-lg border border-slate-300 dark:border-slate-700 transition-colors"
                               title="Print Invoice"
                             >
                               <Printer className="w-3.5 h-3.5 text-gold-500" />
@@ -348,12 +348,12 @@ const Ledger: React.FC = () => {
                         </td>
                       </tr>
                       {isExpanded && (
-                        <tr className="bg-slate-900/20 border-b border-slate-800/50">
+                        <tr className="bg-slate-50 dark:bg-slate-900/20 border-b border-slate-200 dark:border-slate-800/50">
                           <td colSpan={6} className="p-0">
-                            <div className="p-4 pl-14 bg-slate-900/30">
+                            <div className="p-4 pl-14 bg-slate-50 dark:bg-slate-900/30">
                               <table className="w-full text-left border-collapse text-xs">
                                 <thead>
-                                  <tr className="border-b border-slate-800 text-slate-500">
+                                  <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-500">
                                     <th className="pb-2 px-2 font-medium text-center w-12">Qty</th>
                                     <th className="pb-2 px-2 font-medium">Model</th>
                                     <th className="pb-2 px-2 font-medium">Type</th>
@@ -383,13 +383,13 @@ const Ledger: React.FC = () => {
                                     const gw = group.weight;
                                     const nw = Math.max(0, gw - sw);
                                     return (
-                                      <tr key={`${group.model}-${group.type}`} className="border-b border-slate-800/30">
-                                        <td className="py-2 px-2 font-medium text-slate-300 text-center">{group.qty}</td>
-                                        <td className="py-2 px-2 text-slate-300">{group.model}</td>
-                                        <td className="py-2 px-2 text-slate-400">{group.type}</td>
-                                        <td className="py-2 px-2 text-right text-slate-400">{gw.toFixed(2)}g</td>
+                                      <tr key={`${group.model}-${group.type}`} className="border-b border-slate-200 dark:border-slate-800/30">
+                                        <td className="py-2 px-2 font-medium text-slate-700 dark:text-slate-300 text-center">{group.qty}</td>
+                                        <td className="py-2 px-2 text-slate-700 dark:text-slate-300">{group.model}</td>
+                                        <td className="py-2 px-2 text-slate-600 dark:text-slate-400">{group.type}</td>
+                                        <td className="py-2 px-2 text-right text-slate-600 dark:text-slate-400">{gw.toFixed(2)}g</td>
                                         <td className="py-2 px-2 text-right text-slate-500">{sw > 0 ? sw.toFixed(2) + 'g' : '-'}</td>
-                                        <td className="py-2 px-2 text-right font-medium text-slate-300">{nw.toFixed(2)}g</td>
+                                        <td className="py-2 px-2 text-right font-medium text-slate-700 dark:text-slate-300">{nw.toFixed(2)}g</td>
                                       </tr>
                                     );
                                   })}
@@ -408,9 +408,9 @@ const Ledger: React.FC = () => {
           </div>
         </div>
         
-        <div className="bg-slate-900 border-t border-slate-800 p-4 flex justify-between items-center text-sm">
-          <span className="text-slate-400">Total Transactions: <strong className="text-slate-200">{transactions.length}</strong></span>
-          <span className="text-slate-400">Total Net Weight Sold: <strong className="text-gold-500">{transactions.reduce((acc, tx) => acc + tx.totalNet, 0).toFixed(2)}g</strong></span>
+        <div className="bg-slate-50 dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 p-4 flex justify-between items-center text-sm">
+          <span className="text-slate-600 dark:text-slate-400">Total Transactions: <strong className="text-slate-800 dark:text-slate-200">{transactions.length}</strong></span>
+          <span className="text-slate-600 dark:text-slate-400">Total Net Weight Sold: <strong className="text-gold-500">{transactions.reduce((acc, tx) => acc + tx.totalNet, 0).toFixed(2)}g</strong></span>
         </div>
       </div>
 

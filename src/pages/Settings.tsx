@@ -188,9 +188,9 @@ const Settings: React.FC = () => {
 
   if (user?.role !== 'OWNER') {
     return (
-      <div className="flex flex-col items-center justify-center h-full text-slate-400">
+      <div className="flex flex-col items-center justify-center h-full text-slate-600 dark:text-slate-400">
         <ShieldAlert className="w-16 h-16 text-slate-600 mb-4" />
-        <h2 className="text-2xl font-bold text-white mb-2">Access Restricted</h2>
+        <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">Access Restricted</h2>
         <p>Only the shop owner can access settings.</p>
       </div>
     );
@@ -206,28 +206,28 @@ const Settings: React.FC = () => {
       )}
 
       <div>
-        <h2 className="text-3xl font-bold text-white tracking-tight">Settings</h2>
-        <p className="text-slate-400 mt-2">Manage your shop, staff, and billing</p>
+        <h2 className="text-3xl font-bold text-slate-900 dark:text-white tracking-tight">Settings</h2>
+        <p className="text-slate-600 dark:text-slate-400 mt-2">Manage your shop, staff, and billing</p>
       </div>
 
-      <div className="flex gap-4 border-b border-slate-800 pb-4 overflow-x-auto">
+      <div className="flex gap-4 border-b border-slate-200 dark:border-slate-800 pb-4 overflow-x-auto">
         <button 
           onClick={() => setActiveTab('company')}
-          className={`flex items-center gap-2 px-4 py-2 font-medium rounded-lg transition-colors whitespace-nowrap ${activeTab === 'company' ? 'bg-gold-500/10 text-gold-500' : 'text-slate-400 hover:text-slate-300 hover:bg-slate-800/50'}`}
+          className={`flex items-center gap-2 px-4 py-2 font-medium rounded-lg transition-colors whitespace-nowrap ${activeTab === 'company' ? 'bg-gold-500/10 text-gold-500' : 'text-slate-600 dark:text-slate-400 hover:text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:bg-slate-800/50'}`}
         >
           <Building2 className="w-5 h-5" />
           Company Profile
         </button>
         <button 
           onClick={() => setActiveTab('staff')}
-          className={`flex items-center gap-2 px-4 py-2 font-medium rounded-lg transition-colors whitespace-nowrap ${activeTab === 'staff' ? 'bg-gold-500/10 text-gold-500' : 'text-slate-400 hover:text-slate-300 hover:bg-slate-800/50'}`}
+          className={`flex items-center gap-2 px-4 py-2 font-medium rounded-lg transition-colors whitespace-nowrap ${activeTab === 'staff' ? 'bg-gold-500/10 text-gold-500' : 'text-slate-600 dark:text-slate-400 hover:text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:bg-slate-800/50'}`}
         >
           <Users className="w-5 h-5" />
           Staff Management
         </button>
         <button 
           onClick={() => setActiveTab('subscription')}
-          className={`flex items-center gap-2 px-4 py-2 font-medium rounded-lg transition-colors whitespace-nowrap ${activeTab === 'subscription' ? 'bg-gold-500/10 text-gold-500' : 'text-slate-400 hover:text-slate-300 hover:bg-slate-800/50'}`}
+          className={`flex items-center gap-2 px-4 py-2 font-medium rounded-lg transition-colors whitespace-nowrap ${activeTab === 'subscription' ? 'bg-gold-500/10 text-gold-500' : 'text-slate-600 dark:text-slate-400 hover:text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:bg-slate-800/50'}`}
         >
           <CreditCard className="w-5 h-5" />
           Subscription & Billing
@@ -235,35 +235,35 @@ const Settings: React.FC = () => {
       </div>
 
       {activeTab === 'company' && (
-        <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-xl max-w-3xl">
-          <h3 className="text-xl font-semibold text-white mb-6">Company Profile</h3>
+        <div className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 rounded-2xl shadow-xl max-w-3xl">
+          <h3 className="text-xl font-semibold text-slate-900 dark:text-white mb-6">Company Profile</h3>
           {loadingShop ? (
-            <p className="text-slate-400">Loading company information...</p>
+            <p className="text-slate-600 dark:text-slate-400">Loading company information...</p>
           ) : (
             <form onSubmit={handleUpdateShopInfo} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-slate-400 mb-1">Company Name</label>
-                <input required type="text" value={shopInfo.name} onChange={(e) => setShopInfo({...shopInfo, name: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-gold-500" />
+                <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">Company Name</label>
+                <input required type="text" value={shopInfo.name} onChange={(e) => setShopInfo({...shopInfo, name: e.target.value})} className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-4 py-3 text-slate-900 dark:text-white focus:outline-none focus:border-gold-500" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-400 mb-1">TRN Number</label>
-                <input type="text" value={shopInfo.trn} onChange={(e) => setShopInfo({...shopInfo, trn: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-gold-500" placeholder="e.g. 100000000000003" />
+                <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">TRN Number</label>
+                <input type="text" value={shopInfo.trn} onChange={(e) => setShopInfo({...shopInfo, trn: e.target.value})} className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-4 py-3 text-slate-900 dark:text-white focus:outline-none focus:border-gold-500" placeholder="e.g. 100000000000003" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-400 mb-1">Address</label>
-                <textarea rows={3} value={shopInfo.address} onChange={(e) => setShopInfo({...shopInfo, address: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-gold-500" placeholder="e.g. Shop 12, Gold Souq, Dubai" />
+                <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">Address</label>
+                <textarea rows={3} value={shopInfo.address} onChange={(e) => setShopInfo({...shopInfo, address: e.target.value})} className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-4 py-3 text-slate-900 dark:text-white focus:outline-none focus:border-gold-500" placeholder="e.g. Shop 12, Gold Souq, Dubai" />
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-400 mb-1">Email</label>
-                  <input type="email" value={shopInfo.email} onChange={(e) => setShopInfo({...shopInfo, email: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-gold-500" placeholder="e.g. contact@myjewellery.com" />
+                  <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">Email</label>
+                  <input type="email" value={shopInfo.email} onChange={(e) => setShopInfo({...shopInfo, email: e.target.value})} className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-4 py-3 text-slate-900 dark:text-white focus:outline-none focus:border-gold-500" placeholder="e.g. contact@myjewellery.com" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-400 mb-1">Phone Number</label>
-                  <input type="tel" value={shopInfo.phone} onChange={(e) => setShopInfo({...shopInfo, phone: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-gold-500" placeholder="e.g. +971 50 123 4567" />
+                  <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">Phone Number</label>
+                  <input type="tel" value={shopInfo.phone} onChange={(e) => setShopInfo({...shopInfo, phone: e.target.value})} className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-4 py-3 text-slate-900 dark:text-white focus:outline-none focus:border-gold-500" placeholder="e.g. +971 50 123 4567" />
                 </div>
               </div>
-              <div className="pt-4 mt-6 border-t border-slate-800">
+              <div className="pt-4 mt-6 border-t border-slate-200 dark:border-slate-800">
                 <button type="submit" disabled={savingShop} className="bg-gold-500 hover:bg-gold-600 disabled:opacity-50 text-slate-950 px-6 py-3 rounded-lg font-bold transition-colors w-full sm:w-auto">
                   {savingShop ? 'Saving...' : 'Save Changes'}
                 </button>
@@ -276,7 +276,7 @@ const Settings: React.FC = () => {
       {activeTab === 'staff' && (
         <div className="space-y-6">
           <div className="flex justify-between items-center">
-            <h3 className="text-xl font-semibold text-white">Staff Members</h3>
+            <h3 className="text-xl font-semibold text-slate-900 dark:text-white">Staff Members</h3>
             <button 
               onClick={() => setShowAddStaff(!showAddStaff)}
               className="flex items-center gap-2 bg-gold-500 hover:bg-gold-600 text-slate-950 px-4 py-2 rounded-lg font-semibold transition-colors"
@@ -287,51 +287,51 @@ const Settings: React.FC = () => {
           </div>
 
           {showAddStaff && (
-            <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl mb-8">
-              <h4 className="text-lg font-medium text-white mb-4">Add New Staff Member</h4>
+            <div className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 rounded-2xl mb-8">
+              <h4 className="text-lg font-medium text-slate-900 dark:text-white mb-4">Add New Staff Member</h4>
               <form onSubmit={handleAddStaff} className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-slate-400 mb-1">Name</label>
-                    <input required type="text" value={newStaff.name} onChange={(e) => setNewStaff({...newStaff, name: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-gold-500" />
+                    <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">Name</label>
+                    <input required type="text" value={newStaff.name} onChange={(e) => setNewStaff({...newStaff, name: e.target.value})} className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-4 py-2 text-slate-900 dark:text-white focus:outline-none focus:border-gold-500" />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-slate-400 mb-1">Email</label>
-                    <input required type="email" value={newStaff.email} onChange={(e) => setNewStaff({...newStaff, email: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-gold-500" />
+                    <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">Email</label>
+                    <input required type="email" value={newStaff.email} onChange={(e) => setNewStaff({...newStaff, email: e.target.value})} className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-4 py-2 text-slate-900 dark:text-white focus:outline-none focus:border-gold-500" />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-slate-400 mb-1">Password</label>
-                    <input required type="password" value={newStaff.password} onChange={(e) => setNewStaff({...newStaff, password: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-gold-500" />
+                    <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">Password</label>
+                    <input required type="password" value={newStaff.password} onChange={(e) => setNewStaff({...newStaff, password: e.target.value})} className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-4 py-2 text-slate-900 dark:text-white focus:outline-none focus:border-gold-500" />
                   </div>
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium text-slate-400 mb-1">Role Name (e.g. Accountant, Salesman)</label>
-                  <input required type="text" value={newStaff.customRole} onChange={(e) => setNewStaff({...newStaff, customRole: e.target.value})} placeholder="e.g. Accountant" className="w-full md:w-1/3 bg-slate-950 border border-slate-800 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-gold-500" />
+                  <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">Role Name (e.g. Accountant, Salesman)</label>
+                  <input required type="text" value={newStaff.customRole} onChange={(e) => setNewStaff({...newStaff, customRole: e.target.value})} placeholder="e.g. Accountant" className="w-full md:w-1/3 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-4 py-2 text-slate-900 dark:text-white focus:outline-none focus:border-gold-500" />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-slate-400 mb-3">Permissions</label>
+                  <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-3">Permissions</label>
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
                     {AVAILABLE_PERMISSIONS.map(p => (
-                      <label key={p.id} className="flex items-center gap-3 p-3 rounded-lg border border-slate-800 bg-slate-950/50 cursor-pointer hover:bg-slate-800 transition-colors">
+                      <label key={p.id} className="flex items-center gap-3 p-3 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950/50 cursor-pointer hover:bg-slate-100 dark:bg-slate-800 transition-colors">
                         <input 
                           type="checkbox" 
-                          className="w-4 h-4 rounded border-slate-700 text-gold-500 focus:ring-gold-500 focus:ring-offset-slate-900 bg-slate-900"
+                          className="w-4 h-4 rounded border-slate-300 dark:border-slate-700 text-gold-500 focus:ring-gold-500 focus:ring-offset-slate-900 bg-slate-50 dark:bg-slate-900"
                           checked={newStaff.permissions.includes(p.id)}
                           onChange={(e) => {
                             if (e.target.checked) setNewStaff({...newStaff, permissions: [...newStaff.permissions, p.id]});
                             else setNewStaff({...newStaff, permissions: newStaff.permissions.filter(id => id !== p.id)});
                           }}
                         />
-                        <span className="text-sm text-slate-300">{p.label}</span>
+                        <span className="text-sm text-slate-700 dark:text-slate-300">{p.label}</span>
                       </label>
                     ))}
                   </div>
                 </div>
 
-                <div className="flex justify-end pt-4 border-t border-slate-800">
-                  <button type="submit" className="bg-emerald-500 hover:bg-emerald-600 text-white px-6 py-2 rounded-lg font-semibold transition-colors">
+                <div className="flex justify-end pt-4 border-t border-slate-200 dark:border-slate-800">
+                  <button type="submit" className="bg-emerald-500 hover:bg-emerald-600 text-slate-900 dark:text-white px-6 py-2 rounded-lg font-semibold transition-colors">
                     Save Staff
                   </button>
                 </div>
@@ -342,10 +342,10 @@ const Settings: React.FC = () => {
           {/* Edit Staff Modal */}
           {editingStaff && (
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-              <div className="bg-[#0B0F19] border border-slate-800 rounded-2xl p-6 w-full max-w-2xl shadow-2xl">
+              <div className="bg-[#0B0F19] border border-slate-200 dark:border-slate-800 rounded-2xl p-6 w-full max-w-2xl shadow-2xl">
                 <div className="flex justify-between items-center mb-6">
-                  <h3 className="text-xl font-bold text-white">Edit Staff Permissions</h3>
-                  <button onClick={() => setEditingStaff(null)} className="text-slate-400 hover:text-white transition-colors">
+                  <h3 className="text-xl font-bold text-slate-900 dark:text-white">Edit Staff Permissions</h3>
+                  <button onClick={() => setEditingStaff(null)} className="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:text-white transition-colors">
                     <X className="w-5 h-5" />
                   </button>
                 </div>
@@ -353,23 +353,23 @@ const Settings: React.FC = () => {
                 <form onSubmit={handleEditStaffSave} className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-slate-400 mb-1">Name</label>
-                      <input required type="text" value={editingStaff.name} onChange={(e) => setEditingStaff({...editingStaff, name: e.target.value})} className="w-full bg-slate-900 border border-slate-800 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-gold-500" />
+                      <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">Name</label>
+                      <input required type="text" value={editingStaff.name} onChange={(e) => setEditingStaff({...editingStaff, name: e.target.value})} className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg px-4 py-2 text-slate-900 dark:text-white focus:outline-none focus:border-gold-500" />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-slate-400 mb-1">Role Name</label>
-                      <input required type="text" value={editingStaff.customRole || ''} onChange={(e) => setEditingStaff({...editingStaff, customRole: e.target.value})} className="w-full bg-slate-900 border border-slate-800 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-gold-500" />
+                      <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">Role Name</label>
+                      <input required type="text" value={editingStaff.customRole || ''} onChange={(e) => setEditingStaff({...editingStaff, customRole: e.target.value})} className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg px-4 py-2 text-slate-900 dark:text-white focus:outline-none focus:border-gold-500" />
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-slate-400 mb-3">Permissions</label>
+                    <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-3">Permissions</label>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       {AVAILABLE_PERMISSIONS.map(p => (
-                        <label key={p.id} className="flex items-center gap-3 p-3 rounded-lg border border-slate-800 bg-slate-900 cursor-pointer hover:bg-slate-800/80 transition-colors">
+                        <label key={p.id} className="flex items-center gap-3 p-3 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 cursor-pointer hover:bg-slate-100 dark:bg-slate-800/80 transition-colors">
                           <input 
                             type="checkbox" 
-                            className="w-4 h-4 rounded border-slate-700 text-gold-500 focus:ring-gold-500 focus:ring-offset-slate-900 bg-slate-950"
+                            className="w-4 h-4 rounded border-slate-300 dark:border-slate-700 text-gold-500 focus:ring-gold-500 focus:ring-offset-slate-900 bg-white dark:bg-slate-950"
                             checked={(editingStaff.permissions || []).includes(p.id)}
                             onChange={(e) => {
                               const perms = editingStaff.permissions || [];
@@ -377,14 +377,14 @@ const Settings: React.FC = () => {
                               else setEditingStaff({...editingStaff, permissions: perms.filter(id => id !== p.id)});
                             }}
                           />
-                          <span className="text-sm text-slate-300">{p.label}</span>
+                          <span className="text-sm text-slate-700 dark:text-slate-300">{p.label}</span>
                         </label>
                       ))}
                     </div>
                   </div>
 
-                  <div className="flex justify-end gap-3 pt-6 border-t border-slate-800">
-                    <button type="button" onClick={() => setEditingStaff(null)} className="px-4 py-2 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition-colors">
+                  <div className="flex justify-end gap-3 pt-6 border-t border-slate-200 dark:border-slate-800">
+                    <button type="button" onClick={() => setEditingStaff(null)} className="px-4 py-2 rounded-lg text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:text-white hover:bg-slate-100 dark:bg-slate-800 transition-colors">
                       Cancel
                     </button>
                     <button type="submit" className="px-6 py-2 rounded-lg bg-gold-500 hover:bg-gold-600 text-slate-950 font-bold transition-colors">
@@ -396,14 +396,14 @@ const Settings: React.FC = () => {
             </div>
           )}
 
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
+          <div className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-xl">
             <table className="w-full text-left">
               <thead>
-                <tr className="bg-slate-950/50">
-                  <th className="p-4 text-sm font-semibold text-slate-300 border-b border-slate-800">Name</th>
-                  <th className="p-4 text-sm font-semibold text-slate-300 border-b border-slate-800">Email</th>
-                  <th className="p-4 text-sm font-semibold text-slate-300 border-b border-slate-800">Role</th>
-                  <th className="p-4 text-sm font-semibold text-slate-300 border-b border-slate-800 text-right">Actions</th>
+                <tr className="bg-white dark:bg-slate-950/50">
+                  <th className="p-4 text-sm font-semibold text-slate-700 dark:text-slate-300 border-b border-slate-200 dark:border-slate-800">Name</th>
+                  <th className="p-4 text-sm font-semibold text-slate-700 dark:text-slate-300 border-b border-slate-200 dark:border-slate-800">Email</th>
+                  <th className="p-4 text-sm font-semibold text-slate-700 dark:text-slate-300 border-b border-slate-200 dark:border-slate-800">Role</th>
+                  <th className="p-4 text-sm font-semibold text-slate-700 dark:text-slate-300 border-b border-slate-200 dark:border-slate-800 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -411,9 +411,9 @@ const Settings: React.FC = () => {
                   <tr><td colSpan={4} className="p-8 text-center text-slate-500">Loading...</td></tr>
                 ) : (
                   staff.map((s) => (
-                    <tr key={s.id} className="border-b border-slate-800/50 hover:bg-slate-800/20 transition-colors">
-                      <td className="p-4 text-white font-medium">{s.name}</td>
-                      <td className="p-4 text-slate-400">{s.email}</td>
+                    <tr key={s.id} className="border-b border-slate-200 dark:border-slate-800/50 hover:bg-slate-100 dark:bg-slate-800/20 transition-colors">
+                      <td className="p-4 text-slate-900 dark:text-white font-medium">{s.name}</td>
+                      <td className="p-4 text-slate-600 dark:text-slate-400">{s.email}</td>
                       <td className="p-4">
                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${s.role === 'OWNER' ? 'bg-gold-500/10 text-gold-400 border-gold-500/20' : 'bg-blue-500/10 text-blue-400 border-blue-500/20'}`}>
                           {s.role === 'OWNER' ? 'Owner' : s.customRole || s.role}
@@ -422,8 +422,8 @@ const Settings: React.FC = () => {
                       <td className="p-4 text-right">
                         {s.role !== 'OWNER' && (
                           <div className="flex items-center justify-end gap-2">
-                            <button onClick={() => setEditingStaff(s)} className="p-2 text-slate-400 hover:bg-gold-500/20 hover:text-gold-400 rounded-lg transition-colors" title="Edit Permissions"><Edit2 className="w-4 h-4" /></button>
-                            <button onClick={() => handleDeleteStaff(s.id)} className="p-2 text-slate-400 hover:bg-red-500/20 hover:text-red-400 rounded-lg transition-colors" title="Remove Staff"><Trash2 className="w-4 h-4" /></button>
+                            <button onClick={() => setEditingStaff(s)} className="p-2 text-slate-600 dark:text-slate-400 hover:bg-gold-500/20 hover:text-gold-400 rounded-lg transition-colors" title="Edit Permissions"><Edit2 className="w-4 h-4" /></button>
+                            <button onClick={() => handleDeleteStaff(s.id)} className="p-2 text-slate-600 dark:text-slate-400 hover:bg-red-500/20 hover:text-red-400 rounded-lg transition-colors" title="Remove Staff"><Trash2 className="w-4 h-4" /></button>
                           </div>
                         )}
                       </td>
@@ -439,11 +439,11 @@ const Settings: React.FC = () => {
       {activeTab === 'subscription' && subscription && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Status Card */}
-          <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-xl">
-            <h3 className="text-xl font-semibold text-white mb-6">Current Plan</h3>
+          <div className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 rounded-2xl shadow-xl">
+            <h3 className="text-xl font-semibold text-slate-900 dark:text-white mb-6">Current Plan</h3>
             <div className="space-y-4">
-              <div className="flex justify-between items-center py-3 border-b border-slate-800">
-                <span className="text-slate-400">Status</span>
+              <div className="flex justify-between items-center py-3 border-b border-slate-200 dark:border-slate-800">
+                <span className="text-slate-600 dark:text-slate-400">Status</span>
                 <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-semibold border ${
                   subscription.status === 'ACTIVE' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
                   subscription.status === 'TRIAL' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' :
@@ -455,45 +455,45 @@ const Settings: React.FC = () => {
               </div>
               
               {subscription.status === 'TRIAL' && (
-                <div className="flex justify-between items-center py-3 border-b border-slate-800">
-                  <span className="text-slate-400">Trial Ends</span>
-                  <span className="text-white font-medium">{new Date(subscription.trialEndsAt).toLocaleDateString()}</span>
+                <div className="flex justify-between items-center py-3 border-b border-slate-200 dark:border-slate-800">
+                  <span className="text-slate-600 dark:text-slate-400">Trial Ends</span>
+                  <span className="text-slate-900 dark:text-white font-medium">{new Date(subscription.trialEndsAt).toLocaleDateString()}</span>
                 </div>
               )}
 
               {subscription.status === 'ACTIVE' && subscription.endsAt && (
-                <div className="flex justify-between items-center py-3 border-b border-slate-800">
-                  <span className="text-slate-400">Next Renewal</span>
-                  <span className="text-white font-medium">{new Date(subscription.endsAt).toLocaleDateString()}</span>
+                <div className="flex justify-between items-center py-3 border-b border-slate-200 dark:border-slate-800">
+                  <span className="text-slate-600 dark:text-slate-400">Next Renewal</span>
+                  <span className="text-slate-900 dark:text-white font-medium">{new Date(subscription.endsAt).toLocaleDateString()}</span>
                 </div>
               )}
             </div>
           </div>
 
           {/* Payment Card */}
-          <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-xl">
-            <h3 className="text-xl font-semibold text-white mb-2">Upgrade / Renew</h3>
-            <p className="text-slate-400 text-sm mb-6">To upgrade or renew your subscription, please transfer the payment to the bank account below and submit your voucher number.</p>
+          <div className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 rounded-2xl shadow-xl">
+            <h3 className="text-xl font-semibold text-slate-900 dark:text-white mb-2">Upgrade / Renew</h3>
+            <p className="text-slate-600 dark:text-slate-400 text-sm mb-6">To upgrade or renew your subscription, please transfer the payment to the bank account below and submit your voucher number.</p>
             
-            <div className="bg-slate-950 border border-slate-800 rounded-xl p-4 mb-6">
+            <div className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-4 mb-6">
               <div className="space-y-2 text-sm">
-                <div className="flex justify-between"><span className="text-slate-500">Account Holder:</span> <span className="text-white font-medium">MUHAMMAD ABU TAWHID RIAN MUHAMMAD</span></div>
-                <div className="flex justify-between"><span className="text-slate-500">Bank Name:</span> <span className="text-white font-medium">Mashreq Bank</span></div>
-                <div className="flex justify-between"><span className="text-slate-500">Account Number:</span> <span className="text-white font-medium">019101135322</span></div>
-                <div className="flex justify-between"><span className="text-slate-500">IBAN:</span> <span className="text-white font-medium font-mono text-xs mt-1">AE310330000019101135322</span></div>
+                <div className="flex justify-between"><span className="text-slate-500">Account Holder:</span> <span className="text-slate-900 dark:text-white font-medium">MUHAMMAD ABU TAWHID RIAN MUHAMMAD</span></div>
+                <div className="flex justify-between"><span className="text-slate-500">Bank Name:</span> <span className="text-slate-900 dark:text-white font-medium">Mashreq Bank</span></div>
+                <div className="flex justify-between"><span className="text-slate-500">Account Number:</span> <span className="text-slate-900 dark:text-white font-medium">019101135322</span></div>
+                <div className="flex justify-between"><span className="text-slate-500">IBAN:</span> <span className="text-slate-900 dark:text-white font-medium font-mono text-xs mt-1">AE310330000019101135322</span></div>
               </div>
             </div>
 
             <form onSubmit={handleSubmitVoucher} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-slate-400 mb-1">Payment Voucher Number</label>
+                <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">Payment Voucher Number</label>
                 <input 
                   required 
                   type="text" 
                   value={voucherNumber}
                   onChange={(e) => setVoucherNumber(e.target.value)}
                   placeholder="e.g. TRN-123456789"
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-gold-500" 
+                  className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-4 py-3 text-slate-900 dark:text-white focus:outline-none focus:border-gold-500" 
                 />
               </div>
               <button 

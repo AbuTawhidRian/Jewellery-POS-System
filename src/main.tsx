@@ -6,14 +6,18 @@ import './index.css';
 import { InventoryProvider } from './store/InventoryContext';
 import { AuthProvider } from './contexts/AuthContext';
 
+import { ThemeProvider } from './contexts/ThemeContext';
+
 ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
   <React.StrictMode>
     <BrowserRouter>
-      <AuthProvider>
-        <InventoryProvider>
-          <App />
-        </InventoryProvider>
-      </AuthProvider>
+      <ThemeProvider>
+        <AuthProvider>
+          <InventoryProvider>
+            <App />
+          </InventoryProvider>
+        </AuthProvider>
+      </ThemeProvider>
     </BrowserRouter>
   </React.StrictMode>
 );

@@ -1,18 +1,13 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Moon, Sun, Check, MessageCircle, Lock, ChevronDown, CheckCircle2 } from 'lucide-react';
+import { useTheme } from '../contexts/ThemeContext';
 
 export default function Landing() {
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
   const [isLangMenuOpen, setIsLangMenuOpen] = useState(false);
   const [activeLang, setActiveLang] = useState('en');
-  const [isDarkMode, setIsDarkMode] = useState(() => {
-    const savedTheme = localStorage.getItem('theme');
-    if (savedTheme) {
-      return savedTheme === 'dark';
-    }
-    return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-  });
+  const { isDarkMode, toggleTheme } = useTheme();
 
   const handleLanguageChange = (langCode: string) => {
     setIsLangMenuOpen(false);
@@ -58,10 +53,6 @@ export default function Landing() {
       }
     }
   };
-
-  useEffect(() => {
-    localStorage.setItem('theme', isDarkMode ? 'dark' : 'light');
-  }, [isDarkMode]);
 
   return (
     <div className={`min-h-screen flex flex-col font-sans selection:bg-amber-100 selection:text-amber-900 transition-colors duration-300 ${isDarkMode ? 'dark bg-[#0B0F19]' : 'bg-[#F8FAFC]'} ${activeLang === 'en' ? 'lg:h-screen lg:overflow-hidden' : ''}`}>
@@ -137,7 +128,7 @@ export default function Landing() {
           </div>
 
           <button 
-            onClick={() => setIsDarkMode(!isDarkMode)}
+            onClick={toggleTheme}
             className="text-[#64748B] dark:text-slate-400 hover:text-[#1E293B] dark:hover:text-white transition-colors"
           >
             {isDarkMode ? <Sun className="w-5 h-5" strokeWidth={2.5} /> : <Moon className="w-5 h-5" strokeWidth={2.5} />}
