@@ -65,7 +65,7 @@ const Ledger: React.FC = () => {
         format(parseISO(sale.date), 'yyyy-MM-dd HH:mm:ss'),
         sale.barcode,
         sale.type,
-        `"${sale.description}"`,
+        `"${sale.model}"`,
         gw.toFixed(2),
         sw.toFixed(2),
         nw.toFixed(2),
@@ -303,7 +303,7 @@ const Ledger: React.FC = () => {
                                     return (
                                       <tr key={item.id} className="border-b border-slate-800/30">
                                         <td className="py-2 px-2 font-mono text-slate-400">{item.barcode}</td>
-                                        <td className="py-2 px-2 text-slate-300">{item.description}</td>
+                                        <td className="py-2 px-2 text-slate-300">{item.model}</td>
                                         <td className="py-2 px-2 text-slate-400">{item.type}</td>
                                         <td className="py-2 px-2 text-right text-slate-400">{gw.toFixed(2)}g</td>
                                         <td className="py-2 px-2 text-right text-slate-500">{sw > 0 ? sw.toFixed(2) + 'g' : '-'}</td>

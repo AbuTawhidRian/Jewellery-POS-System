@@ -58,10 +58,10 @@ const InvoicePrintLayout: React.FC = () => {
           </thead>
           <tbody className="text-sm">
             {Object.values(printInvoiceData.items.reduce((acc, item) => {
-              const key = `${item.description || 'Unknown'}-${item.type}`;
+              const key = `${item.model || 'Unknown'}-${item.type}`;
               if (!acc[key]) {
                 acc[key] = {
-                  description: item.description || 'Unknown',
+                  model: item.model || 'Unknown',
                   type: item.type,
                   qty: 0,
                   weight: 0,
@@ -72,14 +72,14 @@ const InvoicePrintLayout: React.FC = () => {
               acc[key].weight += Number(item.weight) || 0;
               acc[key].stone_weight += Number(item.stone_weight) || 0;
               return acc;
-            }, {} as Record<string, { description: string, type: string, qty: number, weight: number, stone_weight: number }>)).map((group, idx) => {
+            }, {} as Record<string, { model: string, type: string, qty: number, weight: number, stone_weight: number }>)).map((group, idx) => {
               const sw = group.stone_weight;
               const gw = group.weight;
               const nw = Math.max(0, gw - sw);
               return (
-              <tr key={`${group.description}-${group.type}`} className="border-b border-slate-200">
+              <tr key={`${group.model}-${group.type}`} className="border-b border-slate-200">
                 <td className="py-4 px-2 text-slate-500">{idx + 1}</td>
-                <td className="py-4 px-2 font-bold text-slate-800">{group.description}</td>
+                <td className="py-4 px-2 font-bold text-slate-800">{group.model}</td>
                 <td className="py-4 px-2 text-slate-600">{group.type}</td>
                 <td className="py-4 px-2 font-medium text-center text-slate-700">{group.qty}</td>
                 <td className="py-4 px-2 font-medium text-right text-slate-700">{gw.toFixed(2)}</td>

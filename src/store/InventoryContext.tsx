@@ -7,7 +7,7 @@ export interface Item {
   id: string;
   barcode: string;
   type: string;
-  description: string;
+  model?: string;
   weight: number;
   stone_weight: number;
   status: ItemStatus;
@@ -19,8 +19,9 @@ export interface ItemType {
   name: string;
 }
 
-export interface Description {
+export interface ItemModel {
   id: string;
+  shopId: string;
   name: string;
 }
 
@@ -39,12 +40,12 @@ export interface Sale {
   weight: number;
   stone_weight: number;
   type: string;
-  description: string;
+  model: string;
 }
 
 export interface InvoiceData {
   buyerName: string;
-  items: { barcode?: string; type: string; description?: string; weight: number; stone_weight: number }[];
+  items: { barcode?: string; type: string; model?: string; weight: number; stone_weight: number }[];
   date: string;
   totalWeight: number;
 }
@@ -64,10 +65,10 @@ interface InventoryContextType {
   addItemType: (name: string) => Promise<ItemType | null>;
   editItemType: (id: string, name: string) => Promise<boolean>;
   deleteItemType: (id: string) => Promise<boolean>;
-  descriptions: Description[];
-  addDescription: (name: string) => Promise<Description | null>;
-  editDescription: (id: string, name: string) => Promise<boolean>;
-  deleteDescription: (id: string) => Promise<boolean>;
+  models: ItemModel[];
+  addModel: (name: string) => Promise<ItemModel | null>;
+  editModel: (id: string, name: string) => Promise<boolean>;
+  deleteModel: (id: string) => Promise<boolean>;
   processBulkSale: (barcodes: string[], buyerId: string) => Promise<{ success: boolean; message: string }>;
   voidTransaction: (buyerId: string, date: string) => Promise<{ success: boolean; message: string }>;
   printItem: Item | null;
@@ -86,7 +87,7 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const [buyers, setBuyers] = useState<Buyer[]>([]);
   const [sales, setSales] = useState<Sale[]>([]);
   const [itemTypes, setItemTypes] = useState<ItemType[]>([]);
-  const [descriptions, setDescriptions] = useState<Description[]>([]);
+  const [models, setModels] = useState<ItemModel[]>([]);
   const [printItem, setPrintItem] = useState<Item | null>(null);
   const [printInvoiceData, setPrintInvoiceData] = useState<InvoiceData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -116,14 +117,14 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           // The backend might not have item_types and descriptions endpoints right now,
           // but we will keep them as is and handle errors gracefully
           authFetch(`${API_URL}/item_types`).then(res => res.ok ? res.json() : []),
-          authFetch(`${API_URL}/descriptions`).then(res => res.ok ? res.json() : [])
+          authFetch(`${API_URL}/models`).then(res => res.ok ? res.json() : [])
         ]);
 
         if (Array.isArray(itemsRes)) setItems(itemsRes);
         if (Array.isArray(buyersRes)) setBuyers(buyersRes);
         if (Array.isArray(salesRes)) setSales(salesRes);
         if (Array.isArray(typesRes)) setItemTypes(typesRes);
-        if (Array.isArray(descRes)) setDescriptions(descRes);
+        if (Array.isArray(descRes)) setModels(descRes);
       } catch (error) {
         console.error("Error fetching data:", error);
       } finally {
@@ -291,57 +292,57 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }
   };
 
-  const addDescription = async (name: string) => {
+  const addModel = async (name: string) => {
     try {
-      const res = await authFetch(`${API_URL}/descriptions`, {
+      const res = await authFetch(`${API_URL}/models`, {
         method: 'POST',
         body: JSON.stringify({ name })
       });
       const result = await res.json();
       
       if (res.ok) {
-        setDescriptions(prev => [...prev, result].sort((a, b) => a.name.localeCompare(b.name)));
+        setModels(prev => [...prev, result].sort((a, b) => a.name.localeCompare(b.name)));
         return result;
       }
       return null;
     } catch (error) {
-      console.error("Error adding description:", error);
+      console.error("Error adding model:", error);
       return null;
     }
   };
 
-  const editDescription = async (id: string, name: string) => {
+  const editModel = async (id: string, name: string) => {
     try {
-      const oldDescObj = descriptions.find(d => d.id === id);
-      const res = await authFetch(`${API_URL}/descriptions/${id}`, {
+      const oldDescObj = models.find(d => d.id === id);
+      const res = await authFetch(`${API_URL}/models/${id}`, {
         method: 'PUT',
         body: JSON.stringify({ name })
       });
       const result = await res.json();
       if (res.ok) {
-        setDescriptions(prev => prev.map(d => d.id === id ? result : d).sort((a, b) => a.name.localeCompare(b.name)));
+        setModels(prev => prev.map(d => d.id === id ? result : d).sort((a, b) => a.name.localeCompare(b.name)));
         if (oldDescObj) {
-          setItems(prev => prev.map(i => i.description === oldDescObj.name ? { ...i, description: name } : i));
+          setItems(prev => prev.map(i => i.model === oldDescObj.name ? { ...i, model: name } : i));
         }
         return true;
       }
       return false;
     } catch (error) {
-      console.error("Error editing description:", error);
+      console.error("Error editing model:", error);
       return false;
     }
   };
 
-  const deleteDescription = async (id: string) => {
+  const deleteModel = async (id: string) => {
     try {
-      const res = await authFetch(`${API_URL}/descriptions/${id}`, { method: 'DELETE' });
+      const res = await authFetch(`${API_URL}/models/${id}`, { method: 'DELETE' });
       if (res.ok) {
-        setDescriptions(prev => prev.filter(d => d.id !== id));
+        setModels(prev => prev.filter(d => d.id !== id));
         return true;
       }
       return false;
     } catch (error) {
-      console.error("Error deleting description:", error);
+      console.error("Error deleting model:", error);
       return false;
     }
   };
@@ -401,7 +402,7 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   };
 
   return (
-    <InventoryContext.Provider value={{ items, buyers, sales, itemTypes, descriptions, isLoading, addItem, editItem, deleteItem, addBuyer, editBuyer, deleteBuyer, addItemType, editItemType, deleteItemType, addDescription, editDescription, deleteDescription, processBulkSale, voidTransaction, printItem, setPrintItem, printInvoiceData, setPrintInvoiceData }}>
+    <InventoryContext.Provider value={{ items, buyers, sales, itemTypes, models, isLoading, addItem, editItem, deleteItem, addBuyer, editBuyer, deleteBuyer, addItemType, editItemType, deleteItemType, addModel, editModel, deleteModel, processBulkSale, voidTransaction, printItem, setPrintItem, printInvoiceData, setPrintInvoiceData }}>
       {children}
     </InventoryContext.Provider>
   );

@@ -381,55 +381,55 @@ app.delete('/api/item_types/:id', authenticateToken, requireActiveOrTrial, requi
   }
 });
 
-// --- Descriptions (Models) Routes ---
-app.get('/api/descriptions', authenticateToken, requireActiveOrTrial, async (req: AuthRequest, res) => {
+// --- Models Routes ---
+app.get('/api/models', authenticateToken, requireActiveOrTrial, async (req: AuthRequest, res) => {
   try {
-    const descriptions = await prisma.description.findMany({
+    const models = await prisma.itemModel.findMany({
       where: { shopId: req.user!.shopId! },
       orderBy: { name: 'asc' }
     });
-    res.json(descriptions);
+    res.json(models);
   } catch (error) {
     res.status(500).json({ error: 'Internal Server Error' });
   }
 });
 
-app.post('/api/descriptions', authenticateToken, requireActiveOrTrial, requireRole(Role.OWNER, Role.MANAGER), async (req: AuthRequest, res) => {
+app.post('/api/models', authenticateToken, requireActiveOrTrial, requireRole(Role.OWNER, Role.MANAGER), async (req: AuthRequest, res) => {
   try {
     const { name } = req.body;
-    const description = await prisma.description.create({
+    const itemModel = await prisma.itemModel.create({
       data: { name, shopId: req.user!.shopId! }
     });
-    res.json(description);
+    res.json(itemModel);
   } catch (error) {
     res.status(500).json({ error: 'Internal Server Error' });
   }
 });
 
-app.put('/api/descriptions/:id', authenticateToken, requireActiveOrTrial, requireRole(Role.OWNER, Role.MANAGER), async (req: AuthRequest, res) => {
+app.put('/api/models/:id', authenticateToken, requireActiveOrTrial, requireRole(Role.OWNER, Role.MANAGER), async (req: AuthRequest, res) => {
   try {
     const id = String(req.params.id);
     const { name } = req.body;
-    const existing = await prisma.description.findUnique({ where: { id } });
+    const existing = await prisma.itemModel.findUnique({ where: { id } });
     if (!existing || existing.shopId !== req.user!.shopId) return res.status(404).json({ error: 'Not found' });
 
-    const description = await prisma.description.update({
+    const itemModel = await prisma.itemModel.update({
       where: { id },
       data: { name }
     });
-    res.json(description);
+    res.json(itemModel);
   } catch (error) {
     res.status(500).json({ error: 'Internal Server Error' });
   }
 });
 
-app.delete('/api/descriptions/:id', authenticateToken, requireActiveOrTrial, requireRole(Role.OWNER, Role.MANAGER), async (req: AuthRequest, res) => {
+app.delete('/api/models/:id', authenticateToken, requireActiveOrTrial, requireRole(Role.OWNER, Role.MANAGER), async (req: AuthRequest, res) => {
   try {
     const id = String(req.params.id);
-    const existing = await prisma.description.findUnique({ where: { id } });
+    const existing = await prisma.itemModel.findUnique({ where: { id } });
     if (!existing || existing.shopId !== req.user!.shopId) return res.status(404).json({ error: 'Not found' });
 
-    await prisma.description.delete({ where: { id } });
+    await prisma.itemModel.delete({ where: { id } });
     res.json({ success: true });
   } catch (error) {
     res.status(500).json({ error: 'Internal Server Error' });
@@ -451,7 +451,7 @@ app.get('/api/inventory', authenticateToken, requireActiveOrTrial, async (req: A
 
 app.post('/api/inventory', authenticateToken, requireActiveOrTrial, requireRole(Role.OWNER, Role.MANAGER), async (req: AuthRequest, res) => {
   try {
-    const { barcode, type, description, weight, stone_weight } = req.body;
+    const { barcode, type, model, weight, stone_weight } = req.body;
     const shopId = req.user!.shopId!;
     
     const existing = await prisma.item.findUnique({ 
@@ -467,7 +467,7 @@ app.post('/api/inventory', authenticateToken, requireActiveOrTrial, requireRole(
         shopId,
         barcode,
         type,
-        description,
+        model,
         weight: parseFloat(weight),
         stone_weight: stone_weight ? parseFloat(stone_weight) : null,
         status: 'In Stock',
@@ -485,7 +485,7 @@ app.put('/api/inventory/:id', authenticateToken, requireActiveOrTrial, requireRo
   try {
     const id = String(req.params.id);
     const shopId = req.user!.shopId!;
-    const { barcode, type, description, weight, stone_weight } = req.body;
+    const { barcode, type, model, weight, stone_weight } = req.body;
     
     const existing = await prisma.item.findUnique({ where: { id } });
     if (!existing || existing.shopId !== shopId) return res.status(404).json({ error: 'Not found' });
@@ -502,7 +502,7 @@ app.put('/api/inventory/:id', authenticateToken, requireActiveOrTrial, requireRo
       data: {
         barcode: barcode !== undefined ? barcode : undefined,
         type: type !== undefined ? type : undefined,
-        description: description !== undefined ? description : undefined,
+        model: model !== undefined ? model : undefined,
         weight: weight !== undefined ? parseFloat(weight) : undefined,
         stone_weight: stone_weight !== undefined ? (stone_weight ? parseFloat(stone_weight) : null) : undefined,
       }
@@ -560,7 +560,7 @@ app.get('/api/sales', authenticateToken, requireActiveOrTrial, async (req: AuthR
       weight: s.weight,
       type: s.item.type,
       stone_weight: s.item.stone_weight,
-      description: s.item.description,
+      model: s.item.model,
     }));
     
     res.json(flatSales);

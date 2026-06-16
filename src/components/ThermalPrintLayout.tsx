@@ -71,7 +71,7 @@ const ThermalPrintLayout: React.FC = () => {
         )}
         <div className="flex flex-col items-center w-full px-1 mt-1 text-[9px] font-semibold">
           <div className="flex justify-between w-full leading-tight">
-            <span className="truncate max-w-[60%] font-bold">{printItem.description}</span>
+            <span className="truncate max-w-[60%] font-bold">{printItem.model}</span>
             <span>GW: {parseFloat(printItem.weight as any || '0').toFixed(2)}g</span>
           </div>
           <div className="flex justify-between w-full leading-tight">

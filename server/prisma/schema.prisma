@@ -35,7 +35,7 @@ model Shop {
   buyers       Buyer[]
   sales        Sale[]
   itemTypes    ItemType[]
-  descriptions Description[]
+  models       ItemModel[]
   subscription Subscription?
 }
 
@@ -71,8 +71,8 @@ model Item {
   shopId       String
   barcode      String
   type         String
+  model        String?
   stone_weight Float?
-  description  String
   weight       Float
   status       String   @default("In Stock")
   dateAdded    DateTime @default(now())
@@ -115,12 +115,13 @@ model ItemType {
   @@unique([name, shopId])
 }
 
-model Description {
-  id     String @id @default(uuid())
-  shopId String
-  name   String
+model ItemModel {
+  id        String   @id @default(uuid())
+  name      String
+  createdAt DateTime @default(now())
 
-  shop Shop @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  shop   Shop   @relation(fields: [shopId], references: [id])
+  shopId String
 
   @@unique([name, shopId])
 }
