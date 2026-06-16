@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { Users, CreditCard, Plus, Edit2, Trash2, Check, X, ShieldAlert, Building2, CheckCircle, XCircle } from 'lucide-react';
+import { Users, CreditCard, Plus, Edit2, Trash2, ShieldAlert, Building2, CheckCircle, XCircle } from 'lucide-react';
 import Dialog from '../components/Dialog';
 import api from '../lib/api';
 
@@ -117,7 +117,7 @@ const Settings: React.FC = () => {
     }
   };
 
-  const handleEditRole = (id: number, currentRole: string) => {
+  const handleEditRole = (id: number) => {
     setDialogConfig({
       isOpen: true,
       type: 'prompt',
@@ -332,7 +332,7 @@ const Settings: React.FC = () => {
                       <td className="p-4 text-right">
                         {s.role !== 'OWNER' && (
                           <div className="flex items-center justify-end gap-2">
-                            <button onClick={() => handleEditRole(s.id, s.role)} className="p-2 text-slate-400 hover:bg-gold-500/20 hover:text-gold-400 rounded-lg transition-colors" title="Edit Role"><Edit2 className="w-4 h-4" /></button>
+                            <button onClick={() => handleEditRole(s.id)} className="p-2 text-slate-400 hover:bg-gold-500/20 hover:text-gold-400 rounded-lg transition-colors" title="Edit Role"><Edit2 className="w-4 h-4" /></button>
                             <button onClick={() => handleDeleteStaff(s.id)} className="p-2 text-slate-400 hover:bg-red-500/20 hover:text-red-400 rounded-lg transition-colors" title="Remove Staff"><Trash2 className="w-4 h-4" /></button>
                           </div>
                         )}
@@ -417,6 +417,18 @@ const Settings: React.FC = () => {
           </div>
         </div>
       )}
+      
+      <Dialog 
+        isOpen={dialogConfig.isOpen}
+        type={dialogConfig.type as any}
+        title={dialogConfig.title}
+        message={dialogConfig.message}
+        onConfirm={(val) => {
+          if (dialogConfig.onConfirm) dialogConfig.onConfirm(val);
+          setDialogConfig({ ...dialogConfig, isOpen: false });
+        }}
+        onCancel={() => setDialogConfig({ ...dialogConfig, isOpen: false })}
+      />
     </div>
   );
 };
