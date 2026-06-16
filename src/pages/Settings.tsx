@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { Users, CreditCard, Plus, Edit2, Trash2, Check, X, ShieldAlert, Building2 } from 'lucide-react';
+import { Users, CreditCard, Plus, Edit2, Trash2, Check, X, ShieldAlert, Building2, CheckCircle, XCircle } from 'lucide-react';
 import api from '../lib/api';
 
 interface ShopUser {
@@ -14,6 +14,12 @@ interface ShopUser {
 const Settings: React.FC = () => {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<'company' | 'staff' | 'subscription'>('company');
+  
+  const [notification, setNotification] = useState<{ type: 'success' | 'error', message: string } | null>(null);
+  const showNotification = useCallback((type: 'success' | 'error', message: string) => {
+    setNotification({ type, message });
+    setTimeout(() => setNotification(null), 3000);
+  }, []);
   
   // Staff State
   const [staff, setStaff] = useState<ShopUser[]>([]);
@@ -83,9 +89,9 @@ const Settings: React.FC = () => {
     setSavingShop(true);
     try {
       await api.put('/shop', shopInfo);
-      alert('Company information updated successfully!');
+      showNotification('success', 'Company information updated successfully!');
     } catch (err) {
-      alert('Failed to update company information');
+      showNotification('error', 'Failed to update company information');
     } finally {
       setSavingShop(false);
     }
@@ -98,8 +104,9 @@ const Settings: React.FC = () => {
       setShowAddStaff(false);
       setNewStaff({ name: '', email: '', password: '', role: 'CASHIER' });
       fetchStaff();
+      showNotification('success', 'Staff member added successfully');
     } catch (err: any) {
-      alert(err.response?.data?.error || 'Failed to add staff');
+      showNotification('error', err.response?.data?.error || 'Failed to add staff');
     }
   };
 
@@ -108,8 +115,9 @@ const Settings: React.FC = () => {
       await api.patch(`/users/${id}`, { role: editRole });
       setEditingStaffId(null);
       fetchStaff();
+      showNotification('success', 'Role updated successfully');
     } catch (err) {
-      alert('Failed to update role');
+      showNotification('error', 'Failed to update role');
     }
   };
 
@@ -118,8 +126,9 @@ const Settings: React.FC = () => {
     try {
       await api.delete(`/users/${id}`);
       fetchStaff();
+      showNotification('success', 'Staff member removed');
     } catch (err: any) {
-      alert(err.response?.data?.error || 'Failed to delete staff');
+      showNotification('error', err.response?.data?.error || 'Failed to delete staff');
     }
   };
 
@@ -128,11 +137,11 @@ const Settings: React.FC = () => {
     setSubmittingVoucher(true);
     try {
       await api.post('/subscription/voucher-number', { voucherNumber });
-      alert('Voucher submitted successfully. Waiting for admin approval.');
+      showNotification('success', 'Voucher submitted successfully. Waiting for admin approval.');
       fetchSubscription();
       setVoucherNumber('');
     } catch (err: any) {
-      alert('Failed to submit voucher');
+      showNotification('error', 'Failed to submit voucher');
     } finally {
       setSubmittingVoucher(false);
     }
@@ -149,7 +158,14 @@ const Settings: React.FC = () => {
   }
 
   return (
-    <div className="max-w-6xl mx-auto space-y-6">
+    <div className="max-w-6xl mx-auto space-y-6 relative">
+      {notification && (
+        <div className={`fixed top-4 right-4 z-50 flex items-center gap-2 px-4 py-3 rounded-xl font-medium shadow-lg animate-in fade-in slide-in-from-top-4 duration-300 ${notification.type === 'success' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-red-500/10 text-red-400 border border-red-500/20'}`}>
+          {notification.type === 'success' ? <CheckCircle className="w-5 h-5 shrink-0" /> : <XCircle className="w-5 h-5 shrink-0" />}
+          <span>{notification.message}</span>
+        </div>
+      )}
+
       <div>
         <h2 className="text-3xl font-bold text-white tracking-tight">Settings</h2>
         <p className="text-slate-400 mt-2">Manage your shop, staff, and billing</p>
