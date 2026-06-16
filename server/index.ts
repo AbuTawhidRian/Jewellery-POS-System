@@ -353,7 +353,7 @@ app.post('/api/item_types', authenticateToken, requireActiveOrTrial, requireRole
 
 app.put('/api/item_types/:id', authenticateToken, requireActiveOrTrial, requireRole(Role.OWNER, Role.MANAGER), async (req: AuthRequest, res) => {
   try {
-    const { id } = req.params;
+    const id = String(req.params.id);
     const { name } = req.body;
     const existing = await prisma.itemType.findUnique({ where: { id } });
     if (!existing || existing.shopId !== req.user!.shopId) return res.status(404).json({ error: 'Not found' });
@@ -370,7 +370,7 @@ app.put('/api/item_types/:id', authenticateToken, requireActiveOrTrial, requireR
 
 app.delete('/api/item_types/:id', authenticateToken, requireActiveOrTrial, requireRole(Role.OWNER, Role.MANAGER), async (req: AuthRequest, res) => {
   try {
-    const { id } = req.params;
+    const id = String(req.params.id);
     const existing = await prisma.itemType.findUnique({ where: { id } });
     if (!existing || existing.shopId !== req.user!.shopId) return res.status(404).json({ error: 'Not found' });
 
@@ -408,7 +408,7 @@ app.post('/api/descriptions', authenticateToken, requireActiveOrTrial, requireRo
 
 app.put('/api/descriptions/:id', authenticateToken, requireActiveOrTrial, requireRole(Role.OWNER, Role.MANAGER), async (req: AuthRequest, res) => {
   try {
-    const { id } = req.params;
+    const id = String(req.params.id);
     const { name } = req.body;
     const existing = await prisma.description.findUnique({ where: { id } });
     if (!existing || existing.shopId !== req.user!.shopId) return res.status(404).json({ error: 'Not found' });
@@ -425,7 +425,7 @@ app.put('/api/descriptions/:id', authenticateToken, requireActiveOrTrial, requir
 
 app.delete('/api/descriptions/:id', authenticateToken, requireActiveOrTrial, requireRole(Role.OWNER, Role.MANAGER), async (req: AuthRequest, res) => {
   try {
-    const { id } = req.params;
+    const id = String(req.params.id);
     const existing = await prisma.description.findUnique({ where: { id } });
     if (!existing || existing.shopId !== req.user!.shopId) return res.status(404).json({ error: 'Not found' });
 
