@@ -5,7 +5,7 @@ import { format, parseISO } from 'date-fns';
 import Dialog from '../components/Dialog';
 
 const Ledger: React.FC = () => {
-  const { sales, buyers, setPrintInvoiceData, voidTransaction } = useInventory();
+  const { sales, buyers, setPrintInvoiceData, setPrintItem, voidTransaction } = useInventory();
   const [filterBuyerId, setFilterBuyerId] = useState<string>('all');
   const [filterDateRange, setFilterDateRange] = useState<string>('all');
   const [customStartDate, setCustomStartDate] = useState<string>('');
@@ -120,6 +120,7 @@ const Ledger: React.FC = () => {
 
   const printTransactionInvoice = (tx: any, e: React.MouseEvent) => {
     e.stopPropagation();
+    setPrintItem(null); // Clear any pending barcode
     setPrintInvoiceData({
       buyerName: tx.buyerName,
       items: tx.items,
@@ -129,20 +130,20 @@ const Ledger: React.FC = () => {
     setTimeout(() => window.print(), 100);
   };
 
-  const handleVoidTransaction = (tx: any, e: React.MouseEvent) => {
+  const handleDeleteTransaction = (tx: any, e: React.MouseEvent) => {
     e.stopPropagation();
     setDialogConfig({
       isOpen: true,
       type: 'confirm',
-      title: 'Void Transaction',
-      message: `Are you sure you want to void this transaction from ${format(parseISO(tx.date), 'MMM dd, yyyy')}? This will delete the sale and return ${tx.totalItems} items back to In Stock.`,
+      title: 'Delete Transaction',
+      message: `Are you sure you want to delete this transaction from ${format(parseISO(tx.date), 'MMM dd, yyyy')}? This will delete the sale and return ${tx.totalItems} items back to In Stock.`,
       onConfirm: async () => {
         const result = await voidTransaction(tx.buyerId, tx.date);
         if (!result.success) {
           setDialogConfig({
             isOpen: true,
             type: 'alert',
-            title: 'Void Failed',
+            title: 'Delete Failed',
             message: result.message
           });
         }
@@ -270,12 +271,12 @@ const Ledger: React.FC = () => {
                               <span className="hidden sm:inline">Print</span>
                             </button>
                             <button 
-                              onClick={(e) => handleVoidTransaction(tx, e)}
+                              onClick={(e) => handleDeleteTransaction(tx, e)}
                               className="inline-flex items-center gap-2 bg-red-900/30 hover:bg-red-900/50 text-red-400 text-xs font-semibold py-1.5 px-3 rounded-lg border border-red-900/50 transition-colors"
-                              title="Void Transaction"
+                              title="Delete Transaction"
                             >
                               <Trash2 className="w-3.5 h-3.5" />
-                              <span className="hidden sm:inline">Void</span>
+                              <span className="hidden sm:inline">Delete</span>
                             </button>
                           </div>
                         </td>
@@ -287,7 +288,7 @@ const Ledger: React.FC = () => {
                               <table className="w-full text-left border-collapse text-xs">
                                 <thead>
                                   <tr className="border-b border-slate-800 text-slate-500">
-                                    <th className="pb-2 px-2 font-medium">Barcode</th>
+                                    <th className="pb-2 px-2 font-medium text-center w-12">Qty</th>
                                     <th className="pb-2 px-2 font-medium">Model</th>
                                     <th className="pb-2 px-2 font-medium">Type</th>
                                     <th className="pb-2 px-2 font-medium text-right">Gr. Wt</th>
@@ -296,15 +297,30 @@ const Ledger: React.FC = () => {
                                   </tr>
                                 </thead>
                                 <tbody>
-                                  {tx.items.map(item => {
-                                    const sw = Number(item.stone_weight) || 0;
-                                    const gw = Number(item.weight) || 0;
+                                  {Object.values(tx.items.reduce((acc: any, item: any) => {
+                                    const key = `${item.model || 'Unknown'}-${item.type}`;
+                                    if (!acc[key]) {
+                                      acc[key] = {
+                                        model: item.model || 'Unknown',
+                                        type: item.type,
+                                        qty: 0,
+                                        weight: 0,
+                                        stone_weight: 0,
+                                      };
+                                    }
+                                    acc[key].qty += 1;
+                                    acc[key].weight += Number(item.weight) || 0;
+                                    acc[key].stone_weight += Number(item.stone_weight) || 0;
+                                    return acc;
+                                  }, {})).map((group: any) => {
+                                    const sw = group.stone_weight;
+                                    const gw = group.weight;
                                     const nw = Math.max(0, gw - sw);
                                     return (
-                                      <tr key={item.id} className="border-b border-slate-800/30">
-                                        <td className="py-2 px-2 font-mono text-slate-400">{item.barcode}</td>
-                                        <td className="py-2 px-2 text-slate-300">{item.model}</td>
-                                        <td className="py-2 px-2 text-slate-400">{item.type}</td>
+                                      <tr key={`${group.model}-${group.type}`} className="border-b border-slate-800/30">
+                                        <td className="py-2 px-2 font-medium text-slate-300 text-center">{group.qty}</td>
+                                        <td className="py-2 px-2 text-slate-300">{group.model}</td>
+                                        <td className="py-2 px-2 text-slate-400">{group.type}</td>
                                         <td className="py-2 px-2 text-right text-slate-400">{gw.toFixed(2)}g</td>
                                         <td className="py-2 px-2 text-right text-slate-500">{sw > 0 ? sw.toFixed(2) + 'g' : '-'}</td>
                                         <td className="py-2 px-2 text-right font-medium text-slate-300">{nw.toFixed(2)}g</td>

@@ -6,7 +6,7 @@ import { Html5QrcodeScanner } from 'html5-qrcode';
 import Dialog from '../components/Dialog';
 
 const POS: React.FC = () => {
-  const { items, buyers, sales, processBulkSale, addBuyer, editBuyer, deleteBuyer, setPrintInvoiceData } = useInventory();
+  const { items, buyers, sales, processBulkSale, addBuyer, editBuyer, deleteBuyer, setPrintInvoiceData, setPrintItem } = useInventory();
   const [selectedBuyer, setSelectedBuyer] = useState('');
   const [barcode, setBarcode] = useState('');
   const [notification, setNotification] = useState<{ type: 'success' | 'error', message: string } | null>(null);
@@ -248,6 +248,7 @@ const POS: React.FC = () => {
         const result = await processBulkSale(barcodes, selectedBuyer);
         
         if (result.success) {
+          setPrintItem(null); // Clear any pending barcode
           setPrintInvoiceData({
             buyerName,
             items: completedCart,
