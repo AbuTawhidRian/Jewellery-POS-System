@@ -55,7 +55,14 @@ const requireActiveOrTrial = async (req: AuthRequest, res: Response, next: NextF
 
   try {
     const sub = await prisma.subscription.findUnique({ where: { shopId: req.user.shopId } });
-    if (!sub) return res.status(403).json({ error: 'Subscription not found' });
+    
+    // Auto-create trial for existing shops that don't have a subscription
+    if (!sub) {
+      await prisma.subscription.create({
+        data: { shopId: req.user.shopId, status: SubStatus.TRIAL }
+      });
+      return next();
+    }
 
     if (sub.status === SubStatus.ACTIVE) return next();
     if (sub.status === SubStatus.TRIAL && new Date() <= sub.trialEndsAt) return next();
@@ -451,9 +458,13 @@ app.get('/api/inventory', authenticateToken, requireActiveOrTrial, async (req: A
 
 app.post('/api/inventory', authenticateToken, requireActiveOrTrial, requireRole(Role.OWNER, Role.MANAGER), async (req: AuthRequest, res) => {
   try {
-    const { barcode, type, model, weight, stone_weight } = req.body;
+    let { barcode, type, model, weight, stone_weight } = req.body;
     const shopId = req.user!.shopId!;
     
+    if (!barcode) {
+      barcode = Math.floor(1000000000 + Math.random() * 9000000000).toString(); // 10 digit random barcode
+    }
+
     const existing = await prisma.item.findUnique({ 
       where: { barcode_shopId: { barcode, shopId } } 
     });
@@ -534,6 +545,51 @@ app.get('/api/buyers', authenticateToken, requireActiveOrTrial, async (req: Auth
       where: { shopId: req.user!.shopId! }
     });
     res.json(buyers);
+  } catch (error) {
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+app.post('/api/buyers', authenticateToken, requireActiveOrTrial, async (req: AuthRequest, res) => {
+  try {
+    const { name } = req.body;
+    const shopId = req.user!.shopId!;
+    const newBuyer = await prisma.buyer.create({
+      data: { name, shopId }
+    });
+    res.json(newBuyer);
+  } catch (error) {
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+app.put('/api/buyers/:id', authenticateToken, requireActiveOrTrial, async (req: AuthRequest, res) => {
+  try {
+    const id = String(req.params.id);
+    const { name } = req.body;
+    const shopId = req.user!.shopId!;
+    const existing = await prisma.buyer.findUnique({ where: { id } });
+    if (!existing || existing.shopId !== shopId) return res.status(404).json({ error: 'Not found' });
+    
+    const updated = await prisma.buyer.update({
+      where: { id },
+      data: { name }
+    });
+    res.json(updated);
+  } catch (error) {
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+app.delete('/api/buyers/:id', authenticateToken, requireActiveOrTrial, async (req: AuthRequest, res) => {
+  try {
+    const id = String(req.params.id);
+    const shopId = req.user!.shopId!;
+    const existing = await prisma.buyer.findUnique({ where: { id } });
+    if (!existing || existing.shopId !== shopId) return res.status(404).json({ error: 'Not found' });
+    
+    await prisma.buyer.delete({ where: { id } });
+    res.json({ success: true });
   } catch (error) {
     res.status(500).json({ error: 'Internal Server Error' });
   }
