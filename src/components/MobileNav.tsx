@@ -5,21 +5,20 @@ import clsx from 'clsx';
 import { useAuth } from '../contexts/AuthContext';
 
 const MobileNav: React.FC = () => {
-  const { user } = useAuth();
-  let links = [
-    { to: '/dashboard', icon: LayoutDashboard, label: 'Dash' },
-    { to: '/dashboard/vault', icon: Lock, label: 'Vault' },
-    { to: '/dashboard/pos', icon: Barcode, label: 'POS' },
-    { to: '/dashboard/ledger', icon: BookOpen, label: 'Ledger' },
-  ];
-
-  if (user?.role === 'OWNER') {
-    links.push({ to: '/dashboard/settings', icon: SettingsIcon, label: 'Set' });
-  } else if (user?.role === 'SUPERADMIN') {
-    links = [
-      { to: '/dashboard/admin', icon: ShieldCheck, label: 'Admin' }
-    ];
+  const { user, hasPermission } = useAuth();
+  let links: any[] = [];
+  
+  if (user?.role === 'SUPERADMIN') {
+    links = [{ to: '/dashboard/admin', icon: ShieldCheck, label: 'Admin' }];
+  } else {
+    if (hasPermission('view_dashboard')) links.push({ to: '/dashboard', icon: LayoutDashboard, label: 'Dash' });
+    if (hasPermission('view_vault')) links.push({ to: '/dashboard/vault', icon: Lock, label: 'Vault' });
+    if (hasPermission('access_pos')) links.push({ to: '/dashboard/pos', icon: Barcode, label: 'POS' });
+    if (hasPermission('view_ledger')) links.push({ to: '/dashboard/ledger', icon: BookOpen, label: 'Ledger' });
+    if (user?.role === 'OWNER') links.push({ to: '/dashboard/settings', icon: SettingsIcon, label: 'Set' });
   }
+
+
 
   return (
     <div className="md:hidden fixed bottom-0 left-0 right-0 bg-[#0B0F19]/95 backdrop-blur-xl border-t border-[#334155]/50 z-50 px-2 pb-safe shadow-[0_-10px_40px_rgba(0,0,0,0.5)]">

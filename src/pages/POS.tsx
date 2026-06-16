@@ -4,8 +4,10 @@ import { ShoppingCart, CheckCircle, XCircle, ScanLine, Trash2, Camera, CameraOff
 import clsx from 'clsx';
 import { Html5QrcodeScanner } from 'html5-qrcode';
 import Dialog from '../components/Dialog';
+import { useAuth } from '../contexts/AuthContext';
 
 const POS: React.FC = () => {
+  const { hasPermission } = useAuth();
   const { items, buyers, sales, processBulkSale, addBuyer, editBuyer, deleteBuyer, setPrintInvoiceData, setPrintItem } = useInventory();
   const [selectedBuyer, setSelectedBuyer] = useState('');
   const [barcode, setBarcode] = useState('');
@@ -338,14 +340,16 @@ const POS: React.FC = () => {
                   </div>
                 )}
               </div>
-              <button
-                onClick={() => setIsBuyerModalOpen(true)}
-                className="bg-slate-900 hover:bg-slate-800 border-2 border-slate-700 hover:border-gold-500 text-gold-500 rounded-xl px-4 flex flex-col items-center justify-center transition-all"
-                title="Manage Buyers"
-              >
-                <Building2 className="w-6 h-6" />
-                <span className="text-[10px] font-bold uppercase mt-1">Manage</span>
-              </button>
+              {hasPermission('manage_buyers') && (
+                <button
+                  onClick={() => setIsBuyerModalOpen(true)}
+                  className="bg-slate-900 hover:bg-slate-800 border-2 border-slate-700 hover:border-gold-500 text-gold-500 rounded-xl px-4 flex flex-col items-center justify-center transition-all"
+                  title="Manage Buyers"
+                >
+                  <Building2 className="w-6 h-6" />
+                  <span className="text-[10px] font-bold uppercase mt-1">Manage</span>
+                </button>
+              )}
             </div>
           </div>
 

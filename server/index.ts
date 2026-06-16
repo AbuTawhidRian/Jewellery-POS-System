@@ -20,7 +20,14 @@ app.use(express.json());
 
 // --- Authentication & Authorization Middleware ---
 export interface AuthRequest extends Request {
-  user?: { id?: string; shopId?: string | null; email: string; role: Role | 'SUPERADMIN' };
+  user?: {
+    id?: string;
+    shopId?: string | null;
+    email: string;
+    role: Role | 'SUPERADMIN';
+    customRole?: string | null;
+    permissions?: string[];
+  };
 }
 
 const authenticateToken = (req: AuthRequest, res: Response, next: NextFunction) => {
@@ -43,6 +50,16 @@ const requireRole = (...allowedRoles: (Role | 'SUPERADMIN')[]) => {
       return res.status(403).json({ error: 'Forbidden: Insufficient role' });
     }
     next();
+  };
+};
+
+const requireAccess = (allowedRoles: (Role | 'SUPERADMIN')[], allowedPermissions: string[] = []) => {
+  return (req: AuthRequest, res: Response, next: NextFunction) => {
+    if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
+    if (req.user.role === 'OWNER' || req.user.role === 'SUPERADMIN') return next();
+    if (allowedRoles.includes(req.user.role)) return next();
+    if (req.user.permissions && req.user.permissions.some(p => allowedPermissions.includes(p))) return next();
+    return res.status(403).json({ error: 'Forbidden: Insufficient permissions' });
   };
 };
 
@@ -125,9 +142,9 @@ app.post('/api/auth/login', async (req, res) => {
     const validPassword = await bcrypt.compare(password, user.passwordHash);
     if (!validPassword) return res.status(400).json({ error: 'Invalid email or password' });
 
-    const token = jwt.sign({ id: user.id, shopId: user.shopId, email: user.email, role: user.role }, JWT_SECRET, { expiresIn: '7d' });
+    const token = jwt.sign({ id: user.id, shopId: user.shopId, email: user.email, role: user.role, customRole: user.customRole, permissions: user.permissions }, JWT_SECRET, { expiresIn: '7d' });
     
-    res.json({ token, user: { id: user.id, name: user.name, email: user.email, shopId: user.shopId, shopName: user.shop?.name, role: user.role } });
+    res.json({ token, user: { id: user.id, name: user.name, email: user.email, shopId: user.shopId, shopName: user.shop?.name, role: user.role, customRole: user.customRole, permissions: user.permissions } });
   } catch (error) {
     console.error("Login error:", error);
     res.status(500).json({ error: 'Internal Server Error' });
@@ -159,7 +176,7 @@ app.get('/api/auth/me', authenticateToken, async (req: AuthRequest, res) => {
     });
     if (!user) return res.status(404).json({ error: 'User not found' });
     
-    res.json({ id: user.id, name: user.name, email: user.email, shopId: user.shopId, shopName: user.shop?.name, role: user.role });
+    res.json({ id: user.id, name: user.name, email: user.email, shopId: user.shopId, shopName: user.shop?.name, role: user.role, customRole: user.customRole, permissions: user.permissions });
   } catch (error) {
     res.status(500).json({ error: 'Internal Server Error' });
   }
@@ -171,7 +188,7 @@ app.get('/api/users', authenticateToken, requireRole(Role.OWNER), async (req: Au
   try {
     const users = await prisma.user.findMany({
       where: { shopId: req.user!.shopId! },
-      select: { id: true, name: true, email: true, role: true, createdAt: true }
+      select: { id: true, name: true, email: true, role: true, customRole: true, permissions: true, createdAt: true }
     });
     res.json(users);
   } catch (error) {
@@ -179,44 +196,51 @@ app.get('/api/users', authenticateToken, requireRole(Role.OWNER), async (req: Au
   }
 });
 
-app.post('/api/users', authenticateToken, requireRole(Role.OWNER), async (req: AuthRequest, res) => {
-  try {
-    const { name, email, password, role } = req.body;
-    const existingUser = await prisma.user.findUnique({ where: { email } });
-    if (existingUser) return res.status(400).json({ error: 'Email already exists' });
-
-    const passwordHash = await bcrypt.hash(password, 10);
-    const newUser = await prisma.user.create({
-      data: {
-        name,
-        email,
-        passwordHash,
-        role: role as Role,
-        shopId: req.user!.shopId!
-      },
-      select: { id: true, name: true, email: true, role: true, createdAt: true }
-    });
-    res.json(newUser);
+  app.post('/api/users', authenticateToken, requireRole(Role.OWNER), async (req: AuthRequest, res) => {
+    try {
+      const { name, email, password, role, customRole, permissions } = req.body;
+      const existingUser = await prisma.user.findUnique({ where: { email } });
+      if (existingUser) return res.status(400).json({ error: 'Email already exists' });
+  
+      const passwordHash = await bcrypt.hash(password, 10);
+      const newUser = await prisma.user.create({
+        data: {
+          name,
+          email,
+          passwordHash,
+          role: role as Role,
+          customRole,
+          permissions,
+          shopId: req.user!.shopId!
+        },
+        select: { id: true, name: true, email: true, role: true, customRole: true, permissions: true, createdAt: true }
+      });
+      res.json(newUser);
   } catch (error) {
     res.status(500).json({ error: 'Internal Server Error' });
   }
 });
 
-app.patch('/api/users/:id', authenticateToken, requireRole(Role.OWNER), async (req: AuthRequest, res) => {
-  try {
-    const { name, role } = req.body;
-    const userId = String(req.params.id);
-    // Don't allow modifying other shop's users
-    const existing = await prisma.user.findUnique({ where: { id: userId } });
-    if (!existing || existing.shopId !== req.user!.shopId) {
-      return res.status(404).json({ error: 'User not found' });
-    }
-    const updated = await prisma.user.update({
-      where: { id: userId },
-      data: { name, role: role as Role },
-      select: { id: true, name: true, email: true, role: true, createdAt: true }
-    });
-    res.json(updated);
+  app.patch('/api/users/:id', authenticateToken, requireRole(Role.OWNER), async (req: AuthRequest, res) => {
+    try {
+      const { name, role, customRole, permissions } = req.body;
+      const userId = String(req.params.id);
+      // Don't allow modifying other shop's users
+      const existing = await prisma.user.findUnique({ where: { id: userId } });
+      if (!existing || existing.shopId !== req.user!.shopId) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+      
+      const updateData: any = { name, role: role as Role };
+      if (customRole !== undefined) updateData.customRole = customRole;
+      if (permissions !== undefined) updateData.permissions = permissions;
+      
+      const updated = await prisma.user.update({
+        where: { id: userId },
+        data: updateData,
+        select: { id: true, name: true, email: true, role: true, customRole: true, permissions: true, createdAt: true }
+      });
+      res.json(updated);
   } catch (error) {
     res.status(500).json({ error: 'Internal Server Error' });
   }
@@ -346,7 +370,7 @@ app.get('/api/item_types', authenticateToken, requireActiveOrTrial, async (req: 
   }
 });
 
-app.post('/api/item_types', authenticateToken, requireActiveOrTrial, requireRole(Role.OWNER, Role.MANAGER), async (req: AuthRequest, res) => {
+app.post('/api/item_types', authenticateToken, requireActiveOrTrial, requireAccess([Role.OWNER, Role.MANAGER], ['view_vault', 'edit_vault', 'manage_buyers']), async (req: AuthRequest, res) => {
   try {
     const { name } = req.body;
     const itemType = await prisma.itemType.create({
@@ -358,7 +382,7 @@ app.post('/api/item_types', authenticateToken, requireActiveOrTrial, requireRole
   }
 });
 
-app.put('/api/item_types/:id', authenticateToken, requireActiveOrTrial, requireRole(Role.OWNER, Role.MANAGER), async (req: AuthRequest, res) => {
+app.put('/api/item_types/:id', authenticateToken, requireActiveOrTrial, requireAccess([Role.OWNER, Role.MANAGER], ['view_vault', 'edit_vault', 'manage_buyers']), async (req: AuthRequest, res) => {
   try {
     const id = String(req.params.id);
     const { name } = req.body;
@@ -375,7 +399,7 @@ app.put('/api/item_types/:id', authenticateToken, requireActiveOrTrial, requireR
   }
 });
 
-app.delete('/api/item_types/:id', authenticateToken, requireActiveOrTrial, requireRole(Role.OWNER, Role.MANAGER), async (req: AuthRequest, res) => {
+app.delete('/api/item_types/:id', authenticateToken, requireActiveOrTrial, requireAccess([Role.OWNER, Role.MANAGER], ['view_vault', 'edit_vault', 'manage_buyers']), async (req: AuthRequest, res) => {
   try {
     const id = String(req.params.id);
     const existing = await prisma.itemType.findUnique({ where: { id } });
@@ -401,7 +425,7 @@ app.get('/api/models', authenticateToken, requireActiveOrTrial, async (req: Auth
   }
 });
 
-app.post('/api/models', authenticateToken, requireActiveOrTrial, requireRole(Role.OWNER, Role.MANAGER), async (req: AuthRequest, res) => {
+app.post('/api/models', authenticateToken, requireActiveOrTrial, requireAccess([Role.OWNER, Role.MANAGER], ['view_vault', 'edit_vault', 'manage_buyers']), async (req: AuthRequest, res) => {
   try {
     const { name } = req.body;
     const itemModel = await prisma.itemModel.create({
@@ -413,7 +437,7 @@ app.post('/api/models', authenticateToken, requireActiveOrTrial, requireRole(Rol
   }
 });
 
-app.put('/api/models/:id', authenticateToken, requireActiveOrTrial, requireRole(Role.OWNER, Role.MANAGER), async (req: AuthRequest, res) => {
+app.put('/api/models/:id', authenticateToken, requireActiveOrTrial, requireAccess([Role.OWNER, Role.MANAGER], ['view_vault', 'edit_vault', 'manage_buyers']), async (req: AuthRequest, res) => {
   try {
     const id = String(req.params.id);
     const { name } = req.body;
@@ -430,7 +454,7 @@ app.put('/api/models/:id', authenticateToken, requireActiveOrTrial, requireRole(
   }
 });
 
-app.delete('/api/models/:id', authenticateToken, requireActiveOrTrial, requireRole(Role.OWNER, Role.MANAGER), async (req: AuthRequest, res) => {
+app.delete('/api/models/:id', authenticateToken, requireActiveOrTrial, requireAccess([Role.OWNER, Role.MANAGER], ['view_vault', 'edit_vault', 'manage_buyers']), async (req: AuthRequest, res) => {
   try {
     const id = String(req.params.id);
     const existing = await prisma.itemModel.findUnique({ where: { id } });
@@ -456,7 +480,7 @@ app.get('/api/inventory', authenticateToken, requireActiveOrTrial, async (req: A
   }
 });
 
-app.post('/api/inventory', authenticateToken, requireActiveOrTrial, requireRole(Role.OWNER, Role.MANAGER), async (req: AuthRequest, res) => {
+app.post('/api/inventory', authenticateToken, requireActiveOrTrial, requireAccess([Role.OWNER, Role.MANAGER], ['view_vault', 'edit_vault', 'manage_buyers']), async (req: AuthRequest, res) => {
   try {
     let { barcode, type, model, weight, stone_weight } = req.body;
     const shopId = req.user!.shopId!;
@@ -502,7 +526,7 @@ app.post('/api/inventory', authenticateToken, requireActiveOrTrial, requireRole(
   }
 });
 
-app.put('/api/inventory/:id', authenticateToken, requireActiveOrTrial, requireRole(Role.OWNER, Role.MANAGER), async (req: AuthRequest, res) => {
+app.put('/api/inventory/:id', authenticateToken, requireActiveOrTrial, requireAccess([Role.OWNER, Role.MANAGER], ['view_vault', 'edit_vault', 'manage_buyers']), async (req: AuthRequest, res) => {
   try {
     const id = String(req.params.id);
     const shopId = req.user!.shopId!;
@@ -534,7 +558,7 @@ app.put('/api/inventory/:id', authenticateToken, requireActiveOrTrial, requireRo
   }
 });
 
-app.delete('/api/inventory/:id', authenticateToken, requireActiveOrTrial, requireRole(Role.OWNER, Role.MANAGER), async (req: AuthRequest, res) => {
+app.delete('/api/inventory/:id', authenticateToken, requireActiveOrTrial, requireAccess([Role.OWNER, Role.MANAGER], ['view_vault', 'edit_vault', 'manage_buyers']), async (req: AuthRequest, res) => {
   try {
     const id = String(req.params.id);
     const shopId = req.user!.shopId!;
@@ -636,7 +660,7 @@ app.get('/api/sales', authenticateToken, requireActiveOrTrial, async (req: AuthR
   }
 });
 
-app.post('/api/sales/bulk', authenticateToken, requireActiveOrTrial, requireRole(Role.OWNER, Role.MANAGER, Role.CASHIER), async (req: AuthRequest, res) => {
+app.post('/api/sales/bulk', authenticateToken, requireActiveOrTrial, requireAccess([Role.OWNER, Role.MANAGER, Role.CASHIER], ['access_pos', 'delete_sale']), async (req: AuthRequest, res) => {
   try {
     const { barcodes, buyerId } = req.body;
     const shopId = req.user!.shopId!;
@@ -688,7 +712,7 @@ app.post('/api/sales/bulk', authenticateToken, requireActiveOrTrial, requireRole
   }
 });
 
-app.post('/api/sales/void', authenticateToken, requireActiveOrTrial, requireRole(Role.OWNER, Role.MANAGER, Role.CASHIER), async (req: AuthRequest, res) => {
+app.post('/api/sales/void', authenticateToken, requireActiveOrTrial, requireAccess([Role.OWNER, Role.MANAGER, Role.CASHIER], ['access_pos', 'delete_sale']), async (req: AuthRequest, res) => {
   try {
     const { buyerId, date } = req.body;
     const shopId = req.user!.shopId!;

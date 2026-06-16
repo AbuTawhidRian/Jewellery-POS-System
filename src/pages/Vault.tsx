@@ -2,10 +2,11 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useInventory, type Item } from '../store/InventoryContext';
 import { Plus, Search, XCircle, Trash2, Printer, Settings, CheckCircle, MoreVertical, Edit2, Lock } from 'lucide-react';
 import Dialog from '../components/Dialog';
-
-
+import { useAuth } from '../contexts/AuthContext';
 
 const Vault: React.FC = () => {
+  const { hasPermission } = useAuth();
+  const canEditVault = hasPermission('edit_vault');
   const { items, itemTypes, addItem, editItem, deleteItem, setPrintItem, setPrintInvoiceData, addItemType, editItemType, deleteItemType, models, addModel, editModel, deleteModel } = useInventory();
   const [searchTerm, setSearchTerm] = useState('');
   
@@ -133,11 +134,12 @@ const Vault: React.FC = () => {
         <p className="text-slate-400 mt-2 text-sm">Manage your active jewelry inventory.</p>
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+      <div className={`grid grid-cols-1 gap-8 ${canEditVault ? 'xl:grid-cols-3' : ''}`}>
         {/* Entry Form */}
-        <div className="xl:col-span-1">
-          <div className="bg-slate-950 p-4 md:p-8 rounded-2xl border border-slate-800 shadow-xl relative overflow-hidden">
-            <h2 className="text-xl font-bold text-slate-100 mb-6 flex items-center gap-2">
+        {canEditVault && (
+          <div className="xl:col-span-1">
+            <div className="bg-slate-950 p-4 md:p-8 rounded-2xl border border-slate-800 shadow-xl relative overflow-hidden">
+              <h2 className="text-xl font-bold text-slate-100 mb-6 flex items-center gap-2">
               <Plus className="w-5 h-5 text-gold-500" />
               Add New Item
             </h2>
@@ -301,9 +303,10 @@ const Vault: React.FC = () => {
             </form>
           </div>
         </div>
+        )}
 
-        {/* Inventory Table */}
-        <div className="xl:col-span-2">
+        {/* Inventory List */}
+        <div className={canEditVault ? "xl:col-span-2" : ""}>
           <div className="bg-slate-950 rounded-2xl border border-slate-800 shadow-lg flex-1 overflow-hidden flex flex-col">
             <div className="p-4 md:p-6 border-b border-slate-800 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
               <h2 className="text-xl font-bold text-slate-100">Active Stock ({activeStock.length})</h2>
@@ -372,7 +375,7 @@ const Vault: React.FC = () => {
                                   <MoreVertical className="w-4 h-4" />
                                 </button>
 
-                                {activeMenuId === item.id && (
+                                {activeMenuId === item.id && canEditVault && (
                                   <>
                                     <div 
                                       className="fixed inset-0 z-40" 

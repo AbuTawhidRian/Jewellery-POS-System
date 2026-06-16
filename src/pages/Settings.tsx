@@ -9,8 +9,20 @@ interface ShopUser {
   name: string;
   email: string;
   role: string;
+  customRole?: string;
+  permissions?: string[];
   createdAt: string;
 }
+
+const AVAILABLE_PERMISSIONS = [
+  { id: 'view_dashboard', label: 'View Dashboard' },
+  { id: 'view_vault', label: 'View Vault' },
+  { id: 'edit_vault', label: 'Add/Edit/Delete Items in Vault' },
+  { id: 'access_pos', label: 'Access POS Terminal' },
+  { id: 'manage_buyers', label: 'Manage Buyers' },
+  { id: 'view_ledger', label: 'View Sales Ledger' },
+  { id: 'delete_sale', label: 'Delete/Void Sales' }
+];
 
 const Settings: React.FC = () => {
   const { user } = useAuth();
@@ -26,7 +38,8 @@ const Settings: React.FC = () => {
   const [staff, setStaff] = useState<ShopUser[]>([]);
   const [loadingStaff, setLoadingStaff] = useState(true);
   const [showAddStaff, setShowAddStaff] = useState(false);
-  const [newStaff, setNewStaff] = useState({ name: '', email: '', password: '', role: 'CASHIER' });
+  const [newStaff, setNewStaff] = useState<{name: string, email: string, password: string, role: string, customRole: string, permissions: string[]}>({ name: '', email: '', password: '', role: 'STAFF', customRole: '', permissions: [] });
+  const [editingStaff, setEditingStaff] = useState<ShopUser | null>(null);
   
   // Sub State
   const [subscription, setSubscription] = useState<any>(null);
@@ -106,40 +119,39 @@ const Settings: React.FC = () => {
 
   const handleAddStaff = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!newStaff.customRole) {
+      showNotification('error', 'Please enter a Role Name');
+      return;
+    }
     try {
       await api.post('/users', newStaff);
+      showNotification('success', 'Staff member added successfully!');
+      setNewStaff({ name: '', email: '', password: '', role: 'STAFF', customRole: '', permissions: [] });
       setShowAddStaff(false);
-      setNewStaff({ name: '', email: '', password: '', role: 'CASHIER' });
       fetchStaff();
-      showNotification('success', 'Staff member added successfully');
     } catch (err: any) {
       showNotification('error', err.response?.data?.error || 'Failed to add staff');
     }
   };
 
-  const handleEditRole = (id: number) => {
-    setDialogConfig({
-      isOpen: true,
-      type: 'prompt',
-      title: 'Edit Staff Role',
-      message: 'Enter new role (MANAGER or CASHIER):',
-      onConfirm: async (inputValue) => {
-        if (!inputValue) return;
-        const roleUpper = inputValue.toUpperCase();
-        if (!['MANAGER', 'CASHIER'].includes(roleUpper)) {
-          showNotification('error', 'Invalid role. Please enter MANAGER or CASHIER.');
-          return;
-        }
-        try {
-          await api.put(`/users/${id}/role`, { role: roleUpper });
-          fetchStaff();
-          showNotification('success', 'Role updated successfully');
-        } catch (err) {
-          showNotification('error', 'Failed to update role');
-        }
-      }
-    });
+  const handleEditStaffSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingStaff) return;
+    try {
+      await api.patch(`/users/${editingStaff.id}`, {
+        name: editingStaff.name,
+        role: editingStaff.role,
+        customRole: editingStaff.customRole,
+        permissions: editingStaff.permissions
+      });
+      showNotification('success', 'Staff member updated successfully!');
+      setEditingStaff(null);
+      fetchStaff();
+    } catch (err: any) {
+      showNotification('error', 'Failed to update staff member');
+    }
   };
+
 
   const handleDeleteStaff = (id: number) => {
     setDialogConfig({
@@ -275,34 +287,112 @@ const Settings: React.FC = () => {
           </div>
 
           {showAddStaff && (
-            <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl">
+            <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl mb-8">
               <h4 className="text-lg font-medium text-white mb-4">Add New Staff Member</h4>
-              <form onSubmit={handleAddStaff} className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
-                <div>
-                  <label className="block text-sm font-medium text-slate-400 mb-1">Name</label>
-                  <input required type="text" value={newStaff.name} onChange={(e) => setNewStaff({...newStaff, name: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-gold-500" />
+              <form onSubmit={handleAddStaff} className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-400 mb-1">Name</label>
+                    <input required type="text" value={newStaff.name} onChange={(e) => setNewStaff({...newStaff, name: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-gold-500" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-400 mb-1">Email</label>
+                    <input required type="email" value={newStaff.email} onChange={(e) => setNewStaff({...newStaff, email: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-gold-500" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-400 mb-1">Password</label>
+                    <input required type="password" value={newStaff.password} onChange={(e) => setNewStaff({...newStaff, password: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-gold-500" />
+                  </div>
                 </div>
+                
                 <div>
-                  <label className="block text-sm font-medium text-slate-400 mb-1">Email</label>
-                  <input required type="email" value={newStaff.email} onChange={(e) => setNewStaff({...newStaff, email: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-gold-500" />
+                  <label className="block text-sm font-medium text-slate-400 mb-1">Role Name (e.g. Accountant, Salesman)</label>
+                  <input required type="text" value={newStaff.customRole} onChange={(e) => setNewStaff({...newStaff, customRole: e.target.value})} placeholder="e.g. Accountant" className="w-full md:w-1/3 bg-slate-950 border border-slate-800 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-gold-500" />
                 </div>
+
                 <div>
-                  <label className="block text-sm font-medium text-slate-400 mb-1">Password</label>
-                  <input required type="password" value={newStaff.password} onChange={(e) => setNewStaff({...newStaff, password: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-gold-500" />
+                  <label className="block text-sm font-medium text-slate-400 mb-3">Permissions</label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                    {AVAILABLE_PERMISSIONS.map(p => (
+                      <label key={p.id} className="flex items-center gap-3 p-3 rounded-lg border border-slate-800 bg-slate-950/50 cursor-pointer hover:bg-slate-800 transition-colors">
+                        <input 
+                          type="checkbox" 
+                          className="w-4 h-4 rounded border-slate-700 text-gold-500 focus:ring-gold-500 focus:ring-offset-slate-900 bg-slate-900"
+                          checked={newStaff.permissions.includes(p.id)}
+                          onChange={(e) => {
+                            if (e.target.checked) setNewStaff({...newStaff, permissions: [...newStaff.permissions, p.id]});
+                            else setNewStaff({...newStaff, permissions: newStaff.permissions.filter(id => id !== p.id)});
+                          }}
+                        />
+                        <span className="text-sm text-slate-300">{p.label}</span>
+                      </label>
+                    ))}
+                  </div>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-400 mb-1">Role</label>
-                  <select value={newStaff.role} onChange={(e) => setNewStaff({...newStaff, role: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-gold-500">
-                    <option value="MANAGER">Manager</option>
-                    <option value="CASHIER">Cashier</option>
-                  </select>
-                </div>
-                <div className="md:col-span-4 flex justify-end mt-2">
+
+                <div className="flex justify-end pt-4 border-t border-slate-800">
                   <button type="submit" className="bg-emerald-500 hover:bg-emerald-600 text-white px-6 py-2 rounded-lg font-semibold transition-colors">
                     Save Staff
                   </button>
                 </div>
               </form>
+            </div>
+          )}
+
+          {/* Edit Staff Modal */}
+          {editingStaff && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+              <div className="bg-[#0B0F19] border border-slate-800 rounded-2xl p-6 w-full max-w-2xl shadow-2xl">
+                <div className="flex justify-between items-center mb-6">
+                  <h3 className="text-xl font-bold text-white">Edit Staff Permissions</h3>
+                  <button onClick={() => setEditingStaff(null)} className="text-slate-400 hover:text-white transition-colors">
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+                
+                <form onSubmit={handleEditStaffSave} className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-slate-400 mb-1">Name</label>
+                      <input required type="text" value={editingStaff.name} onChange={(e) => setEditingStaff({...editingStaff, name: e.target.value})} className="w-full bg-slate-900 border border-slate-800 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-gold-500" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-400 mb-1">Role Name</label>
+                      <input required type="text" value={editingStaff.customRole || ''} onChange={(e) => setEditingStaff({...editingStaff, customRole: e.target.value})} className="w-full bg-slate-900 border border-slate-800 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-gold-500" />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-slate-400 mb-3">Permissions</label>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {AVAILABLE_PERMISSIONS.map(p => (
+                        <label key={p.id} className="flex items-center gap-3 p-3 rounded-lg border border-slate-800 bg-slate-900 cursor-pointer hover:bg-slate-800/80 transition-colors">
+                          <input 
+                            type="checkbox" 
+                            className="w-4 h-4 rounded border-slate-700 text-gold-500 focus:ring-gold-500 focus:ring-offset-slate-900 bg-slate-950"
+                            checked={(editingStaff.permissions || []).includes(p.id)}
+                            onChange={(e) => {
+                              const perms = editingStaff.permissions || [];
+                              if (e.target.checked) setEditingStaff({...editingStaff, permissions: [...perms, p.id]});
+                              else setEditingStaff({...editingStaff, permissions: perms.filter(id => id !== p.id)});
+                            }}
+                          />
+                          <span className="text-sm text-slate-300">{p.label}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end gap-3 pt-6 border-t border-slate-800">
+                    <button type="button" onClick={() => setEditingStaff(null)} className="px-4 py-2 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition-colors">
+                      Cancel
+                    </button>
+                    <button type="submit" className="px-6 py-2 rounded-lg bg-gold-500 hover:bg-gold-600 text-slate-950 font-bold transition-colors">
+                      Save Changes
+                    </button>
+                  </div>
+                </form>
+              </div>
             </div>
           )}
 
@@ -325,14 +415,14 @@ const Settings: React.FC = () => {
                       <td className="p-4 text-white font-medium">{s.name}</td>
                       <td className="p-4 text-slate-400">{s.email}</td>
                       <td className="p-4">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${s.role === 'OWNER' ? 'bg-gold-500/10 text-gold-400 border-gold-500/20' : s.role === 'MANAGER' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' : 'bg-slate-800 text-slate-300 border-slate-700'}`}>
-                          {s.role}
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${s.role === 'OWNER' ? 'bg-gold-500/10 text-gold-400 border-gold-500/20' : 'bg-blue-500/10 text-blue-400 border-blue-500/20'}`}>
+                          {s.role === 'OWNER' ? 'Owner' : s.customRole || s.role}
                         </span>
                       </td>
                       <td className="p-4 text-right">
                         {s.role !== 'OWNER' && (
                           <div className="flex items-center justify-end gap-2">
-                            <button onClick={() => handleEditRole(s.id)} className="p-2 text-slate-400 hover:bg-gold-500/20 hover:text-gold-400 rounded-lg transition-colors" title="Edit Role"><Edit2 className="w-4 h-4" /></button>
+                            <button onClick={() => setEditingStaff(s)} className="p-2 text-slate-400 hover:bg-gold-500/20 hover:text-gold-400 rounded-lg transition-colors" title="Edit Permissions"><Edit2 className="w-4 h-4" /></button>
                             <button onClick={() => handleDeleteStaff(s.id)} className="p-2 text-slate-400 hover:bg-red-500/20 hover:text-red-400 rounded-lg transition-colors" title="Remove Staff"><Trash2 className="w-4 h-4" /></button>
                           </div>
                         )}

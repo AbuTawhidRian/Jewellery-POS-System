@@ -3,8 +3,10 @@ import { useInventory, type Sale } from '../store/InventoryContext';
 import { Download, FileText, Filter, Printer, ChevronDown, ChevronRight, Calendar, Trash2 } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import Dialog from '../components/Dialog';
+import { useAuth } from '../contexts/AuthContext';
 
 const Ledger: React.FC = () => {
+  const { hasPermission } = useAuth();
   const { sales, buyers, setPrintInvoiceData, setPrintItem, voidTransaction } = useInventory();
   const [filterBuyerId, setFilterBuyerId] = useState<string>('all');
   const [filterDateRange, setFilterDateRange] = useState<string>('all');
@@ -332,14 +334,16 @@ const Ledger: React.FC = () => {
                               <Printer className="w-3.5 h-3.5 text-gold-500" />
                               <span className="hidden sm:inline">Print</span>
                             </button>
-                            <button 
-                              onClick={(e) => handleDeleteTransaction(tx, e)}
-                              className="inline-flex items-center gap-2 bg-red-900/30 hover:bg-red-900/50 text-red-400 text-xs font-semibold py-1.5 px-3 rounded-lg border border-red-900/50 transition-colors"
-                              title="Delete Transaction"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                              <span className="hidden sm:inline">Delete</span>
-                            </button>
+                            {hasPermission('delete_sale') && (
+                              <button 
+                                onClick={(e) => handleDeleteTransaction(tx, e)}
+                                className="inline-flex items-center gap-2 bg-red-900/30 hover:bg-red-900/50 text-red-400 text-xs font-semibold py-1.5 px-3 rounded-lg border border-red-900/50 transition-colors"
+                                title="Delete Transaction"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                                <span className="hidden sm:inline">Delete</span>
+                              </button>
+                            )}
                           </div>
                         </td>
                       </tr>

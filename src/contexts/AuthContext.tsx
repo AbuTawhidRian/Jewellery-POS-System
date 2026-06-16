@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 
 interface User {
   id: string;
@@ -7,6 +7,8 @@ interface User {
   shopId: string;
   shopName: string;
   role: string;
+  customRole?: string;
+  permissions?: string[];
 }
 
 interface AuthContextType {
@@ -15,6 +17,7 @@ interface AuthContextType {
   login: (token: string, user: User) => void;
   logout: () => void;
   isAuthenticated: boolean;
+  hasPermission: (permission: string) => boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -58,8 +61,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return <div>Loading...</div>; // Prevent render until auth state is known
   }
 
+  const hasPermission = useCallback((permission: string) => {
+    if (!user) return false;
+    if (user.role === 'OWNER' || user.role === 'SUPERADMIN') return true;
+    return user.permissions?.includes(permission) || false;
+  }, [user]);
+
   return (
-    <AuthContext.Provider value={{ user, token, login, logout, isAuthenticated: !!token }}>
+    <AuthContext.Provider value={{ user, token, login, logout, isAuthenticated: !!token, hasPermission }}>
       {children}
     </AuthContext.Provider>
   );

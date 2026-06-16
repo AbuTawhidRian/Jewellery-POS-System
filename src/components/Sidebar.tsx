@@ -5,21 +5,20 @@ import clsx from 'clsx';
 import { useAuth } from '../contexts/AuthContext';
 
 const Sidebar: React.FC = () => {
-  const { user } = useAuth();
-  let links = [
-    { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-    { to: '/dashboard/vault', icon: Lock, label: 'The Vault' },
-    { to: '/dashboard/pos', icon: Barcode, label: 'POS Terminal' },
-    { to: '/dashboard/ledger', icon: BookOpen, label: 'Sales Ledger' },
-  ];
-
-  if (user?.role === 'OWNER') {
-    links.push({ to: '/dashboard/settings', icon: SettingsIcon, label: 'Settings' });
-  } else if (user?.role === 'SUPERADMIN') {
-    links = [
-      { to: '/dashboard/admin', icon: ShieldCheck, label: 'Super Admin' }
-    ];
+  const { user, hasPermission } = useAuth();
+  let links: any[] = [];
+  
+  if (user?.role === 'SUPERADMIN') {
+    links = [{ to: '/dashboard/admin', icon: ShieldCheck, label: 'Super Admin' }];
+  } else {
+    if (hasPermission('view_dashboard')) links.push({ to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' });
+    if (hasPermission('view_vault')) links.push({ to: '/dashboard/vault', icon: Lock, label: 'The Vault' });
+    if (hasPermission('access_pos')) links.push({ to: '/dashboard/pos', icon: Barcode, label: 'POS Terminal' });
+    if (hasPermission('view_ledger')) links.push({ to: '/dashboard/ledger', icon: BookOpen, label: 'Sales Ledger' });
+    if (user?.role === 'OWNER') links.push({ to: '/dashboard/settings', icon: SettingsIcon, label: 'Settings' });
   }
+
+
 
   return (
     <div className="w-64 bg-[#0B0F19] h-screen flex flex-col hidden md:flex shrink-0">

@@ -11,6 +11,7 @@ enum Role {
   OWNER
   MANAGER
   CASHIER
+  STAFF
 }
 
 enum SubStatus {
@@ -44,7 +45,9 @@ model User {
   email        String   @unique
   passwordHash String
   name         String?
-  role         Role     @default(CASHIER)
+  role         Role     @default(STAFF)
+  customRole   String?
+  permissions  String[] @default([])
   shopId       String
   createdAt    DateTime @default(now())
   updatedAt    DateTime @default(now()) @updatedAt
