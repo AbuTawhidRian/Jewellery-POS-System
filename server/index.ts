@@ -232,6 +232,30 @@ app.delete('/api/users/:id', authenticateToken, requireRole(Role.OWNER), async (
   }
 });
 
+// --- Shop Routes ---
+app.get('/api/shop', authenticateToken, requireRole(Role.OWNER), async (req: AuthRequest, res) => {
+  try {
+    const shop = await prisma.shop.findUnique({ where: { id: req.user!.shopId! } });
+    if (!shop) return res.status(404).json({ error: 'Shop not found' });
+    res.json(shop);
+  } catch (error) {
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+app.put('/api/shop', authenticateToken, requireRole(Role.OWNER), async (req: AuthRequest, res) => {
+  try {
+    const { name, trn, address, email, phone } = req.body;
+    const shop = await prisma.shop.update({
+      where: { id: req.user!.shopId! },
+      data: { name, trn, address, email, phone }
+    });
+    res.json(shop);
+  } catch (error) {
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
 // --- Subscription Routes ---
 
 app.get('/api/subscription', authenticateToken, requireRole(Role.OWNER), async (req: AuthRequest, res) => {

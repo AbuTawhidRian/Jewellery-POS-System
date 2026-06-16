@@ -24,6 +24,10 @@ enum SubStatus {
 model Shop {
   id        String   @id @default(uuid())
   name      String
+  trn       String?
+  address   String?
+  email     String?
+  phone     String?
   createdAt DateTime @default(now())
 
   users        User[]

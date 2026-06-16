@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { Users, CreditCard, Plus, Edit2, Trash2, Check, X, ShieldAlert } from 'lucide-react';
+import { Users, CreditCard, Plus, Edit2, Trash2, Check, X, ShieldAlert, Building2 } from 'lucide-react';
 import api from '../lib/api';
 
 interface ShopUser {
@@ -13,7 +13,7 @@ interface ShopUser {
 
 const Settings: React.FC = () => {
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState<'staff' | 'subscription'>('staff');
+  const [activeTab, setActiveTab] = useState<'company' | 'staff' | 'subscription'>('company');
   
   // Staff State
   const [staff, setStaff] = useState<ShopUser[]>([]);
@@ -28,10 +28,16 @@ const Settings: React.FC = () => {
   const [voucherNumber, setVoucherNumber] = useState('');
   const [submittingVoucher, setSubmittingVoucher] = useState(false);
 
+  // Company State
+  const [shopInfo, setShopInfo] = useState({ name: '', trn: '', address: '', email: '', phone: '' });
+  const [loadingShop, setLoadingShop] = useState(true);
+  const [savingShop, setSavingShop] = useState(false);
+
   useEffect(() => {
     if (user?.role === 'OWNER') {
       fetchStaff();
       fetchSubscription();
+      fetchShopInfo();
     }
   }, [user]);
 
@@ -52,6 +58,36 @@ const Settings: React.FC = () => {
       setSubscription(res.data);
     } catch (err) {
       console.error(err);
+    }
+  };
+
+  const fetchShopInfo = async () => {
+    try {
+      const res = await api.get('/shop');
+      setShopInfo({
+        name: res.data.name || '',
+        trn: res.data.trn || '',
+        address: res.data.address || '',
+        email: res.data.email || '',
+        phone: res.data.phone || ''
+      });
+    } catch (err) {
+      console.error('Failed to fetch shop info', err);
+    } finally {
+      setLoadingShop(false);
+    }
+  };
+
+  const handleUpdateShopInfo = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSavingShop(true);
+    try {
+      await api.put('/shop', shopInfo);
+      alert('Company information updated successfully!');
+    } catch (err) {
+      alert('Failed to update company information');
+    } finally {
+      setSavingShop(false);
     }
   };
 
@@ -119,22 +155,68 @@ const Settings: React.FC = () => {
         <p className="text-slate-400 mt-2">Manage your shop, staff, and billing</p>
       </div>
 
-      <div className="flex gap-4 border-b border-slate-800 pb-4">
+      <div className="flex gap-4 border-b border-slate-800 pb-4 overflow-x-auto">
+        <button 
+          onClick={() => setActiveTab('company')}
+          className={`flex items-center gap-2 px-4 py-2 font-medium rounded-lg transition-colors whitespace-nowrap ${activeTab === 'company' ? 'bg-gold-500/10 text-gold-500' : 'text-slate-400 hover:text-slate-300 hover:bg-slate-800/50'}`}
+        >
+          <Building2 className="w-5 h-5" />
+          Company Profile
+        </button>
         <button 
           onClick={() => setActiveTab('staff')}
-          className={`flex items-center gap-2 px-4 py-2 font-medium rounded-lg transition-colors ${activeTab === 'staff' ? 'bg-gold-500/10 text-gold-500' : 'text-slate-400 hover:text-slate-300 hover:bg-slate-800/50'}`}
+          className={`flex items-center gap-2 px-4 py-2 font-medium rounded-lg transition-colors whitespace-nowrap ${activeTab === 'staff' ? 'bg-gold-500/10 text-gold-500' : 'text-slate-400 hover:text-slate-300 hover:bg-slate-800/50'}`}
         >
           <Users className="w-5 h-5" />
           Staff Management
         </button>
         <button 
           onClick={() => setActiveTab('subscription')}
-          className={`flex items-center gap-2 px-4 py-2 font-medium rounded-lg transition-colors ${activeTab === 'subscription' ? 'bg-gold-500/10 text-gold-500' : 'text-slate-400 hover:text-slate-300 hover:bg-slate-800/50'}`}
+          className={`flex items-center gap-2 px-4 py-2 font-medium rounded-lg transition-colors whitespace-nowrap ${activeTab === 'subscription' ? 'bg-gold-500/10 text-gold-500' : 'text-slate-400 hover:text-slate-300 hover:bg-slate-800/50'}`}
         >
           <CreditCard className="w-5 h-5" />
           Subscription & Billing
         </button>
       </div>
+
+      {activeTab === 'company' && (
+        <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-xl max-w-3xl">
+          <h3 className="text-xl font-semibold text-white mb-6">Company Profile</h3>
+          {loadingShop ? (
+            <p className="text-slate-400">Loading company information...</p>
+          ) : (
+            <form onSubmit={handleUpdateShopInfo} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-400 mb-1">Company Name</label>
+                <input required type="text" value={shopInfo.name} onChange={(e) => setShopInfo({...shopInfo, name: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-gold-500" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-400 mb-1">TRN Number</label>
+                <input type="text" value={shopInfo.trn} onChange={(e) => setShopInfo({...shopInfo, trn: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-gold-500" placeholder="e.g. 100000000000003" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-400 mb-1">Address</label>
+                <textarea rows={3} value={shopInfo.address} onChange={(e) => setShopInfo({...shopInfo, address: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-gold-500" placeholder="e.g. Shop 12, Gold Souq, Dubai" />
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-400 mb-1">Email</label>
+                  <input type="email" value={shopInfo.email} onChange={(e) => setShopInfo({...shopInfo, email: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-gold-500" placeholder="e.g. contact@myjewellery.com" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-400 mb-1">Phone Number</label>
+                  <input type="tel" value={shopInfo.phone} onChange={(e) => setShopInfo({...shopInfo, phone: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-gold-500" placeholder="e.g. +971 50 123 4567" />
+                </div>
+              </div>
+              <div className="pt-4 mt-6 border-t border-slate-800">
+                <button type="submit" disabled={savingShop} className="bg-gold-500 hover:bg-gold-600 disabled:opacity-50 text-slate-950 px-6 py-3 rounded-lg font-bold transition-colors w-full sm:w-auto">
+                  {savingShop ? 'Saving...' : 'Save Changes'}
+                </button>
+              </div>
+            </form>
+          )}
+        </div>
+      )}
 
       {activeTab === 'staff' && (
         <div className="space-y-6">
