@@ -481,6 +481,53 @@ app.post('/api/inventory', authenticateToken, requireActiveOrTrial, requireRole(
   }
 });
 
+app.put('/api/inventory/:id', authenticateToken, requireActiveOrTrial, requireRole(Role.OWNER, Role.MANAGER), async (req: AuthRequest, res) => {
+  try {
+    const id = String(req.params.id);
+    const shopId = req.user!.shopId!;
+    const { barcode, type, description, weight, stone_weight } = req.body;
+    
+    const existing = await prisma.item.findUnique({ where: { id } });
+    if (!existing || existing.shopId !== shopId) return res.status(404).json({ error: 'Not found' });
+    
+    if (barcode && barcode !== existing.barcode) {
+      const barcodeExists = await prisma.item.findUnique({
+        where: { barcode_shopId: { barcode, shopId } }
+      });
+      if (barcodeExists) return res.status(400).json({ error: 'Barcode already exists' });
+    }
+
+    const updatedItem = await prisma.item.update({
+      where: { id },
+      data: {
+        barcode: barcode !== undefined ? barcode : undefined,
+        type: type !== undefined ? type : undefined,
+        description: description !== undefined ? description : undefined,
+        weight: weight !== undefined ? parseFloat(weight) : undefined,
+        stone_weight: stone_weight !== undefined ? (stone_weight ? parseFloat(stone_weight) : null) : undefined,
+      }
+    });
+    res.json(updatedItem);
+  } catch (error) {
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+app.delete('/api/inventory/:id', authenticateToken, requireActiveOrTrial, requireRole(Role.OWNER, Role.MANAGER), async (req: AuthRequest, res) => {
+  try {
+    const id = String(req.params.id);
+    const shopId = req.user!.shopId!;
+    
+    const existing = await prisma.item.findUnique({ where: { id } });
+    if (!existing || existing.shopId !== shopId) return res.status(404).json({ error: 'Not found' });
+    
+    await prisma.item.delete({ where: { id } });
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
 app.get('/api/buyers', authenticateToken, requireActiveOrTrial, async (req: AuthRequest, res) => {
   try {
     const buyers = await prisma.buyer.findMany({
