@@ -19,9 +19,18 @@ const Dashboard: React.FC = () => {
   const totalItemsSold = sales.length;
 
   const typeWiseStock = activeStock.reduce((acc, item) => {
-    acc[item.type] = (acc[item.type] || 0) + 1;
+    if (!acc[item.type]) acc[item.type] = { count: 0, weight: 0 };
+    acc[item.type].count += 1;
+    acc[item.type].weight += Math.max(0, (Number(item.weight) || 0) - (Number(item.stone_weight) || 0));
     return acc;
-  }, {} as Record<string, number>);
+  }, {} as Record<string, { count: number, weight: number }>);
+
+  const typeWiseSales = sales.reduce((acc, sale) => {
+    if (!acc[sale.type]) acc[sale.type] = { count: 0, weight: 0 };
+    acc[sale.type].count += 1;
+    acc[sale.type].weight += Math.max(0, (Number(sale.weight) || 0) - (Number(sale.stone_weight) || 0));
+    return acc;
+  }, {} as Record<string, { count: number, weight: number }>);
 
   const stats = [
     { label: 'Items In Stock', value: totalItemsInStock, icon: Package, color: 'text-blue-400', bg: 'bg-blue-400/10' },
@@ -60,7 +69,7 @@ const Dashboard: React.FC = () => {
         })}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-8">
         
         {/* Type-wise Stock */}
         <div className="bg-slate-950 rounded-2xl border border-slate-800 p-6 shadow-lg lg:col-span-1">
@@ -72,10 +81,36 @@ const Dashboard: React.FC = () => {
             <p className="text-slate-500 text-sm py-4">No items in stock.</p>
           ) : (
             <div className="space-y-3">
-              {Object.entries(typeWiseStock).map(([type, count]) => (
-                <div key={type} className="flex justify-between items-center p-3 rounded-xl bg-slate-900/50 border border-slate-800/50">
+              {Object.entries(typeWiseStock).map(([type, data]) => (
+                <div key={type} className="flex justify-between items-center p-3 rounded-xl bg-slate-900/50 border border-slate-800/50 hover:border-slate-700 transition-colors">
                   <span className="text-slate-300 font-medium">{type}</span>
-                  <span className="bg-gold-500/10 text-gold-400 font-bold px-3 py-1 rounded-lg text-sm">{count}</span>
+                  <div className="text-right flex flex-col items-end">
+                    <span className="bg-slate-800 text-slate-200 font-bold px-2 py-0.5 rounded text-xs mb-1">{data.count} items</span>
+                    <span className="text-gold-500 font-bold text-sm">{data.weight.toFixed(2)}g</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Type-wise Sales */}
+        <div className="bg-slate-950 rounded-2xl border border-slate-800 p-6 shadow-lg lg:col-span-1">
+          <h2 className="text-xl font-bold text-slate-100 mb-4 flex items-center gap-2">
+            <TrendingUp className="w-5 h-5 text-emerald-500" />
+            Sales by Type
+          </h2>
+          {Object.keys(typeWiseSales).length === 0 ? (
+            <p className="text-slate-500 text-sm py-4">No sales recorded.</p>
+          ) : (
+            <div className="space-y-3">
+              {Object.entries(typeWiseSales).map(([type, data]) => (
+                <div key={type} className="flex justify-between items-center p-3 rounded-xl bg-slate-900/50 border border-slate-800/50 hover:border-slate-700 transition-colors">
+                  <span className="text-slate-300 font-medium">{type}</span>
+                  <div className="text-right flex flex-col items-end">
+                    <span className="bg-slate-800 text-slate-200 font-bold px-2 py-0.5 rounded text-xs mb-1">{data.count} sold</span>
+                    <span className="text-emerald-500 font-bold text-sm">{data.weight.toFixed(2)}g</span>
+                  </div>
                 </div>
               ))}
             </div>
