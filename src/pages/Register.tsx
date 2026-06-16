@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { Gem, ArrowRight, Loader2, Store, User, Mail, Lock } from 'lucide-react';
+import { ArrowRight, Loader2, Store, User, Mail, Lock } from 'lucide-react';
 
 export default function Register() {
   const [shopName, setShopName] = useState('');
