@@ -232,7 +232,7 @@ export default function Landing() {
           <div className="lg:pl-8 relative w-full lg:w-auto flex flex-col items-center">
             
             {/* Toggle */}
-            <div className="mt-4 mb-4 relative z-10">
+            <div className="mt-4 mb-8 sm:mb-10 relative z-10">
               <div className="bg-[#F1F5F9] dark:bg-[#1E293B] p-1.5 rounded-full inline-flex items-center border border-[#E2E8F0] dark:border-[#334155]/50 shadow-sm">
                 <button 
                   onClick={() => setBillingCycle('monthly')}
