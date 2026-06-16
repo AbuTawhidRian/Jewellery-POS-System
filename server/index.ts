@@ -618,10 +618,10 @@ app.get('/api/sales', authenticateToken, requireActiveOrTrial, async (req: AuthR
     
     const flatSales = sales.map(s => ({
       id: s.id,
-      itemId: s.itemId,
+      item_id: s.itemId,
       barcode: s.item.barcode,
-      buyerId: s.buyerId,
-      buyerName: s.buyer.name,
+      buyer_id: s.buyerId,
+      buyer_name: s.buyer.name,
       date: s.date,
       weight: s.weight,
       type: s.item.type,
