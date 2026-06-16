@@ -23,12 +23,14 @@ const Sidebar: React.FC = () => {
 
   return (
     <div className="w-64 bg-[#0B0F19] h-screen flex flex-col hidden md:flex shrink-0">
-      <div className="h-20 px-6 flex items-center gap-3 shrink-0">
-        <div className="h-10 w-10 bg-gradient-to-br from-[#C28C46] to-[#8C622C] rounded-xl flex items-center justify-center shadow-lg shadow-[#C28C46]/20">
+      <div className="h-20 px-6 flex items-center gap-3 shrink-0 overflow-hidden">
+        <div className="h-10 w-10 bg-gradient-to-br from-[#C28C46] to-[#8C622C] rounded-xl flex items-center justify-center shadow-lg shadow-[#C28C46]/20 shrink-0">
           <Diamond className="text-white w-6 h-6" />
         </div>
-        <h1 className="text-xl font-extrabold text-white tracking-wider">
-          RIAN<span className="text-[#C28C46]">JEWEL</span>
+        <h1 className="text-lg font-extrabold text-white tracking-wider truncate" title={user?.shopName || 'RIANJEWEL'}>
+          {user?.shopName ? user.shopName.toUpperCase() : (
+            <>RIAN<span className="text-[#C28C46]">JEWEL</span></>
+          )}
         </h1>
       </div>
       
@@ -39,6 +41,7 @@ const Sidebar: React.FC = () => {
             <NavLink
               key={link.to}
               to={link.to}
+              end={link.to === '/dashboard'}
               className={({ isActive }) =>
                 clsx(
                   'flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all duration-200 group outline-none focus:outline-none focus:ring-0',
