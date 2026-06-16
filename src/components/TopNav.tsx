@@ -155,11 +155,11 @@ const TopNav: React.FC = () => {
           >
             <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#C28C46] to-[#8C622C] flex items-center justify-center shadow-lg shadow-[#C28C46]/20 shrink-0">
               <span className="text-white font-bold text-sm">
-                {(user?.shopName || user?.name || user?.email || 'U').charAt(0).toUpperCase()}
+                {(user?.name || user?.email || 'U').charAt(0).toUpperCase()}
               </span>
             </div>
             <div className="hidden sm:block text-left max-w-[120px]">
-              <p className="text-sm font-semibold text-white leading-none mb-1 truncate">{user?.shopName || user?.name || 'Store Owner'}</p>
+              <p className="text-sm font-semibold text-white leading-none mb-1 truncate">{user?.name || 'Store Owner'}</p>
               <p className="text-xs text-[#94A3B8] capitalize leading-none truncate">{user?.role?.toLowerCase() || 'Admin'}</p>
             </div>
             <ChevronDown className="w-4 h-4 text-[#94A3B8] hidden sm:block ml-1 shrink-0" />
@@ -168,7 +168,7 @@ const TopNav: React.FC = () => {
           {isProfileMenuOpen && (
             <div className="absolute right-0 mt-3 w-56 rounded-xl shadow-2xl bg-[#151B23] border border-[#334155]/50 py-2 backdrop-blur-xl z-50">
               <div className="px-4 py-3 border-b border-[#334155]/50 sm:hidden">
-                <p className="text-sm font-semibold text-white truncate">{user?.shopName || user?.name || 'Store Owner'}</p>
+                <p className="text-sm font-semibold text-white truncate">{user?.name || 'Store Owner'}</p>
                 <p className="text-xs text-[#94A3B8] truncate">{user?.email}</p>
               </div>
               <Link
