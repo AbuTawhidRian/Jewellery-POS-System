@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Moon, Sun, Globe, ChevronDown, User, LogOut, Diamond } from 'lucide-react';
+import { Globe, ChevronDown, User, LogOut, Diamond } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { Link } from 'react-router-dom';
 import clsx from 'clsx';
@@ -20,22 +20,6 @@ const TopNav: React.FC = () => {
   
   const langMenuRef = useRef<HTMLDivElement>(null);
   const profileMenuRef = useRef<HTMLDivElement>(null);
-
-  const [isDarkMode, setIsDarkMode] = useState(() => {
-    const savedTheme = localStorage.getItem('theme');
-    if (savedTheme) return savedTheme === 'dark';
-    return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-  });
-
-  useEffect(() => {
-    if (isDarkMode) {
-      document.documentElement.classList.add('dark');
-      localStorage.setItem('theme', 'dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-      localStorage.setItem('theme', 'light');
-    }
-  }, [isDarkMode]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -138,13 +122,6 @@ const TopNav: React.FC = () => {
             </div>
           )}
         </div>
-
-        <button
-          onClick={() => setIsDarkMode(!isDarkMode)}
-          className="text-[#94A3B8] hover:text-[#C28C46] transition-colors p-2 rounded-lg hover:bg-[#151B23]"
-        >
-          {isDarkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-        </button>
 
         <div className="h-8 w-px bg-[#334155]/50 hidden sm:block"></div>
 
