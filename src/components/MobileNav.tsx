@@ -21,7 +21,7 @@ const MobileNav: React.FC = () => {
 
 
   return (
-    <div className="md:hidden fixed bottom-0 left-0 right-0 bg-[#0B0F19]/95 backdrop-blur-xl border-t border-[#334155]/50 z-50 px-2 pb-safe shadow-[0_-10px_40px_rgba(0,0,0,0.5)]">
+    <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white/95 dark:bg-[#0B0F19]/95 backdrop-blur-xl border-t border-slate-200 dark:border-[#334155]/50 z-50 px-2 pb-safe shadow-[0_-10px_40px_rgba(0,0,0,0.5)] transition-colors duration-300">
       <nav className="flex justify-around items-center h-16">
         {links.map((link) => {
           const Icon = link.icon;
