@@ -30,6 +30,8 @@ model Shop {
   items        Item[]
   buyers       Buyer[]
   sales        Sale[]
+  itemTypes    ItemType[]
+  descriptions Description[]
   subscription Subscription?
 }
 
@@ -97,4 +99,24 @@ model Sale {
   shop  Shop  @relation(fields: [shopId], references: [id], onDelete: Cascade)
   item  Item  @relation(fields: [itemId], references: [id])
   buyer Buyer @relation(fields: [buyerId], references: [id])
+}
+
+model ItemType {
+  id     String @id @default(uuid())
+  shopId String
+  name   String
+
+  shop Shop @relation(fields: [shopId], references: [id], onDelete: Cascade)
+
+  @@unique([name, shopId])
+}
+
+model Description {
+  id     String @id @default(uuid())
+  shopId String
+  name   String
+
+  shop Shop @relation(fields: [shopId], references: [id], onDelete: Cascade)
+
+  @@unique([name, shopId])
 }

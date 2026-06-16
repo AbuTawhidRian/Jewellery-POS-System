@@ -302,6 +302,116 @@ app.patch('/api/admin/subscriptions/:shopId', authenticateToken, requireSuperAdm
 
 // --- Protected API Routes (Requires Active/Trial) ---
 
+// --- Item Types Routes ---
+app.get('/api/item_types', authenticateToken, requireActiveOrTrial, async (req: AuthRequest, res) => {
+  try {
+    const itemTypes = await prisma.itemType.findMany({
+      where: { shopId: req.user!.shopId! },
+      orderBy: { name: 'asc' }
+    });
+    res.json(itemTypes);
+  } catch (error) {
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+app.post('/api/item_types', authenticateToken, requireActiveOrTrial, requireRole(Role.OWNER, Role.MANAGER), async (req: AuthRequest, res) => {
+  try {
+    const { name } = req.body;
+    const itemType = await prisma.itemType.create({
+      data: { name, shopId: req.user!.shopId! }
+    });
+    res.json(itemType);
+  } catch (error) {
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+app.put('/api/item_types/:id', authenticateToken, requireActiveOrTrial, requireRole(Role.OWNER, Role.MANAGER), async (req: AuthRequest, res) => {
+  try {
+    const { id } = req.params;
+    const { name } = req.body;
+    const existing = await prisma.itemType.findUnique({ where: { id } });
+    if (!existing || existing.shopId !== req.user!.shopId) return res.status(404).json({ error: 'Not found' });
+
+    const itemType = await prisma.itemType.update({
+      where: { id },
+      data: { name }
+    });
+    res.json(itemType);
+  } catch (error) {
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+app.delete('/api/item_types/:id', authenticateToken, requireActiveOrTrial, requireRole(Role.OWNER, Role.MANAGER), async (req: AuthRequest, res) => {
+  try {
+    const { id } = req.params;
+    const existing = await prisma.itemType.findUnique({ where: { id } });
+    if (!existing || existing.shopId !== req.user!.shopId) return res.status(404).json({ error: 'Not found' });
+
+    await prisma.itemType.delete({ where: { id } });
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+// --- Descriptions (Models) Routes ---
+app.get('/api/descriptions', authenticateToken, requireActiveOrTrial, async (req: AuthRequest, res) => {
+  try {
+    const descriptions = await prisma.description.findMany({
+      where: { shopId: req.user!.shopId! },
+      orderBy: { name: 'asc' }
+    });
+    res.json(descriptions);
+  } catch (error) {
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+app.post('/api/descriptions', authenticateToken, requireActiveOrTrial, requireRole(Role.OWNER, Role.MANAGER), async (req: AuthRequest, res) => {
+  try {
+    const { name } = req.body;
+    const description = await prisma.description.create({
+      data: { name, shopId: req.user!.shopId! }
+    });
+    res.json(description);
+  } catch (error) {
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+app.put('/api/descriptions/:id', authenticateToken, requireActiveOrTrial, requireRole(Role.OWNER, Role.MANAGER), async (req: AuthRequest, res) => {
+  try {
+    const { id } = req.params;
+    const { name } = req.body;
+    const existing = await prisma.description.findUnique({ where: { id } });
+    if (!existing || existing.shopId !== req.user!.shopId) return res.status(404).json({ error: 'Not found' });
+
+    const description = await prisma.description.update({
+      where: { id },
+      data: { name }
+    });
+    res.json(description);
+  } catch (error) {
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+app.delete('/api/descriptions/:id', authenticateToken, requireActiveOrTrial, requireRole(Role.OWNER, Role.MANAGER), async (req: AuthRequest, res) => {
+  try {
+    const { id } = req.params;
+    const existing = await prisma.description.findUnique({ where: { id } });
+    if (!existing || existing.shopId !== req.user!.shopId) return res.status(404).json({ error: 'Not found' });
+
+    await prisma.description.delete({ where: { id } });
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
 app.get('/api/inventory', authenticateToken, requireActiveOrTrial, async (req: AuthRequest, res) => {
   try {
     const items = await prisma.item.findMany({
