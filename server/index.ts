@@ -688,6 +688,54 @@ app.post('/api/sales/bulk', authenticateToken, requireActiveOrTrial, requireRole
   }
 });
 
+app.post('/api/sales/void', authenticateToken, requireActiveOrTrial, requireRole(Role.OWNER, Role.MANAGER, Role.CASHIER), async (req: AuthRequest, res) => {
+  try {
+    const { buyerId, date } = req.body;
+    const shopId = req.user!.shopId!;
+
+    if (!buyerId || !date) {
+      return res.status(400).json({ error: 'buyerId and date are required' });
+    }
+
+    const result = await prisma.$transaction(async (tx) => {
+      // Find the sales to void
+      const salesToVoid = await tx.sale.findMany({
+        where: {
+          shopId,
+          buyerId,
+          date: new Date(date)
+        }
+      });
+
+      if (salesToVoid.length === 0) {
+        throw new Error('No transactions found to void');
+      }
+
+      const itemIds = salesToVoid.map(s => s.itemId);
+
+      // Update items back to 'In Stock'
+      await tx.item.updateMany({
+        where: { id: { in: itemIds } },
+        data: { status: 'In Stock' }
+      });
+
+      // Delete the sales
+      await tx.sale.deleteMany({
+        where: {
+          id: { in: salesToVoid.map(s => s.id) }
+        }
+      });
+
+      return salesToVoid.length;
+    });
+
+    res.json({ success: true, count: result, message: `Successfully voided transaction and returned ${result} items to stock` });
+  } catch (error: any) {
+    console.error("Void sale error:", error);
+    res.status(500).json({ error: error.message || 'Failed to void transaction' });
+  }
+});
+
 // --- Serve React Frontend ---
 const distPath = path.join(process.cwd(), 'dist');
 app.use(express.static(distPath));

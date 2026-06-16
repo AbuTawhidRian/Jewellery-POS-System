@@ -1,6 +1,6 @@
 import React from 'react';
 import { useInventory } from '../store/InventoryContext';
-import { Package, Scale, TrendingUp, ShoppingBag, LayoutDashboard } from 'lucide-react';
+import { Package, Scale, TrendingUp, ShoppingBag, LayoutDashboard, Diamond } from 'lucide-react';
 import { isToday, parseISO } from 'date-fns';
 
 const Dashboard: React.FC = () => {
@@ -17,6 +17,11 @@ const Dashboard: React.FC = () => {
   // or just count of items sold. The requirements asked for "Total Sales Today (AED)". 
   // We'll show N/A or calculate based on a mock gold rate if needed, but let's show items count for now.
   const totalItemsSold = sales.length;
+
+  const typeWiseStock = activeStock.reduce((acc, item) => {
+    acc[item.type] = (acc[item.type] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
 
   const stats = [
     { label: 'Items In Stock', value: totalItemsInStock, icon: Package, color: 'text-blue-400', bg: 'bg-blue-400/10' },
@@ -55,9 +60,31 @@ const Dashboard: React.FC = () => {
         })}
       </div>
 
-      {/* Quick overview of recent activity */}
-      <div className="bg-slate-950 rounded-2xl border border-slate-800 p-6 shadow-lg">
-        <h2 className="text-xl font-bold text-slate-100 mb-4">Recent Sales</h2>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+        
+        {/* Type-wise Stock */}
+        <div className="bg-slate-950 rounded-2xl border border-slate-800 p-6 shadow-lg lg:col-span-1">
+          <h2 className="text-xl font-bold text-slate-100 mb-4 flex items-center gap-2">
+            <Diamond className="w-5 h-5 text-gold-500" />
+            Stock by Type
+          </h2>
+          {Object.keys(typeWiseStock).length === 0 ? (
+            <p className="text-slate-500 text-sm py-4">No items in stock.</p>
+          ) : (
+            <div className="space-y-3">
+              {Object.entries(typeWiseStock).map(([type, count]) => (
+                <div key={type} className="flex justify-between items-center p-3 rounded-xl bg-slate-900/50 border border-slate-800/50">
+                  <span className="text-slate-300 font-medium">{type}</span>
+                  <span className="bg-gold-500/10 text-gold-400 font-bold px-3 py-1 rounded-lg text-sm">{count}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Quick overview of recent activity */}
+        <div className="bg-slate-950 rounded-2xl border border-slate-800 p-6 shadow-lg lg:col-span-2">
+          <h2 className="text-xl font-bold text-slate-100 mb-4">Recent Sales</h2>
         {sales.length === 0 ? (
           <p className="text-slate-500 text-center py-8">No sales recorded yet.</p>
         ) : (
@@ -84,6 +111,7 @@ const Dashboard: React.FC = () => {
             </table>
           </div>
         )}
+      </div>
       </div>
     </div>
   );
