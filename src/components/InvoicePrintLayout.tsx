@@ -2,9 +2,11 @@ import React from 'react';
 import { useInventory } from '../store/InventoryContext';
 import { format } from 'date-fns';
 import { Diamond } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
 
 const InvoicePrintLayout: React.FC = () => {
   const { printInvoiceData } = useInventory();
+  const { user } = useAuth();
 
   if (!printInvoiceData) return null;
 
@@ -26,7 +28,7 @@ const InvoicePrintLayout: React.FC = () => {
           <div className="flex items-center gap-3">
             <Diamond className="w-10 h-10 text-slate-800" />
             <div>
-              <h1 className="text-3xl font-bold tracking-tight text-slate-900">Rian Jewellery</h1>
+              <h1 className="text-3xl font-bold tracking-tight text-slate-900">{user?.shopName || 'Jewellery Shop'}</h1>
               <p className="text-sm text-slate-500 mt-1">Wholesale & Retail Trading</p>
             </div>
           </div>

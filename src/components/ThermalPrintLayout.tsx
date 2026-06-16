@@ -1,9 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
 import JsBarcode from 'jsbarcode';
 import { useInventory } from '../store/InventoryContext';
+import { useAuth } from '../contexts/AuthContext';
 
 const ThermalPrintLayout: React.FC = () => {
   const { printItem } = useInventory();
+  const { user } = useAuth();
   const barcodeRef = useRef<SVGSVGElement>(null);
   const [barcodeError, setBarcodeError] = useState(false);
 
@@ -60,7 +62,7 @@ const ThermalPrintLayout: React.FC = () => {
       </style>
       <div id="print-area" className="fixed top-0 -left-[9999px] print:static print:flex print:w-full print:h-full bg-white text-black font-sans box-border overflow-hidden p-1 z-[-1] print:z-50 w-[150px]">
       <div className="flex flex-col items-center justify-center w-full">
-        <h1 className="text-[10px] font-bold leading-none mb-1 uppercase tracking-tight">Rian Jewellery</h1>
+        <h1 className="text-[10px] font-bold leading-none mb-1 uppercase tracking-tight">{user?.shopName || 'Jewellery Shop'}</h1>
         
         {barcodeError ? (
           <div className="text-center my-1 border border-black p-1 w-full">
