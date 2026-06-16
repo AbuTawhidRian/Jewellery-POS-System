@@ -57,15 +57,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.removeItem('user');
   };
 
-  if (!isInitialized) {
-    return <div>Loading...</div>; // Prevent render until auth state is known
-  }
-
   const hasPermission = useCallback((permission: string) => {
     if (!user) return false;
     if (user.role === 'OWNER' || user.role === 'SUPERADMIN') return true;
     return user.permissions?.includes(permission) || false;
   }, [user]);
+
+  if (!isInitialized) {
+    return <div>Loading...</div>; // Prevent render until auth state is known
+  }
 
   return (
     <AuthContext.Provider value={{ user, token, login, logout, isAuthenticated: !!token, hasPermission }}>
