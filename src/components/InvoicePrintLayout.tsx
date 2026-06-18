@@ -77,7 +77,7 @@ const InvoicePrintLayout: React.FC = () => {
             }, {} as Record<string, { model: string, type: string, qty: number, weight: number, stone_weight: number }>)).map((group, idx) => {
               const sw = group.stone_weight;
               const gw = group.weight;
-              const nw = Math.max(0, gw - sw);
+              const nw = gw > 0 ? Math.max(0, gw - sw) : Math.min(0, gw + sw);
               return (
               <tr key={`${group.model}-${group.type}`} className="border-b border-slate-200">
                 <td className="py-4 px-2 text-slate-500">{idx + 1}</td>
@@ -103,7 +103,7 @@ const InvoicePrintLayout: React.FC = () => {
             <div className="flex justify-between items-center pt-4 border-t border-slate-200">
               <span className="font-bold text-slate-800">Total Net Weight:</span>
               <span className="text-xl font-bold text-slate-900">
-                {printInvoiceData.items.reduce((acc, item) => acc + Math.max(0, (Number(item.weight) || 0) - (Number(item.stone_weight) || 0)), 0).toFixed(2)} g
+                {printInvoiceData.totalWeight.toFixed(2)} g
               </span>
             </div>
           </div>

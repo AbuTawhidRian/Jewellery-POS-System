@@ -76,7 +76,7 @@ const Ledger: React.FC = () => {
     const rows = filteredSales.map(sale => {
       const sw = Number(sale.stone_weight) || 0;
       const gw = Number(sale.weight) || 0;
-      const nw = Math.max(0, gw - sw);
+      const nw = gw > 0 ? Math.max(0, gw - sw) : Math.min(0, gw + sw);
       return [
         format(parseISO(sale.date), 'yyyy-MM-dd HH:mm:ss'),
         sale.barcode,
@@ -128,7 +128,7 @@ const Ledger: React.FC = () => {
       const sw = Number(sale.stone_weight) || 0;
       const gw = Number(sale.weight) || 0;
       tx.totalGross += gw;
-      tx.totalNet += Math.max(0, gw - sw);
+      tx.totalNet += gw > 0 ? Math.max(0, gw - sw) : Math.min(0, gw + sw);
     });
     
     return Array.from(txMap.values()).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
@@ -431,8 +431,8 @@ const Ledger: React.FC = () => {
                                     acc[key].stone_weight += Number(item.stone_weight) || 0;
                                     return acc;
                                   }, {})).map((group: any) => {
-                                    const sw = group.stone_weight;
-                                    const gw = group.weight;
+                                    const sw = Math.abs(group.stone_weight);
+                                    const gw = Math.abs(group.weight);
                                     const nw = Math.max(0, gw - sw);
                                     return (
                                       <tr key={`${group.model}-${group.type}`} className="border-b border-slate-200 dark:border-slate-800/30">
