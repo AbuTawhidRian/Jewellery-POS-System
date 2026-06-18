@@ -717,6 +717,53 @@ app.post('/api/sales/void', authenticateToken, requireActiveOrTrial, requireAcce
         res.status(500).json({ error: error.message || 'Failed to void transaction' });
     }
 });
+app.post('/api/sales/return', authenticateToken, requireActiveOrTrial, requireAccess([client_1.Role.OWNER, client_1.Role.MANAGER, client_1.Role.CASHIER], ['access_pos', 'delete_sale']), async (req, res) => {
+    try {
+        const { barcodes } = req.body;
+        const shopId = req.user.shopId;
+        if (!barcodes || !Array.isArray(barcodes) || barcodes.length === 0) {
+            return res.status(400).json({ error: 'Barcodes array is required' });
+        }
+        const result = await prisma.$transaction(async (tx) => {
+            // Find the items being returned
+            const itemsToReturn = await tx.item.findMany({
+                where: {
+                    shopId,
+                    barcode: { in: barcodes },
+                    status: 'Sold'
+                }
+            });
+            if (itemsToReturn.length === 0) {
+                throw new Error('No sold items found matching the scanned barcodes.');
+            }
+            const itemIds = itemsToReturn.map(i => i.id);
+            // Find the sales records for these specific items
+            const salesToDelete = await tx.sale.findMany({
+                where: {
+                    shopId,
+                    itemId: { in: itemIds }
+                }
+            });
+            // Update items back to 'In Stock'
+            await tx.item.updateMany({
+                where: { id: { in: itemIds } },
+                data: { status: 'In Stock' }
+            });
+            // Delete the sales records
+            if (salesToDelete.length > 0) {
+                await tx.sale.deleteMany({
+                    where: { id: { in: salesToDelete.map(s => s.id) } }
+                });
+            }
+            return itemsToReturn.length;
+        });
+        res.json({ success: true, count: result, message: `Successfully returned ${result} items to stock` });
+    }
+    catch (error) {
+        console.error("Return item error:", error);
+        res.status(500).json({ error: error.message || 'Failed to return items' });
+    }
+});
 // --- Serve React Frontend ---
 const distPath = path_1.default.join(process.cwd(), 'dist');
 app.use(express_1.default.static(distPath));

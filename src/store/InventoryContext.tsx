@@ -71,6 +71,7 @@ interface InventoryContextType {
   deleteModel: (id: string) => Promise<boolean>;
   processBulkSale: (barcodes: string[], buyerId: string) => Promise<{ success: boolean; message: string }>;
   voidTransaction: (buyerId: string, date: string) => Promise<{ success: boolean; message: string }>;
+  returnItems: (barcodes: string[]) => Promise<{ success: boolean; message: string }>;
   printItem: Item | null;
   setPrintItem: (item: Item | null) => void;
   printInvoiceData: InvoiceData | null;
@@ -401,8 +402,34 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }
   };
 
+  const returnItems = async (barcodes: string[]) => {
+    try {
+      const res = await authFetch(`${API_URL}/sales/return`, {
+        method: 'POST',
+        body: JSON.stringify({ barcodes })
+      });
+      const result = await res.json();
+      
+      if (res.ok && result.success) {
+        setItems(prevItems => prevItems.map(item => 
+          barcodes.includes(item.barcode) ? { ...item, status: 'In Stock' } : item
+        ));
+        
+        authFetch(`${API_URL}/sales`).then(res => res.json()).then(data => {
+            if(Array.isArray(data)) setSales(data);
+        });
+        
+        return { success: true, message: result.message };
+      }
+      return { success: false, message: result.message || 'Failed to return items' };
+    } catch (error: any) {
+      console.error("Error returning items:", error);
+      return { success: false, message: error.message };
+    }
+  };
+
   return (
-    <InventoryContext.Provider value={{ items, buyers, sales, itemTypes, models, isLoading, addItem, editItem, deleteItem, addBuyer, editBuyer, deleteBuyer, addItemType, editItemType, deleteItemType, addModel, editModel, deleteModel, processBulkSale, voidTransaction, printItem, setPrintItem, printInvoiceData, setPrintInvoiceData }}>
+    <InventoryContext.Provider value={{ items, buyers, sales, itemTypes, models, isLoading, addItem, editItem, deleteItem, addBuyer, editBuyer, deleteBuyer, addItemType, editItemType, deleteItemType, addModel, editModel, deleteModel, processBulkSale, voidTransaction, returnItems, printItem, setPrintItem, printInvoiceData, setPrintInvoiceData }}>
       {children}
     </InventoryContext.Provider>
   );

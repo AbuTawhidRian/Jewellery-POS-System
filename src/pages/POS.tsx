@@ -8,12 +8,13 @@ import { useAuth } from '../contexts/AuthContext';
 
 const POS: React.FC = () => {
   const { hasPermission } = useAuth();
-  const { items, buyers, sales, processBulkSale, addBuyer, editBuyer, deleteBuyer, setPrintInvoiceData, setPrintItem } = useInventory();
+  const { items, buyers, sales, processBulkSale, returnItems, addBuyer, editBuyer, deleteBuyer, setPrintInvoiceData, setPrintItem } = useInventory();
   const [selectedBuyer, setSelectedBuyer] = useState('');
   const [barcode, setBarcode] = useState('');
   const [notification, setNotification] = useState<{ type: 'success' | 'error', message: string } | null>(null);
   const [cart, setCart] = useState<Item[]>([]);
   const [isScanning, setIsScanning] = useState(false);
+  const [isReturnMode, setIsReturnMode] = useState(false);
   
   // New Buyer Modal State
   const [isBuyerModalOpen, setIsBuyerModalOpen] = useState(false);
@@ -122,8 +123,11 @@ const POS: React.FC = () => {
       if (!item) {
         showNotification('error', `Barcode ${code} not found in inventory.`);
         return prev;
-      } else if (item.status === 'Sold') {
+      } else if (!isReturnMode && item.status === 'Sold') {
         showNotification('error', `Item ${code} is already sold!`);
+        return prev;
+      } else if (isReturnMode && item.status === 'In Stock') {
+        showNotification('error', `Item ${code} is not sold, cannot return.`);
         return prev;
       } else if (prev.some(c => c.barcode === code)) {
         showNotification('error', `WARNING: Item ${code} is already in the cart!`);
@@ -223,7 +227,7 @@ const POS: React.FC = () => {
   };
 
   const handleCheckout = async () => {
-    if (!selectedBuyer) {
+    if (!isReturnMode && !selectedBuyer) {
       showNotification('error', 'Please select a Buyer Company first.');
       return;
     }
@@ -233,58 +237,110 @@ const POS: React.FC = () => {
       return;
     }
 
-    const buyerName = buyers.find(b => b.id === selectedBuyer)?.name || 'Unknown Buyer';
     const completedCart = [...cart];
     const weight = totalWeight;
 
-    setDialogConfig({
-      isOpen: true,
-      type: 'confirm',
-      title: 'Confirm Sale',
-      message: `Are you sure you want to complete this sale of ${completedCart.length} items to ${buyerName}?`,
-      confirmText: 'Yes, Complete Sale',
-      cancelText: 'Cancel',
-      onConfirm: async () => {
-        setDialogConfig(prev => ({ ...prev, isOpen: false }));
-        
-        const barcodes = completedCart.map(c => c.barcode);
-        const result = await processBulkSale(barcodes, selectedBuyer);
-        
-        if (result.success) {
-          setPrintItem(null); // Clear any pending barcode
-          setPrintInvoiceData({
-            buyerName,
-            items: completedCart,
-            date: new Date().toISOString(),
-            totalWeight: weight
-          });
-          showNotification('success', 'Sale completed successfully!');
-          setTimeout(() => window.print(), 100);
-          setCart([]);
-          setSelectedBuyer('');
-          setBuyerSearch('');
-        } else {
-          showNotification('error', result.message);
+    if (isReturnMode) {
+      setDialogConfig({
+        isOpen: true,
+        type: 'confirm',
+        title: 'Confirm Return',
+        message: `Are you sure you want to return ${completedCart.length} items back to In Stock?`,
+        confirmText: 'Yes, Complete Return',
+        cancelText: 'Cancel',
+        onConfirm: async () => {
+          setDialogConfig(prev => ({ ...prev, isOpen: false }));
+          
+          const barcodes = completedCart.map(c => c.barcode);
+          const result = await returnItems(barcodes);
+          
+          if (result.success) {
+            showNotification('success', 'Return completed successfully!');
+            setCart([]);
+          } else {
+            showNotification('error', result.message);
+          }
+          setTimeout(() => inputRef.current?.focus(), 10);
+        },
+        onCancel: () => {
+          setDialogConfig(prev => ({ ...prev, isOpen: false }));
+          setTimeout(() => inputRef.current?.focus(), 10);
         }
-        setTimeout(() => inputRef.current?.focus(), 10);
-      },
-      onCancel: () => {
-        setDialogConfig(prev => ({ ...prev, isOpen: false }));
-        setTimeout(() => inputRef.current?.focus(), 10);
-      }
-    });
+      });
+    } else {
+      const buyerName = buyers.find(b => b.id === selectedBuyer)?.name || 'Unknown Buyer';
+      setDialogConfig({
+        isOpen: true,
+        type: 'confirm',
+        title: 'Confirm Sale',
+        message: `Are you sure you want to complete this sale of ${completedCart.length} items to ${buyerName}?`,
+        confirmText: 'Yes, Complete Sale',
+        cancelText: 'Cancel',
+        onConfirm: async () => {
+          setDialogConfig(prev => ({ ...prev, isOpen: false }));
+          
+          const barcodes = completedCart.map(c => c.barcode);
+          const result = await processBulkSale(barcodes, selectedBuyer);
+          
+          if (result.success) {
+            setPrintItem(null); // Clear any pending barcode
+            setPrintInvoiceData({
+              buyerName,
+              items: completedCart,
+              date: new Date().toISOString(),
+              totalWeight: weight
+            });
+            showNotification('success', 'Sale completed successfully!');
+            setTimeout(() => window.print(), 100);
+            setCart([]);
+            setSelectedBuyer('');
+            setBuyerSearch('');
+          } else {
+            showNotification('error', result.message);
+          }
+          setTimeout(() => inputRef.current?.focus(), 10);
+        },
+        onCancel: () => {
+          setDialogConfig(prev => ({ ...prev, isOpen: false }));
+          setTimeout(() => inputRef.current?.focus(), 10);
+        }
+      });
+    }
   };
 
   const totalWeight = cart.reduce((acc, item) => acc + Math.max(0, (Number(item.weight) || 0) - (Number(item.stone_weight) || 0)), 0);
 
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 ease-out h-full flex flex-col relative">
-      <header className="mb-8">
-        <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-3">
-          <ShoppingCart className="w-8 h-8 text-gold-500" />
-          Point of Sale
-        </h1>
-        <p className="text-slate-600 dark:text-slate-400 mt-1">Scan items into the cart and review before completing the sale.</p>
+      <header className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-3">
+            <ShoppingCart className={clsx("w-8 h-8", isReturnMode ? "text-orange-500" : "text-gold-500")} />
+            Point of Sale
+          </h1>
+          <p className="text-slate-600 dark:text-slate-400 mt-1">Scan items into the cart and review before completing the transaction.</p>
+        </div>
+        
+        <div className="flex bg-slate-200 dark:bg-slate-800 p-1 rounded-xl w-max">
+          <button 
+            onClick={() => { setIsReturnMode(false); setCart([]); }}
+            className={clsx(
+              "px-6 py-2.5 rounded-lg text-sm font-bold transition-all", 
+              !isReturnMode ? "bg-white dark:bg-slate-950 text-gold-500 shadow-sm" : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
+            )}
+          >
+            Sale Mode
+          </button>
+          <button 
+            onClick={() => { setIsReturnMode(true); setCart([]); }}
+            className={clsx(
+              "px-6 py-2.5 rounded-lg text-sm font-bold transition-all", 
+              isReturnMode ? "bg-white dark:bg-slate-950 text-orange-500 shadow-sm" : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
+            )}
+          >
+            Return Mode
+          </button>
+        </div>
       </header>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 flex-1 min-h-0 pb-8">
@@ -292,6 +348,7 @@ const POS: React.FC = () => {
         {/* Left Column: Scanner and Buyer */}
         <div className="lg:col-span-5 flex flex-col gap-6">
           
+          {!isReturnMode && (
           <div className="bg-white dark:bg-slate-950 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-lg">
             <label className="block text-sm font-bold tracking-wide text-slate-600 dark:text-slate-400 uppercase mb-3">
               1. Select Buyer Company
@@ -353,12 +410,13 @@ const POS: React.FC = () => {
               )}
             </div>
           </div>
+          )}
 
           <div className="bg-white dark:bg-slate-950 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xl relative overflow-hidden flex flex-col items-center">
             <div className="w-full flex justify-between items-center mb-6">
-              <label className="flex items-center gap-2 text-sm font-bold tracking-widest text-gold-500 uppercase">
+              <label className={clsx("flex items-center gap-2 text-sm font-bold tracking-widest uppercase", isReturnMode ? "text-orange-500" : "text-gold-500")}>
                 <ScanLine className="w-5 h-5" />
-                2. Scan Barcode
+                {isReturnMode ? "Scan Barcode to Return" : "2. Scan Barcode"}
               </label>
               
               <button
@@ -481,10 +539,13 @@ const POS: React.FC = () => {
             <button 
               onClick={handleCheckout}
               disabled={cart.length === 0}
-              className="w-full bg-gold-500 hover:bg-gold-400 disabled:bg-slate-100 dark:bg-slate-800 disabled:text-slate-500 text-slate-950 font-bold py-4 px-4 rounded-xl transition-all shadow-[0_0_15px_rgba(212,175,55,0.3)] disabled:shadow-none text-lg flex justify-center items-center gap-2"
+              className={clsx(
+                "w-full disabled:bg-slate-100 dark:bg-slate-800 disabled:text-slate-500 text-slate-950 font-bold py-4 px-4 rounded-xl transition-all disabled:shadow-none text-lg flex justify-center items-center gap-2",
+                isReturnMode ? "bg-orange-500 hover:bg-orange-400 shadow-[0_0_15px_rgba(249,115,22,0.3)]" : "bg-gold-500 hover:bg-gold-400 shadow-[0_0_15px_rgba(212,175,55,0.3)]"
+              )}
             >
               <CheckCircle className="w-6 h-6" />
-              Complete Sale
+              {isReturnMode ? 'Complete Return' : 'Complete Sale'}
             </button>
           </div>
         </div>
