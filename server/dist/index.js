@@ -702,12 +702,16 @@ app.post('/api/sales/void', authenticateToken, requireActiveOrTrial, requireAcce
                 where: { id: { in: itemIds } },
                 data: { status: 'In Stock' }
             });
-            // Delete the sales
-            await tx.sale.deleteMany({
-                where: {
-                    id: { in: salesToVoid.map(s => s.id) }
-                }
-            });
+            // Create return records with negative weight instead of deleting
+            const returnSales = salesToVoid.filter(s => s.weight > 0).map(s => ({
+                shopId: s.shopId,
+                itemId: s.itemId,
+                buyerId: s.buyerId,
+                weight: -Math.abs(s.weight)
+            }));
+            if (returnSales.length > 0) {
+                await tx.sale.createMany({ data: returnSales });
+            }
             return salesToVoid.length;
         });
         res.json({ success: true, count: result, message: `Successfully voided transaction and returned ${result} items to stock` });
@@ -737,22 +741,36 @@ app.post('/api/sales/return', authenticateToken, requireActiveOrTrial, requireAc
                 throw new Error('No sold items found matching the scanned barcodes.');
             }
             const itemIds = itemsToReturn.map(i => i.id);
-            // Find the sales records for these specific items
-            const salesToDelete = await tx.sale.findMany({
+            // Find the latest sale records for these items to get the correct buyer and weight
+            const latestSales = await tx.sale.findMany({
                 where: {
                     shopId,
                     itemId: { in: itemIds }
-                }
+                },
+                orderBy: { date: 'desc' }
             });
+            const returnSalesData = [];
+            const processedItems = new Set();
+            for (const sale of latestSales) {
+                if (!processedItems.has(sale.itemId) && sale.weight > 0) {
+                    processedItems.add(sale.itemId);
+                    returnSalesData.push({
+                        shopId: sale.shopId,
+                        itemId: sale.itemId,
+                        buyerId: sale.buyerId,
+                        weight: -Math.abs(sale.weight)
+                    });
+                }
+            }
             // Update items back to 'In Stock'
             await tx.item.updateMany({
                 where: { id: { in: itemIds } },
                 data: { status: 'In Stock' }
             });
-            // Delete the sales records
-            if (salesToDelete.length > 0) {
-                await tx.sale.deleteMany({
-                    where: { id: { in: salesToDelete.map(s => s.id) } }
+            // Insert return sales
+            if (returnSalesData.length > 0) {
+                await tx.sale.createMany({
+                    data: returnSalesData
                 });
             }
             return itemsToReturn.length;

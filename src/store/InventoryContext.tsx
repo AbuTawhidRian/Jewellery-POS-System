@@ -50,6 +50,13 @@ export interface InvoiceData {
   totalWeight: number;
 }
 
+export interface StatementData {
+  buyerName: string;
+  transactions: { date: string, type: 'Sale' | 'Return', totalItems: number, netWeight: number, items: Sale[] }[];
+  dateRange: string;
+  totalNetWeight: number;
+}
+
 interface InventoryContextType {
   items: Item[];
   buyers: Buyer[];
@@ -76,6 +83,8 @@ interface InventoryContextType {
   setPrintItem: (item: Item | null) => void;
   printInvoiceData: InvoiceData | null;
   setPrintInvoiceData: (data: InvoiceData | null) => void;
+  printStatementData: StatementData | null;
+  setPrintStatementData: (data: StatementData | null) => void;
 }
 
 const InventoryContext = createContext<InventoryContextType | undefined>(undefined);
@@ -91,6 +100,7 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const [models, setModels] = useState<ItemModel[]>([]);
   const [printItem, setPrintItem] = useState<Item | null>(null);
   const [printInvoiceData, setPrintInvoiceData] = useState<InvoiceData | null>(null);
+  const [printStatementData, setPrintStatementData] = useState<StatementData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   const authFetch = async (url: string, options: RequestInit = {}) => {
@@ -429,7 +439,7 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   };
 
   return (
-    <InventoryContext.Provider value={{ items, buyers, sales, itemTypes, models, isLoading, addItem, editItem, deleteItem, addBuyer, editBuyer, deleteBuyer, addItemType, editItemType, deleteItemType, addModel, editModel, deleteModel, processBulkSale, voidTransaction, returnItems, printItem, setPrintItem, printInvoiceData, setPrintInvoiceData }}>
+    <InventoryContext.Provider value={{ items, buyers, sales, itemTypes, models, isLoading, addItem, editItem, deleteItem, addBuyer, editBuyer, deleteBuyer, addItemType, editItemType, deleteItemType, addModel, editModel, deleteModel, processBulkSale, voidTransaction, returnItems, printItem, setPrintItem, printInvoiceData, setPrintInvoiceData, printStatementData, setPrintStatementData }}>
       {children}
     </InventoryContext.Provider>
   );

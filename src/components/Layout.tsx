@@ -5,6 +5,7 @@ import MobileNav from './MobileNav';
 import TopNav from './TopNav';
 import ThermalPrintLayout from './ThermalPrintLayout';
 import InvoicePrintLayout from './InvoicePrintLayout';
+import StatementPrintLayout from './StatementPrintLayout';
 
 const Layout: React.FC = () => {
   return (
@@ -21,6 +22,7 @@ const Layout: React.FC = () => {
       <MobileNav />
       <ThermalPrintLayout />
       <InvoicePrintLayout />
+      <StatementPrintLayout />
     </div>
   );
 };

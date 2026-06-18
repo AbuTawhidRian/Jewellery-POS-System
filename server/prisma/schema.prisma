@@ -98,10 +98,10 @@ model Buyer {
 model Sale {
   id      String   @id @default(uuid())
   shopId  String
-  itemId  String
-  buyerId String
-  date    DateTime @default(now())
-  weight  Float
+  itemId          String
+  buyerId         String
+  date            DateTime @default(now())
+  weight          Float
 
   shop  Shop  @relation(fields: [shopId], references: [id], onDelete: Cascade)
   item  Item  @relation(fields: [itemId], references: [id])

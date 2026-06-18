@@ -7,7 +7,7 @@ import { useAuth } from '../contexts/AuthContext';
 
 const Ledger: React.FC = () => {
   const { hasPermission } = useAuth();
-  const { sales, buyers, setPrintInvoiceData, setPrintItem, voidTransaction } = useInventory();
+  const { sales, buyers, setPrintInvoiceData, setPrintStatementData, setPrintItem, voidTransaction } = useInventory();
   const [filterBuyerId, setFilterBuyerId] = useState<string>('all');
   const [filterDateRange, setFilterDateRange] = useState<string>('all');
   const [customStartDate, setCustomStartDate] = useState<string>('');
@@ -141,8 +141,45 @@ const Ledger: React.FC = () => {
       buyerName: tx.buyerName,
       items: tx.items,
       date: tx.date,
-      totalWeight: tx.totalNet
+      totalWeight: Math.abs(tx.totalNet)
     });
+    setTimeout(() => window.print(), 100);
+  };
+
+  const handlePrintStatement = () => {
+    if (filterBuyerId === 'all') {
+      setDialogConfig({ isOpen: true, type: 'alert', title: 'Cannot Print', message: 'Please select a specific Buyer Company to print a statement.' });
+      return;
+    }
+    
+    if (filteredSales.length === 0) {
+      setDialogConfig({ isOpen: true, type: 'alert', title: 'Cannot Print', message: 'No transactions found for this period.' });
+      return;
+    }
+
+    const buyerName = buyers.find(b => b.id === filterBuyerId)?.name || 'Unknown';
+    
+    const statementTx = transactions.map(tx => ({
+      date: tx.date,
+      type: tx.totalNet < 0 ? 'Return' as const : 'Sale' as const,
+      totalItems: tx.totalItems,
+      netWeight: tx.totalNet,
+      items: tx.items
+    }));
+
+    const dateRangeStr = filterDateRange === 'all' ? 'All Time' : 
+                         filterDateRange === 'today' ? 'Today' : 
+                         filterDateRange === 'week' ? 'Past 7 Days' : 
+                         filterDateRange === 'month' ? 'This Month' : 
+                         `${format(new Date(customStartDate || 0), 'MMM d, yyyy')} - ${format(new Date(customEndDate || Date.now()), 'MMM d, yyyy')}`;
+
+    setPrintStatementData({
+      buyerName,
+      dateRange: dateRangeStr,
+      transactions: statementTx,
+      totalNetWeight: statementTx.reduce((acc, t) => acc + t.netWeight, 0)
+    });
+    
     setTimeout(() => window.print(), 100);
   };
 
@@ -279,7 +316,16 @@ const Ledger: React.FC = () => {
             className="inline-flex items-center justify-center gap-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-900 dark:text-slate-100 font-semibold py-2 px-4 rounded-lg border border-slate-300 dark:border-slate-700 transition-colors shadow-sm"
           >
             <Download className="w-4 h-4 text-gold-500" />
-            <span className="hidden sm:inline">Export CSV</span>
+            <span className="hidden sm:inline">CSV</span>
+          </button>
+          
+          <button 
+            onClick={handlePrintStatement}
+            disabled={filterBuyerId === 'all'}
+            className={`inline-flex items-center justify-center gap-2 font-semibold py-2 px-4 rounded-lg border transition-colors shadow-sm ${filterBuyerId === 'all' ? 'bg-slate-100 dark:bg-slate-800 text-slate-400 border-slate-200 dark:border-slate-700 cursor-not-allowed' : 'bg-slate-900 dark:bg-slate-100 hover:bg-slate-800 dark:hover:bg-white text-white dark:text-slate-900 border-slate-900 dark:border-slate-100'}`}
+          >
+            <Printer className="w-4 h-4 text-gold-500" />
+            <span className="hidden sm:inline">Print Statement</span>
           </button>
         </div>
       </header>
@@ -308,11 +354,12 @@ const Ledger: React.FC = () => {
               ) : (
                 transactions.map((tx) => {
                   const isExpanded = expandedTx === tx.date;
+                  const isReturn = tx.totalNet < 0;
                   return (
                     <React.Fragment key={tx.date}>
                       <tr 
                         onClick={() => setExpandedTx(isExpanded ? null : tx.date)}
-                        className="border-b border-slate-200 dark:border-slate-800/50 hover:bg-slate-50 dark:bg-slate-900/50 cursor-pointer transition-colors"
+                        className={`border-b border-slate-200 dark:border-slate-800/50 hover:bg-slate-50 dark:bg-slate-900/50 cursor-pointer transition-colors ${isReturn ? 'bg-red-50/30 dark:bg-red-900/10' : ''}`}
                       >
                         <td className="py-4 px-4 text-slate-500">
                           {isExpanded ? <ChevronDown className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
@@ -321,9 +368,11 @@ const Ledger: React.FC = () => {
                           {format(parseISO(tx.date), 'MMM dd, yyyy')} <br/>
                           <span className="text-xs text-slate-500">{format(parseISO(tx.date), 'hh:mm:ss a')}</span>
                         </td>
-                        <td className="py-4 px-4 text-slate-800 dark:text-slate-200 font-bold">{tx.buyerName}</td>
+                        <td className="py-4 px-4 font-bold text-slate-800 dark:text-slate-200">
+                          {tx.buyerName} {isReturn && <span className="ml-2 text-[10px] font-bold text-red-500 px-2 py-0.5 rounded-full bg-red-100 dark:bg-red-900/30">RETURN</span>}
+                        </td>
                         <td className="py-4 px-4 font-medium text-slate-700 dark:text-slate-300 text-center">{tx.totalItems}</td>
-                        <td className="py-4 px-4 font-medium text-gold-400 text-right">{tx.totalNet.toFixed(2)}g</td>
+                        <td className={`py-4 px-4 font-bold text-right ${isReturn ? 'text-red-500' : 'text-gold-400'}`}>{tx.totalNet.toFixed(2)}g</td>
                         <td className="py-4 px-4 text-right">
                           <div className="flex justify-end gap-2">
                             <button 
@@ -334,7 +383,7 @@ const Ledger: React.FC = () => {
                               <Printer className="w-3.5 h-3.5 text-gold-500" />
                               <span className="hidden sm:inline">Print</span>
                             </button>
-                            {hasPermission('delete_sale') && (
+                            {!isReturn && hasPermission('delete_sale') && (
                               <button 
                                 onClick={(e) => handleDeleteTransaction(tx, e)}
                                 className="inline-flex items-center gap-2 bg-red-900/30 hover:bg-red-900/50 text-red-400 text-xs font-semibold py-1.5 px-3 rounded-lg border border-red-900/50 transition-colors"
@@ -351,6 +400,9 @@ const Ledger: React.FC = () => {
                         <tr className="bg-slate-50 dark:bg-slate-900/20 border-b border-slate-200 dark:border-slate-800/50">
                           <td colSpan={6} className="p-0">
                             <div className="p-4 pl-14 bg-slate-50 dark:bg-slate-900/30">
+                              <h4 className={`text-xs font-bold uppercase tracking-wider mb-2 ${isReturn ? 'text-red-500' : 'text-slate-500'}`}>
+                                {isReturn ? 'Returned Items' : 'Transaction Details'}
+                              </h4>
                               <table className="w-full text-left border-collapse text-xs">
                                 <thead>
                                   <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-500">
