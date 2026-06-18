@@ -138,14 +138,15 @@ const POS: React.FC = () => {
   const handleScan = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       e.preventDefault();
-      if (!barcode.trim()) {
+      const currentBarcode = e.currentTarget.value.trim();
+      if (!currentBarcode) {
         // If input is empty and we press enter, trigger checkout if cart has items
         if (cart.length > 0) {
           handleCheckout();
         }
         return;
       }
-      processScannedCode(barcode.trim());
+      processScannedCode(currentBarcode);
       setBarcode('');
     } else if (e.key === 'Backspace' && !barcode) {
       // Alternate undo shortcut: Backspace on empty input

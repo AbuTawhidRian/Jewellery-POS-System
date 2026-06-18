@@ -14,11 +14,12 @@ const ThermalPrintLayout: React.FC = () => {
       try {
         JsBarcode(barcodeRef.current, String(printItem.barcode), {
           format: "CODE128",
-          width: 1.5,
-          height: 25,
+          width: 1.2,
+          height: 18,
           displayValue: true,
-          fontSize: 10,
+          fontSize: 8,
           margin: 0,
+          textMargin: 0,
           background: "#ffffff",
           lineColor: "#000000"
         });
@@ -31,11 +32,12 @@ const ThermalPrintLayout: React.FC = () => {
           try {
             (JsBarcode as any).default(barcodeRef.current, String(printItem.barcode), {
               format: "CODE128",
-              width: 1.5,
-              height: 25,
+              width: 1.2,
+              height: 18,
               displayValue: true,
-              fontSize: 10,
+              fontSize: 8,
               margin: 0,
+              textMargin: 0,
               background: "#ffffff",
               lineColor: "#000000"
             });
@@ -86,29 +88,34 @@ const ThermalPrintLayout: React.FC = () => {
         `}
       </style>
       <div id="print-area" className="fixed top-0 -left-[9999px] print:static bg-white text-black font-sans z-[-1] print:z-50 flex flex-col items-center justify-center w-[2.25in] h-[0.5in]">
-        <div className="flex flex-col items-center justify-center w-full h-full">
-          <h1 className="text-[9px] font-bold leading-none mb-[1px] uppercase tracking-tight truncate w-full text-center">{user?.shopName || 'Jewellery Shop'}</h1>
+        <div className="flex items-center justify-between w-full h-full px-1">
           
-          {barcodeError ? (
-            <div className="text-center my-[1px] border border-black p-[1px] w-full">
-              <div className="text-[8px] font-mono">{printItem.barcode}</div>
-            </div>
-          ) : (
-            <svg ref={barcodeRef} className="max-w-full h-auto" style={{ maxHeight: '0.25in' }}></svg>
-          )}
-          
-          <div className="flex flex-col w-full mt-[1px] text-[7px] font-bold leading-none">
-            <div className="flex justify-between w-full">
-              <span className="truncate max-w-[60%]">{printItem.model}</span>
-              <span>GW: {parseFloat(printItem.weight as any || '0').toFixed(2)}g</span>
-            </div>
-            <div className="flex justify-between w-full mt-[1px]">
-              <span className="text-[6px] truncate max-w-[50%]">{printItem.type}</span>
-              {parseFloat(printItem.stone_weight as any || '0') > 0 && (
-                <span>NW: {(parseFloat(printItem.weight as any || '0') - parseFloat(printItem.stone_weight as any || '0')).toFixed(2)}g</span>
-              )}
-            </div>
+          {/* Left Column */}
+          <div className="flex flex-col text-[7px] font-bold w-[30%] leading-tight">
+            <span className="truncate w-full">{printItem.model}</span>
+            <span className="truncate w-full">{printItem.type}</span>
           </div>
+          
+          {/* Middle Column (Barcode + Shop Name) */}
+          <div className="flex flex-col items-center justify-center w-[40%]">
+            <h1 className="text-[6px] font-bold leading-none mb-[1px] uppercase tracking-tight truncate w-full text-center">{user?.shopName || 'Jewellery Shop'}</h1>
+            {barcodeError ? (
+              <div className="text-center my-[1px] border border-black p-[1px] w-full">
+                <div className="text-[8px] font-mono">{printItem.barcode}</div>
+              </div>
+            ) : (
+              <svg ref={barcodeRef} className="max-w-full h-auto" style={{ maxHeight: '0.35in' }}></svg>
+            )}
+          </div>
+          
+          {/* Right Column */}
+          <div className="flex flex-col text-[7px] font-bold text-right w-[30%] leading-tight">
+            <span>GW: {parseFloat(printItem.weight as any || '0').toFixed(2)}g</span>
+            {parseFloat(printItem.stone_weight as any || '0') > 0 && (
+              <span>NW: {(parseFloat(printItem.weight as any || '0') - parseFloat(printItem.stone_weight as any || '0')).toFixed(2)}g</span>
+            )}
+          </div>
+
         </div>
       </div>
     </>
