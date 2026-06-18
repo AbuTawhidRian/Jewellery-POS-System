@@ -677,6 +677,23 @@ app.post('/api/sales/bulk', authenticateToken, requireActiveOrTrial, requireAcce
         res.status(500).json({ error: error.message || 'Failed to process sale' });
     }
 });
+app.post('/api/sales/wipe', authenticateToken, requireActiveOrTrial, requireAccess([client_1.Role.OWNER], []), async (req, res) => {
+    try {
+        const shopId = req.user.shopId;
+        const result = await prisma.$transaction(async (tx) => {
+            const sales = await tx.sale.deleteMany({ where: { shopId } });
+            const items = await tx.item.updateMany({
+                where: { shopId },
+                data: { status: 'In Stock' }
+            });
+            return { sales: sales.count, items: items.count };
+        });
+        res.json({ success: true, message: `Wiped ${result.sales} sales and reset ${result.items} items.` });
+    }
+    catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
 app.post('/api/sales/void', authenticateToken, requireActiveOrTrial, requireAccess([client_1.Role.OWNER, client_1.Role.MANAGER, client_1.Role.CASHIER], ['access_pos', 'delete_sale']), async (req, res) => {
     try {
         const { buyerId, date } = req.body;
