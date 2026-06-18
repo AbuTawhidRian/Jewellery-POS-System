@@ -137,7 +137,7 @@ const POS: React.FC = () => {
         return [...prev, item];
       }
     });
-  }, [items, showNotification]);
+  }, [items, isReturnMode, showNotification]);
 
   const handleScan = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
