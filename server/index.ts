@@ -658,6 +658,7 @@ app.get('/api/sales', authenticateToken, requireActiveOrTrial, async (req: AuthR
       type: s.item.type,
       stone_weight: s.item.stone_weight,
       model: s.item.model,
+      makingCharge: s.makingCharge,
     }));
     
     res.json(flatSales);

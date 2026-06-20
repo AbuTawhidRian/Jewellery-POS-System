@@ -157,8 +157,8 @@ const StatementPrintLayout: React.FC = () => {
                         <td className="py-4 px-2 text-slate-700">{format(new Date(entry.date), 'MMM dd, yyyy')}</td>
                         <td className="py-4 px-2 font-bold text-slate-800">{entry.type}</td>
                         <td className="py-4 px-2 text-slate-600">{entry.details}</td>
-                        <td className="py-4 px-2 font-medium text-right text-slate-900">{entry.charge > 0 ? entry.charge.toFixed(2) : '-'}</td>
-                        <td className="py-4 px-2 font-medium text-right text-emerald-600">{entry.payment > 0 ? entry.payment.toFixed(2) : '-'}</td>
+                        <td className="py-4 px-2 font-medium text-right text-slate-900">{entry.charge !== 0 ? entry.charge.toFixed(2) : '-'}</td>
+                        <td className={`py-4 px-2 font-medium text-right ${entry.payment > 0 ? 'text-emerald-600' : 'text-orange-500'}`}>{entry.payment !== 0 ? entry.payment.toFixed(2) : '-'}</td>
                         <td className={`py-4 px-2 font-bold text-right ${cashBalance > 0 ? 'text-red-600' : 'text-emerald-600'}`}>
                           {cashBalance > 0 ? cashBalance.toFixed(2) : cashBalance < 0 ? `(${Math.abs(cashBalance).toFixed(2)})` : '0.00'}
                         </td>
