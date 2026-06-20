@@ -8,7 +8,7 @@ import { useAuth } from '../contexts/AuthContext';
 
 const POS: React.FC = () => {
   const { hasPermission } = useAuth();
-  const { items, buyers, sales, processBulkSale, returnItems, addBuyer, editBuyer, deleteBuyer, setPrintInvoiceData, setPrintItem } = useInventory();
+  const { items, buyers, sales, processBulkSale, returnItems, addBuyer, editBuyer, deleteBuyer, addPayment, setPrintInvoiceData, setPrintItem } = useInventory();
   const [selectedBuyer, setSelectedBuyer] = useState('');
   const [barcode, setBarcode] = useState('');
   const [notification, setNotification] = useState<{ type: 'success' | 'error', message: string } | null>(null);
@@ -16,6 +16,7 @@ const POS: React.FC = () => {
   const [isScanning, setIsScanning] = useState(false);
   const [isReturnMode, setIsReturnMode] = useState(false);
   const [totalMakingCharge, setTotalMakingCharge] = useState<number | ''>('');
+  const [paymentAmount, setPaymentAmount] = useState<number | ''>('');
   
   // New Buyer Modal State
   const [isBuyerModalOpen, setIsBuyerModalOpen] = useState(false);
@@ -284,6 +285,10 @@ const POS: React.FC = () => {
           const result = await processBulkSale(barcodes, selectedBuyer, Number(totalMakingCharge) || 0);
           
           if (result.success) {
+            if (Number(paymentAmount) > 0) {
+              await addPayment(selectedBuyer, Number(paymentAmount), 'POS Checkout Payment');
+            }
+            
             setPrintItem(null); // Clear any pending barcode
             setPrintInvoiceData({
               buyerName,
@@ -297,6 +302,7 @@ const POS: React.FC = () => {
             setSelectedBuyer('');
             setBuyerSearch('');
             setTotalMakingCharge('');
+            setPaymentAmount('');
           } else {
             showNotification('error', result.message);
           }
@@ -325,7 +331,7 @@ const POS: React.FC = () => {
         
         <div className="flex bg-slate-200 dark:bg-slate-800 p-1 rounded-xl w-max">
           <button 
-            onClick={() => { setIsReturnMode(false); setCart([]); setTotalMakingCharge(''); }}
+            onClick={() => { setIsReturnMode(false); setCart([]); setTotalMakingCharge(''); setPaymentAmount(''); }}
             className={clsx(
               "px-6 py-2.5 rounded-lg text-sm font-bold transition-all", 
               !isReturnMode ? "bg-white dark:bg-slate-950 text-gold-500 shadow-sm" : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
@@ -334,7 +340,7 @@ const POS: React.FC = () => {
             Sale Mode
           </button>
           <button 
-            onClick={() => { setIsReturnMode(true); setCart([]); setTotalMakingCharge(''); }}
+            onClick={() => { setIsReturnMode(true); setCart([]); setTotalMakingCharge(''); setPaymentAmount(''); }}
             className={clsx(
               "px-6 py-2.5 rounded-lg text-sm font-bold transition-all", 
               isReturnMode ? "bg-white dark:bg-slate-950 text-orange-500 shadow-sm" : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
@@ -540,18 +546,32 @@ const POS: React.FC = () => {
             </div>
             
             {!isReturnMode && (
-              <div className="flex justify-between items-center mb-6 pt-4 border-t border-slate-200 dark:border-slate-800">
-                <span className="text-slate-600 dark:text-slate-400 font-medium text-lg">Total Making Charge (AED)</span>
-                <input
-                  type="number"
-                  value={totalMakingCharge}
-                  onChange={(e) => setTotalMakingCharge(e.target.value === '' ? '' : Number(e.target.value))}
-                  placeholder="0"
-                  className="w-32 bg-white dark:bg-slate-950 border-2 border-slate-300 dark:border-slate-700 rounded-lg px-4 py-2 text-xl font-bold text-slate-900 dark:text-slate-100 text-right focus:outline-none focus:border-gold-500 transition-colors"
-                  min="0"
-                  step="0.01"
-                />
-              </div>
+              <>
+                <div className="flex justify-between items-center mb-4 pt-4 border-t border-slate-200 dark:border-slate-800">
+                  <span className="text-slate-600 dark:text-slate-400 font-medium text-lg">Total Making Charge (AED)</span>
+                  <input
+                    type="number"
+                    value={totalMakingCharge}
+                    onChange={(e) => setTotalMakingCharge(e.target.value === '' ? '' : Number(e.target.value))}
+                    placeholder="0"
+                    className="w-32 bg-white dark:bg-slate-950 border-2 border-slate-300 dark:border-slate-700 rounded-lg px-4 py-2 text-xl font-bold text-slate-900 dark:text-slate-100 text-right focus:outline-none focus:border-gold-500 transition-colors"
+                    min="0"
+                    step="0.01"
+                  />
+                </div>
+                <div className="flex justify-between items-center mb-6 pt-4 border-t border-slate-200 dark:border-slate-800">
+                  <span className="text-slate-600 dark:text-slate-400 font-medium text-lg">Payment Received (AED)</span>
+                  <input
+                    type="number"
+                    value={paymentAmount}
+                    onChange={(e) => setPaymentAmount(e.target.value === '' ? '' : Number(e.target.value))}
+                    placeholder="0"
+                    className="w-32 bg-white dark:bg-slate-950 border-2 border-slate-300 dark:border-slate-700 rounded-lg px-4 py-2 text-xl font-bold text-slate-900 dark:text-slate-100 text-right focus:outline-none focus:border-emerald-500 transition-colors"
+                    min="0"
+                    step="0.01"
+                  />
+                </div>
+              </>
             )}
             
             <button 
