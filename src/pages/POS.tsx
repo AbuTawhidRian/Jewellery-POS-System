@@ -16,7 +16,10 @@ const POS: React.FC = () => {
   const [isScanning, setIsScanning] = useState(false);
   const [isReturnMode, setIsReturnMode] = useState(false);
   const [totalMakingCharge, setTotalMakingCharge] = useState<number | ''>('');
-  const [paymentAmount, setPaymentAmount] = useState<number | ''>('');
+  
+  // Payment Modal State
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const [paymentFormData, setPaymentFormData] = useState({ buyerId: '', type: 'received', amount: '', notes: '' });
   
   // New Buyer Modal State
   const [isBuyerModalOpen, setIsBuyerModalOpen] = useState(false);
@@ -285,10 +288,6 @@ const POS: React.FC = () => {
           const result = await processBulkSale(barcodes, selectedBuyer, Number(totalMakingCharge) || 0);
           
           if (result.success) {
-            if (Number(paymentAmount) > 0) {
-              await addPayment(selectedBuyer, Number(paymentAmount), 'POS Checkout Payment');
-            }
-            
             setPrintItem(null); // Clear any pending barcode
             setPrintInvoiceData({
               buyerName,
@@ -302,7 +301,6 @@ const POS: React.FC = () => {
             setSelectedBuyer('');
             setBuyerSearch('');
             setTotalMakingCharge('');
-            setPaymentAmount('');
           } else {
             showNotification('error', result.message);
           }
@@ -318,6 +316,23 @@ const POS: React.FC = () => {
 
   const totalWeight = cart.reduce((acc, item) => acc + Math.max(0, (Number(item.weight) || 0) - (Number(item.stone_weight) || 0)), 0);
 
+  const handleRecordPayment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!paymentFormData.buyerId || !paymentFormData.amount) return;
+    
+    const amountNum = Number(paymentFormData.amount);
+    const finalAmount = paymentFormData.type === 'received' ? amountNum : -amountNum;
+    
+    const result = await addPayment(paymentFormData.buyerId, finalAmount, paymentFormData.notes);
+    if (result.success) {
+      showNotification('success', 'Payment recorded successfully!');
+      setIsPaymentModalOpen(false);
+      setPaymentFormData({ buyerId: '', type: 'received', amount: '', notes: '' });
+    } else {
+      showNotification('error', result.message || 'Failed to record payment');
+    }
+  };
+
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 ease-out h-full flex flex-col relative">
       <header className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -331,22 +346,31 @@ const POS: React.FC = () => {
         
         <div className="flex bg-slate-200 dark:bg-slate-800 p-1 rounded-xl w-max">
           <button 
-            onClick={() => { setIsReturnMode(false); setCart([]); setTotalMakingCharge(''); setPaymentAmount(''); }}
+            onClick={() => { setIsReturnMode(false); setCart([]); setTotalMakingCharge(''); }}
             className={clsx(
               "px-6 py-2.5 rounded-lg text-sm font-bold transition-all", 
-              !isReturnMode ? "bg-white dark:bg-slate-950 text-gold-500 shadow-sm" : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
+              !isReturnMode && !isPaymentModalOpen ? "bg-white dark:bg-slate-950 text-gold-500 shadow-sm" : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
             )}
           >
             Sale Mode
           </button>
           <button 
-            onClick={() => { setIsReturnMode(true); setCart([]); setTotalMakingCharge(''); setPaymentAmount(''); }}
+            onClick={() => { setIsReturnMode(true); setCart([]); setTotalMakingCharge(''); }}
             className={clsx(
-              "px-6 py-2.5 rounded-lg text-sm font-bold transition-all", 
-              isReturnMode ? "bg-white dark:bg-slate-950 text-orange-500 shadow-sm" : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
+              "px-6 py-2.5 rounded-lg text-sm font-bold transition-all border-r border-slate-300 dark:border-slate-700 rounded-r-none", 
+              isReturnMode && !isPaymentModalOpen ? "bg-white dark:bg-slate-950 text-orange-500 shadow-sm" : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
             )}
           >
             Return Mode
+          </button>
+          <button 
+            onClick={() => { setIsPaymentModalOpen(true); }}
+            className={clsx(
+              "px-6 py-2.5 rounded-lg text-sm font-bold transition-all rounded-l-none", 
+              "text-emerald-600 hover:bg-white/50 dark:hover:bg-slate-950/50"
+            )}
+          >
+            Cash
           </button>
         </div>
       </header>
@@ -546,32 +570,18 @@ const POS: React.FC = () => {
             </div>
             
             {!isReturnMode && (
-              <>
-                <div className="flex justify-between items-center mb-4 pt-4 border-t border-slate-200 dark:border-slate-800">
-                  <span className="text-slate-600 dark:text-slate-400 font-medium text-lg">Total Making Charge (AED)</span>
-                  <input
-                    type="number"
-                    value={totalMakingCharge}
-                    onChange={(e) => setTotalMakingCharge(e.target.value === '' ? '' : Number(e.target.value))}
-                    placeholder="0"
-                    className="w-32 bg-white dark:bg-slate-950 border-2 border-slate-300 dark:border-slate-700 rounded-lg px-4 py-2 text-xl font-bold text-slate-900 dark:text-slate-100 text-right focus:outline-none focus:border-gold-500 transition-colors"
-                    min="0"
-                    step="0.01"
-                  />
-                </div>
-                <div className="flex justify-between items-center mb-6 pt-4 border-t border-slate-200 dark:border-slate-800">
-                  <span className="text-slate-600 dark:text-slate-400 font-medium text-lg">Payment Received (AED)</span>
-                  <input
-                    type="number"
-                    value={paymentAmount}
-                    onChange={(e) => setPaymentAmount(e.target.value === '' ? '' : Number(e.target.value))}
-                    placeholder="0"
-                    className="w-32 bg-white dark:bg-slate-950 border-2 border-slate-300 dark:border-slate-700 rounded-lg px-4 py-2 text-xl font-bold text-slate-900 dark:text-slate-100 text-right focus:outline-none focus:border-emerald-500 transition-colors"
-                    min="0"
-                    step="0.01"
-                  />
-                </div>
-              </>
+              <div className="flex justify-between items-center mb-6 pt-4 border-t border-slate-200 dark:border-slate-800">
+                <span className="text-slate-600 dark:text-slate-400 font-medium text-lg">Total Making Charge (AED)</span>
+                <input
+                  type="number"
+                  value={totalMakingCharge}
+                  onChange={(e) => setTotalMakingCharge(e.target.value === '' ? '' : Number(e.target.value))}
+                  placeholder="0"
+                  className="w-32 bg-white dark:bg-slate-950 border-2 border-slate-300 dark:border-slate-700 rounded-lg px-4 py-2 text-xl font-bold text-slate-900 dark:text-slate-100 text-right focus:outline-none focus:border-gold-500 transition-colors"
+                  min="0"
+                  step="0.01"
+                />
+              </div>
             )}
             
             <button 
@@ -761,6 +771,94 @@ const POS: React.FC = () => {
         confirmText={dialogConfig.confirmText || (dialogConfig.type === 'confirm' ? 'Delete' : 'OK')}
         cancelText={dialogConfig.cancelText || 'Cancel'}
       />
+      {/* POS Payment Modal */}
+      {isPaymentModalOpen && (
+        <div className="fixed inset-0 bg-white dark:bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-md shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="p-6 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center bg-white dark:bg-slate-950/50">
+              <h3 className="text-xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                <span className="text-emerald-500">💰</span>
+                Record Cash/Payment
+              </h3>
+              <button 
+                onClick={() => setIsPaymentModalOpen(false)}
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
+              >
+                <XCircle className="w-6 h-6" />
+              </button>
+            </div>
+            <div className="p-6">
+              <form onSubmit={handleRecordPayment} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Account (Buyer)</label>
+                  <select
+                    required
+                    value={paymentFormData.buyerId}
+                    onChange={(e) => setPaymentFormData({...paymentFormData, buyerId: e.target.value})}
+                    className="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg px-4 py-2.5 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500"
+                  >
+                    <option value="">Select an account...</option>
+                    {buyers.map(b => (
+                      <option key={b.id} value={b.id}>{b.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Transaction Type</label>
+                  <select
+                    required
+                    value={paymentFormData.type}
+                    onChange={(e) => setPaymentFormData({...paymentFormData, type: e.target.value})}
+                    className="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg px-4 py-2.5 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500"
+                  >
+                    <option value="received">Payment Received from Client (+)</option>
+                    <option value="paid">Payment Paid to Client (-)</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Amount (AED)</label>
+                  <input
+                    type="number"
+                    required
+                    step="0.01"
+                    min="0"
+                    value={paymentFormData.amount}
+                    onChange={(e) => setPaymentFormData({...paymentFormData, amount: e.target.value})}
+                    className="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg px-4 py-2.5 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500"
+                    placeholder="0.00"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Description / Notes</label>
+                  <input
+                    type="text"
+                    value={paymentFormData.notes}
+                    onChange={(e) => setPaymentFormData({...paymentFormData, notes: e.target.value})}
+                    className="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg px-4 py-2.5 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500"
+                    placeholder="e.g. Cash, Transfer, Adjustment..."
+                  />
+                </div>
+                <div className="pt-4 border-t border-slate-200 dark:border-slate-800 mt-6 flex justify-end gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setIsPaymentModalOpen(false)}
+                    className="px-4 py-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 font-medium"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-6 py-2 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-lg transition-colors shadow-lg shadow-emerald-500/20"
+                  >
+                    Save Payment
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 };
