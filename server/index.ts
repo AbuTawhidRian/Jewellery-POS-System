@@ -669,7 +669,7 @@ app.get('/api/sales', authenticateToken, requireActiveOrTrial, async (req: AuthR
 
 app.post('/api/sales/bulk', authenticateToken, requireActiveOrTrial, requireAccess([Role.OWNER, Role.MANAGER, Role.CASHIER], ['access_pos', 'delete_sale']), async (req: AuthRequest, res) => {
   try {
-    const { barcodes, buyerId } = req.body;
+    const { barcodes, buyerId, totalMakingCharge = 0 } = req.body;
     const shopId = req.user!.shopId!;
     
     let actualBuyerId = buyerId;
@@ -700,11 +700,14 @@ app.post('/api/sales/bulk', authenticateToken, requireActiveOrTrial, requireAcce
         data: { status: 'Sold' }
       });
 
+      const makingChargePerItem = itemsToSell.length > 0 ? (Number(totalMakingCharge) || 0) / itemsToSell.length : 0;
+
       const saleData = itemsToSell.map(item => ({
         shopId,
         itemId: item.id,
         buyerId: actualBuyerId,
-        weight: item.weight
+        weight: item.weight,
+        makingCharge: makingChargePerItem
       }));
 
       await tx.sale.createMany({ data: saleData });
@@ -716,6 +719,50 @@ app.post('/api/sales/bulk', authenticateToken, requireActiveOrTrial, requireAcce
   } catch (error: any) {
     console.error("Bulk sale error:", error);
     res.status(500).json({ error: error.message || 'Failed to process sale' });
+  }
+});
+
+app.get('/api/payments', authenticateToken, requireActiveOrTrial, async (req: AuthRequest, res) => {
+  try {
+    const payments = await prisma.payment.findMany({
+      where: { shopId: req.user!.shopId! },
+      orderBy: { date: 'desc' },
+      include: { buyer: true }
+    });
+    res.json(payments);
+  } catch (error) {
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+app.post('/api/payments', authenticateToken, requireActiveOrTrial, requireAccess([Role.OWNER, Role.MANAGER, Role.CASHIER], ['manage_buyers']), async (req: AuthRequest, res) => {
+  try {
+    const { buyerId, amount, notes } = req.body;
+    const shopId = req.user!.shopId!;
+    const payment = await prisma.payment.create({
+      data: { shopId, buyerId, amount: Number(amount), notes }
+    });
+    const paymentWithBuyer = await prisma.payment.findUnique({
+      where: { id: payment.id },
+      include: { buyer: true }
+    });
+    res.json(paymentWithBuyer);
+  } catch (error) {
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+app.delete('/api/payments/:id', authenticateToken, requireActiveOrTrial, requireAccess([Role.OWNER, Role.MANAGER], ['manage_buyers']), async (req: AuthRequest, res) => {
+  try {
+    const id = String(req.params.id);
+    const shopId = req.user!.shopId!;
+    const existing = await prisma.payment.findUnique({ where: { id } });
+    if (!existing || existing.shopId !== shopId) return res.status(404).json({ error: 'Not found' });
+    
+    await prisma.payment.delete({ where: { id } });
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: 'Internal Server Error' });
   }
 });
 

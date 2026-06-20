@@ -42,6 +42,15 @@ export interface Sale {
   stone_weight: number;
   type: string;
   model: string;
+  makingCharge: number;
+}
+
+export interface Payment {
+  id: string;
+  buyerId: string;
+  amount: number;
+  date: string;
+  notes?: string;
 }
 
 export interface InvoiceData {
@@ -53,16 +62,18 @@ export interface InvoiceData {
 
 export interface StatementData {
   buyerName: string;
-  transactions: { date: string, type: 'Sale' | 'Return', totalItems: number, grossWeight: number, netWeight: number, pureWeight: number, items: Sale[] }[];
+  transactions: { date: string, type: 'Sale' | 'Return', totalItems: number, grossWeight: number, stoneWeight: number, netWeight: number, pureWeight: number, items: Sale[], makingCharge?: number }[];
   dateRange: string;
   totalNetWeight: number;
   totalPureWeight: number;
+  payments: Payment[];
 }
 
 interface InventoryContextType {
   items: Item[];
   buyers: Buyer[];
   sales: Sale[];
+  payments: Payment[];
   itemTypes: ItemType[];
   isLoading: boolean;
   addItem: (item: Partial<Pick<Item, 'barcode'>> & Omit<Item, 'id' | 'status' | 'dateAdded' | 'date_added' | 'barcode'>) => Promise<{ success: boolean, data?: Item, error?: string }>;
@@ -78,9 +89,11 @@ interface InventoryContextType {
   addModel: (name: string) => Promise<ItemModel | null>;
   editModel: (id: string, name: string) => Promise<boolean>;
   deleteModel: (id: string) => Promise<boolean>;
-  processBulkSale: (barcodes: string[], buyerId: string) => Promise<{ success: boolean; message: string }>;
+  processBulkSale: (barcodes: string[], buyerId: string, totalMakingCharge?: number) => Promise<{ success: boolean; message: string }>;
   voidTransaction: (buyerId: string, date: string) => Promise<{ success: boolean; message: string }>;
   returnItems: (barcodes: string[]) => Promise<{ success: boolean; message: string }>;
+  addPayment: (buyerId: string, amount: number, notes?: string) => Promise<boolean>;
+  deletePayment: (id: string) => Promise<boolean>;
   printItem: Item | null;
   setPrintItem: (item: Item | null) => void;
   printInvoiceData: InvoiceData | null;
@@ -98,6 +111,7 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const [items, setItems] = useState<Item[]>([]);
   const [buyers, setBuyers] = useState<Buyer[]>([]);
   const [sales, setSales] = useState<Sale[]>([]);
+  const [payments, setPayments] = useState<Payment[]>([]);
   const [itemTypes, setItemTypes] = useState<ItemType[]>([]);
   const [models, setModels] = useState<ItemModel[]>([]);
   const [printItem, setPrintItem] = useState<Item | null>(null);
@@ -123,14 +137,13 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     const fetchData = async () => {
       setIsLoading(true);
       try {
-        const [itemsRes, buyersRes, salesRes, typesRes, descRes] = await Promise.all([
+        const [itemsRes, buyersRes, salesRes, typesRes, descRes, paymentsRes] = await Promise.all([
           authFetch(`${API_URL}/inventory`).then(res => res.json()),
           authFetch(`${API_URL}/buyers`).then(res => res.json()),
           authFetch(`${API_URL}/sales`).then(res => res.json()),
-          // The backend might not have item_types and descriptions endpoints right now,
-          // but we will keep them as is and handle errors gracefully
           authFetch(`${API_URL}/item_types`).then(res => res.ok ? res.json() : []),
-          authFetch(`${API_URL}/models`).then(res => res.ok ? res.json() : [])
+          authFetch(`${API_URL}/models`).then(res => res.ok ? res.json() : []),
+          authFetch(`${API_URL}/payments`).then(res => res.ok ? res.json() : [])
         ]);
 
         if (Array.isArray(itemsRes)) setItems(itemsRes);
@@ -138,6 +151,7 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         if (Array.isArray(salesRes)) setSales(salesRes);
         if (Array.isArray(typesRes)) setItemTypes(typesRes);
         if (Array.isArray(descRes)) setModels(descRes);
+        if (Array.isArray(paymentsRes)) setPayments(paymentsRes);
       } catch (error) {
         console.error("Error fetching data:", error);
       } finally {
@@ -360,14 +374,14 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }
   };
 
-  const processBulkSale = async (barcodes: string[], buyerId: string) => {
+  const processBulkSale = async (barcodes: string[], buyerId: string, totalMakingCharge: number = 0) => {
     const buyer = buyers.find(b => b.id === buyerId);
     if (!buyer) return { success: false, message: 'Buyer not found.' };
 
     try {
       const res = await authFetch(`${API_URL}/sales/bulk`, {
         method: 'POST',
-        body: JSON.stringify({ barcodes, buyerId })
+        body: JSON.stringify({ barcodes, buyerId, totalMakingCharge })
       });
       
       const result = await res.json();
@@ -440,8 +454,40 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }
   };
 
+  const addPayment = async (buyerId: string, amount: number, notes?: string) => {
+    try {
+      const res = await authFetch(`${API_URL}/payments`, {
+        method: 'POST',
+        body: JSON.stringify({ buyerId, amount, notes })
+      });
+      const result = await res.json();
+      if (res.ok) {
+        setPayments(prev => [result, ...prev]);
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error("Error adding payment:", error);
+      return false;
+    }
+  };
+
+  const deletePayment = async (id: string) => {
+    try {
+      const res = await authFetch(`${API_URL}/payments/${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        setPayments(prev => prev.filter(p => p.id !== id));
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error("Error deleting payment:", error);
+      return false;
+    }
+  };
+
   return (
-    <InventoryContext.Provider value={{ items, buyers, sales, itemTypes, models, isLoading, addItem, editItem, deleteItem, addBuyer, editBuyer, deleteBuyer, addItemType, editItemType, deleteItemType, addModel, editModel, deleteModel, processBulkSale, voidTransaction, returnItems, printItem, setPrintItem, printInvoiceData, setPrintInvoiceData, printStatementData, setPrintStatementData }}>
+    <InventoryContext.Provider value={{ items, buyers, sales, payments, itemTypes, models, isLoading, addItem, editItem, deleteItem, addBuyer, editBuyer, deleteBuyer, addItemType, editItemType, deleteItemType, addModel, editModel, deleteModel, processBulkSale, voidTransaction, returnItems, addPayment, deletePayment, printItem, setPrintItem, printInvoiceData, setPrintInvoiceData, printStatementData, setPrintStatementData }}>
       {children}
     </InventoryContext.Provider>
   );

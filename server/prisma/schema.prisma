@@ -37,6 +37,7 @@ model Shop {
   sales        Sale[]
   itemTypes    ItemType[]
   models       ItemModel[]
+  payments     Payment[]
   subscription Subscription?
 }
 
@@ -91,8 +92,21 @@ model Buyer {
   shopId String
   name   String
 
-  shop  Shop   @relation(fields: [shopId], references: [id], onDelete: Cascade)
-  sales Sale[]
+  shop     Shop      @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  sales    Sale[]
+  payments Payment[]
+}
+
+model Payment {
+  id        String   @id @default(uuid())
+  shopId    String
+  buyerId   String
+  amount    Float
+  date      DateTime @default(now())
+  notes     String?
+
+  shop  Shop  @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  buyer Buyer @relation(fields: [buyerId], references: [id], onDelete: Cascade)
 }
 
 model Sale {
@@ -102,6 +116,7 @@ model Sale {
   buyerId         String
   date            DateTime @default(now())
   weight          Float
+  makingCharge    Float    @default(0)
 
   shop  Shop  @relation(fields: [shopId], references: [id], onDelete: Cascade)
   item  Item  @relation(fields: [itemId], references: [id])

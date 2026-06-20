@@ -14,11 +14,12 @@ const ThermalPrintLayout: React.FC = () => {
       try {
         JsBarcode(barcodeRef.current, String(printItem.barcode), {
           format: "CODE128",
-          width: 1.2,
-          height: 25,
+          width: 1,
+          height: 24,
           displayValue: true,
-          fontSize: 8,
-          margin: 5,
+          fontSize: 10,
+          fontOptions: "bold",
+          margin: 0,
           textMargin: 0,
           background: "#ffffff",
           lineColor: "#000000"
@@ -32,11 +33,12 @@ const ThermalPrintLayout: React.FC = () => {
           try {
             (JsBarcode as any).default(barcodeRef.current, String(printItem.barcode), {
               format: "CODE128",
-              width: 1.2,
-              height: 25,
+              width: 1,
+              height: 24,
               displayValue: true,
-              fontSize: 8,
-              margin: 5,
+              fontSize: 10,
+              fontOptions: "bold",
+              margin: 0,
               textMargin: 0,
               background: "#ffffff",
               lineColor: "#000000"
@@ -85,6 +87,9 @@ const ThermalPrintLayout: React.FC = () => {
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
           }
+          #print-area svg {
+            image-rendering: pixelated;
+          }
         `}
       </style>
       <div id="print-area" className="fixed top-0 -left-[9999px] print:static bg-white text-black font-sans z-[-1] print:z-50 flex flex-col items-center justify-center w-[2.25in] h-[0.5in]">
@@ -104,7 +109,7 @@ const ThermalPrintLayout: React.FC = () => {
                 <div className="text-[8px] font-mono">{printItem.barcode}</div>
               </div>
             ) : (
-              <svg ref={barcodeRef} className="max-w-full h-auto" style={{ maxHeight: '0.35in', shapeRendering: 'crispEdges' }}></svg>
+              <svg ref={barcodeRef} style={{ shapeRendering: 'crispEdges' }}></svg>
             )}
           </div>
           

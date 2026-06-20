@@ -7,7 +7,7 @@ import { useAuth } from '../contexts/AuthContext';
 
 const Ledger: React.FC = () => {
   const { hasPermission } = useAuth();
-  const { sales, buyers, itemTypes, setPrintInvoiceData, setPrintStatementData, setPrintItem, voidTransaction } = useInventory();
+  const { sales, buyers, itemTypes, payments, addPayment, setPrintInvoiceData, setPrintStatementData, setPrintItem, voidTransaction } = useInventory();
   const [filterBuyerId, setFilterBuyerId] = useState<string>('all');
   const [filterDateRange, setFilterDateRange] = useState<string>('all');
   const [customStartDate, setCustomStartDate] = useState<string>('');
@@ -15,6 +15,14 @@ const Ledger: React.FC = () => {
   
   const [buyerDropdownOpen, setBuyerDropdownOpen] = useState(false);
   const [dateDropdownOpen, setDateDropdownOpen] = useState(false);
+
+  // Payment Modal State
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const [paymentAmount, setPaymentAmount] = useState<number | ''>('');
+  const [paymentNotes, setPaymentNotes] = useState('');
+  const [paymentBuyerId, setPaymentBuyerId] = useState('');
+  const [isSubmittingPayment, setIsSubmittingPayment] = useState(false);
+  
   const buyerRef = React.useRef<HTMLDivElement>(null);
   const dateRef = React.useRef<HTMLDivElement>(null);
   
@@ -105,7 +113,7 @@ const Ledger: React.FC = () => {
   };
 
   const transactions = useMemo(() => {
-    const txMap = new Map<string, { date: string, buyerId: string, buyerName: string, items: Sale[], totalItems: number, totalNet: number, totalGross: number, totalPure: number }>();
+    const txMap = new Map<string, { date: string, buyerId: string, buyerName: string, items: Sale[], totalItems: number, totalStone: number, totalNet: number, totalGross: number, totalPure: number, totalMakingCharge: number }>();
     
     filteredSales.forEach(sale => {
       const key = sale.date;
@@ -117,9 +125,11 @@ const Ledger: React.FC = () => {
           buyerName: sale.buyer_name,
           items: [],
           totalItems: 0,
+          totalStone: 0,
           totalNet: 0,
           totalGross: 0,
-          totalPure: 0
+          totalPure: 0,
+          totalMakingCharge: 0
         });
       }
       
@@ -133,9 +143,11 @@ const Ledger: React.FC = () => {
       const purity = itemTypes.find(t => t.name === sale.type)?.purity ?? 1.0;
       const pureWeight = nw * purity;
       
+      tx.totalStone += sw;
       tx.totalGross += gw;
       tx.totalNet += nw;
       tx.totalPure += pureWeight;
+      tx.totalMakingCharge += Number(sale.makingCharge) || 0;
     });
     
     return Array.from(txMap.values()).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
@@ -171,8 +183,10 @@ const Ledger: React.FC = () => {
       type: tx.totalNet < 0 ? 'Return' as const : 'Sale' as const,
       totalItems: tx.totalItems,
       grossWeight: tx.totalGross,
+      stoneWeight: tx.totalStone,
       netWeight: tx.totalNet,
       pureWeight: tx.totalPure,
+      makingCharge: tx.totalMakingCharge,
       items: tx.items
     }));
 
@@ -182,12 +196,15 @@ const Ledger: React.FC = () => {
                          filterDateRange === 'month' ? 'This Month' : 
                          `${format(new Date(customStartDate || 0), 'MMM d, yyyy')} - ${format(new Date(customEndDate || Date.now()), 'MMM d, yyyy')}`;
 
+    const statementPayments = payments.filter(p => p.buyerId === filterBuyerId);
+
     setPrintStatementData({
       buyerName,
       dateRange: dateRangeStr,
       transactions: statementTx,
       totalNetWeight: statementTx.reduce((acc, t) => acc + t.netWeight, 0),
-      totalPureWeight: statementTx.reduce((acc, t) => acc + t.pureWeight, 0)
+      totalPureWeight: statementTx.reduce((acc, t) => acc + t.pureWeight, 0),
+      payments: statementPayments
     });
     
     setTimeout(() => window.print(), 100);
@@ -337,6 +354,18 @@ const Ledger: React.FC = () => {
             <Printer className="w-4 h-4 text-gold-500" />
             <span className="hidden sm:inline">Print Statement</span>
           </button>
+          
+          <button 
+            onClick={() => {
+              setPaymentBuyerId(filterBuyerId === 'all' ? '' : filterBuyerId);
+              setPaymentAmount('');
+              setPaymentNotes('');
+              setIsPaymentModalOpen(true);
+            }}
+            className="inline-flex items-center justify-center gap-2 font-semibold py-2 px-4 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-slate-950 transition-colors shadow-sm"
+          >
+            <span className="hidden sm:inline">Record Payment</span>
+          </button>
         </div>
       </header>
 
@@ -351,13 +380,14 @@ const Ledger: React.FC = () => {
                 <th className="pb-3 px-4 font-medium">Buyer Company</th>
                 <th className="pb-3 px-4 font-medium text-center">Total Items</th>
                 <th className="pb-3 px-4 font-medium text-right">Total Net Wt</th>
+                <th className="pb-3 px-4 font-medium text-right">Total Pure Wt</th>
                 <th className="pb-3 px-4 font-medium text-right">Action</th>
               </tr>
             </thead>
             <tbody className="text-sm">
               {transactions.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="py-12 text-center text-slate-500">
+                  <td colSpan={7} className="py-12 text-center text-slate-500">
                     No transactions recorded for this filter.
                   </td>
                 </tr>
@@ -382,7 +412,8 @@ const Ledger: React.FC = () => {
                           {tx.buyerName} {isReturn && <span className="ml-2 text-[10px] font-bold text-red-500 px-2 py-0.5 rounded-full bg-red-100 dark:bg-red-900/30">RETURN</span>}
                         </td>
                         <td className="py-4 px-4 font-medium text-slate-700 dark:text-slate-300 text-center">{tx.totalItems}</td>
-                        <td className={`py-4 px-4 font-bold text-right ${isReturn ? 'text-red-500' : 'text-gold-400'}`}>{tx.totalNet.toFixed(2)}g</td>
+                        <td className={`py-4 px-4 font-bold text-right ${isReturn ? 'text-red-500' : 'text-slate-700 dark:text-slate-300'}`}>{tx.totalNet.toFixed(2)}g</td>
+                        <td className={`py-4 px-4 font-bold text-right ${isReturn ? 'text-red-500' : 'text-gold-400'}`}>{tx.totalPure.toFixed(2)}g</td>
                         <td className="py-4 px-4 text-right">
                           <div className="flex justify-end gap-2">
                             <button 
@@ -407,9 +438,9 @@ const Ledger: React.FC = () => {
                         </td>
                       </tr>
                       {isExpanded && (
-                        <tr className="bg-slate-50 dark:bg-slate-900/20 border-b border-slate-200 dark:border-slate-800/50">
-                          <td colSpan={6} className="p-0">
-                            <div className="p-4 pl-14 bg-slate-50 dark:bg-slate-900/30">
+                        <tr className="bg-slate-50 dark:bg-slate-900/30">
+                          <td colSpan={7} className="p-0 border-b-4 border-slate-100 dark:border-slate-900">
+                            <div className="bg-slate-50 dark:bg-slate-900/50 p-6 animate-in slide-in-from-top-2 duration-200">
                               <h4 className={`text-xs font-bold uppercase tracking-wider mb-2 ${isReturn ? 'text-red-500' : 'text-slate-500'}`}>
                                 {isReturn ? 'Returned Items' : 'Transaction Details'}
                               </h4>
@@ -422,6 +453,7 @@ const Ledger: React.FC = () => {
                                     <th className="pb-2 px-2 font-medium text-right">Gr. Wt</th>
                                     <th className="pb-2 px-2 font-medium text-right">St. Wt</th>
                                     <th className="pb-2 px-2 font-medium text-right">Net Wt</th>
+                                    <th className="pb-2 px-2 font-medium text-right">Pure Wt</th>
                                   </tr>
                                 </thead>
                                 <tbody>
@@ -434,11 +466,17 @@ const Ledger: React.FC = () => {
                                         qty: 0,
                                         weight: 0,
                                         stone_weight: 0,
+                                        pure_weight: 0,
                                       };
                                     }
                                     acc[key].qty += 1;
-                                    acc[key].weight += Number(item.weight) || 0;
-                                    acc[key].stone_weight += Number(item.stone_weight) || 0;
+                                    const itemGw = Number(item.weight) || 0;
+                                    const itemSw = Number(item.stone_weight) || 0;
+                                    acc[key].weight += itemGw;
+                                    acc[key].stone_weight += itemSw;
+                                    const purity = itemTypes.find(t => t.name === item.type)?.purity ?? 1.0;
+                                    const itemNw = itemGw > 0 ? Math.max(0, itemGw - itemSw) : Math.min(0, itemGw + itemSw);
+                                    acc[key].pure_weight += itemNw * purity;
                                     return acc;
                                   }, {})).map((group: any) => {
                                     const sw = Math.abs(group.stone_weight);
@@ -452,6 +490,7 @@ const Ledger: React.FC = () => {
                                         <td className="py-2 px-2 text-right text-slate-600 dark:text-slate-400">{gw.toFixed(2)}g</td>
                                         <td className="py-2 px-2 text-right text-slate-500">{sw > 0 ? sw.toFixed(2) + 'g' : '-'}</td>
                                         <td className="py-2 px-2 text-right font-medium text-slate-700 dark:text-slate-300">{nw.toFixed(2)}g</td>
+                                        <td className="py-2 px-2 text-right font-medium text-gold-500">{group.pure_weight.toFixed(2)}g</td>
                                       </tr>
                                     );
                                   })}
@@ -470,9 +509,12 @@ const Ledger: React.FC = () => {
           </div>
         </div>
         
-        <div className="bg-slate-50 dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 p-4 flex justify-between items-center text-sm">
-          <span className="text-slate-600 dark:text-slate-400">Total Transactions: <strong className="text-slate-800 dark:text-slate-200">{transactions.length}</strong></span>
-          <span className="text-slate-600 dark:text-slate-400">Total Net Weight Sold: <strong className="text-gold-500">{transactions.reduce((acc, tx) => acc + tx.totalNet, 0).toFixed(2)}g</strong></span>
+        <div className="bg-slate-50 dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 p-4 text-sm text-slate-500 dark:text-slate-400 flex justify-between">
+          <span>Total Transactions: <strong className="text-slate-700 dark:text-slate-300">{transactions.length}</strong></span>
+          <div className="flex gap-4">
+            <span>Total Net Weight Sold: <strong className="text-slate-700 dark:text-slate-300">{transactions.reduce((acc, tx) => acc + (tx.totalNet > 0 ? tx.totalNet : 0), 0).toFixed(2)}g</strong></span>
+            <span>Total Pure Weight Sold: <strong className="text-gold-500">{transactions.reduce((acc, tx) => acc + (tx.totalPure > 0 ? tx.totalPure : 0), 0).toFixed(2)}g</strong></span>
+          </div>
         </div>
       </div>
 
@@ -487,6 +529,76 @@ const Ledger: React.FC = () => {
         }}
         onCancel={() => setDialogConfig({ ...dialogConfig, isOpen: false })}
       />
+      
+      {isPaymentModalOpen && (
+        <div className="fixed inset-0 bg-white dark:bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-md shadow-2xl p-6">
+            <h3 className="text-xl font-bold text-slate-900 dark:text-slate-100 mb-6">Record Cash Payment</h3>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Buyer Company</label>
+                <select 
+                  value={paymentBuyerId} 
+                  onChange={e => setPaymentBuyerId(e.target.value)}
+                  className="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg px-4 py-2"
+                >
+                  <option value="">-- Select Buyer --</option>
+                  {buyers.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+                </select>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Amount (AED)</label>
+                <input 
+                  type="number" 
+                  value={paymentAmount} 
+                  onChange={e => setPaymentAmount(e.target.value === '' ? '' : Number(e.target.value))}
+                  className="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg px-4 py-2"
+                  placeholder="Enter amount"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Notes (Optional)</label>
+                <input 
+                  type="text" 
+                  value={paymentNotes} 
+                  onChange={e => setPaymentNotes(e.target.value)}
+                  className="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg px-4 py-2"
+                  placeholder="E.g. Bank Transfer, Cash"
+                />
+              </div>
+            </div>
+            
+            <div className="mt-8 flex justify-end gap-3">
+              <button 
+                onClick={() => setIsPaymentModalOpen(false)}
+                className="px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-lg transition-colors"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={async () => {
+                  if (!paymentBuyerId || !paymentAmount) return;
+                  setIsSubmittingPayment(true);
+                  const success = await addPayment(paymentBuyerId, Number(paymentAmount), paymentNotes);
+                  setIsSubmittingPayment(false);
+                  if (success) {
+                    setIsPaymentModalOpen(false);
+                  } else {
+                    setDialogConfig({ isOpen: true, type: 'alert', title: 'Error', message: 'Failed to record payment' });
+                  }
+                }}
+                disabled={!paymentBuyerId || !paymentAmount || isSubmittingPayment}
+                className="px-6 py-2 text-sm font-bold bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 text-slate-950 rounded-lg transition-colors"
+              >
+                {isSubmittingPayment ? 'Saving...' : 'Save Payment'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -15,6 +15,7 @@ const POS: React.FC = () => {
   const [cart, setCart] = useState<Item[]>([]);
   const [isScanning, setIsScanning] = useState(false);
   const [isReturnMode, setIsReturnMode] = useState(false);
+  const [totalMakingCharge, setTotalMakingCharge] = useState<number | ''>('');
   
   // New Buyer Modal State
   const [isBuyerModalOpen, setIsBuyerModalOpen] = useState(false);
@@ -280,7 +281,7 @@ const POS: React.FC = () => {
           setDialogConfig(prev => ({ ...prev, isOpen: false }));
           
           const barcodes = completedCart.map(c => c.barcode);
-          const result = await processBulkSale(barcodes, selectedBuyer);
+          const result = await processBulkSale(barcodes, selectedBuyer, Number(totalMakingCharge) || 0);
           
           if (result.success) {
             setPrintItem(null); // Clear any pending barcode
@@ -295,6 +296,7 @@ const POS: React.FC = () => {
             setCart([]);
             setSelectedBuyer('');
             setBuyerSearch('');
+            setTotalMakingCharge('');
           } else {
             showNotification('error', result.message);
           }
@@ -323,7 +325,7 @@ const POS: React.FC = () => {
         
         <div className="flex bg-slate-200 dark:bg-slate-800 p-1 rounded-xl w-max">
           <button 
-            onClick={() => { setIsReturnMode(false); setCart([]); }}
+            onClick={() => { setIsReturnMode(false); setCart([]); setTotalMakingCharge(''); }}
             className={clsx(
               "px-6 py-2.5 rounded-lg text-sm font-bold transition-all", 
               !isReturnMode ? "bg-white dark:bg-slate-950 text-gold-500 shadow-sm" : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
@@ -332,7 +334,7 @@ const POS: React.FC = () => {
             Sale Mode
           </button>
           <button 
-            onClick={() => { setIsReturnMode(true); setCart([]); }}
+            onClick={() => { setIsReturnMode(true); setCart([]); setTotalMakingCharge(''); }}
             className={clsx(
               "px-6 py-2.5 rounded-lg text-sm font-bold transition-all", 
               isReturnMode ? "bg-white dark:bg-slate-950 text-orange-500 shadow-sm" : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
@@ -532,10 +534,26 @@ const POS: React.FC = () => {
           </div>
 
           <div className="p-6 bg-slate-50 dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 mt-auto shrink-0">
-            <div className="flex justify-between items-center mb-6">
+            <div className="flex justify-between items-center mb-4">
               <span className="text-slate-600 dark:text-slate-400 font-medium text-lg">Total Net Weight</span>
               <span className="text-3xl font-bold text-gold-500">{totalWeight.toFixed(2)}<span className="text-xl ml-1">g</span></span>
             </div>
+            
+            {!isReturnMode && (
+              <div className="flex justify-between items-center mb-6 pt-4 border-t border-slate-200 dark:border-slate-800">
+                <span className="text-slate-600 dark:text-slate-400 font-medium text-lg">Total Making Charge (AED)</span>
+                <input
+                  type="number"
+                  value={totalMakingCharge}
+                  onChange={(e) => setTotalMakingCharge(e.target.value === '' ? '' : Number(e.target.value))}
+                  placeholder="0"
+                  className="w-32 bg-white dark:bg-slate-950 border-2 border-slate-300 dark:border-slate-700 rounded-lg px-4 py-2 text-xl font-bold text-slate-900 dark:text-slate-100 text-right focus:outline-none focus:border-gold-500 transition-colors"
+                  min="0"
+                  step="0.01"
+                />
+              </div>
+            )}
+            
             <button 
               onClick={handleCheckout}
               disabled={cart.length === 0}
