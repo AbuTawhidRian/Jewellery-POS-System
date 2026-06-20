@@ -323,13 +323,13 @@ const POS: React.FC = () => {
     const amountNum = Number(paymentFormData.amount);
     const finalAmount = paymentFormData.type === 'received' ? amountNum : -amountNum;
     
-    const result = await addPayment(paymentFormData.buyerId, finalAmount, paymentFormData.notes);
-    if (result.success) {
+    const success = await addPayment(paymentFormData.buyerId, finalAmount, paymentFormData.notes);
+    if (success) {
       showNotification('success', 'Payment recorded successfully!');
       setIsPaymentModalOpen(false);
       setPaymentFormData({ buyerId: '', type: 'received', amount: '', notes: '' });
     } else {
-      showNotification('error', result.message || 'Failed to record payment');
+      showNotification('error', 'Failed to record payment');
     }
   };
 
