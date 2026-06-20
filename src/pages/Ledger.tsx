@@ -7,7 +7,7 @@ import { useAuth } from '../contexts/AuthContext';
 
 const Ledger: React.FC = () => {
   const { hasPermission } = useAuth();
-  const { sales, buyers, setPrintInvoiceData, setPrintStatementData, setPrintItem, voidTransaction } = useInventory();
+  const { sales, buyers, itemTypes, setPrintInvoiceData, setPrintStatementData, setPrintItem, voidTransaction } = useInventory();
   const [filterBuyerId, setFilterBuyerId] = useState<string>('all');
   const [filterDateRange, setFilterDateRange] = useState<string>('all');
   const [customStartDate, setCustomStartDate] = useState<string>('');
@@ -105,7 +105,7 @@ const Ledger: React.FC = () => {
   };
 
   const transactions = useMemo(() => {
-    const txMap = new Map<string, { date: string, buyerId: string, buyerName: string, items: Sale[], totalItems: number, totalNet: number, totalGross: number }>();
+    const txMap = new Map<string, { date: string, buyerId: string, buyerName: string, items: Sale[], totalItems: number, totalNet: number, totalGross: number, totalPure: number }>();
     
     filteredSales.forEach(sale => {
       const key = sale.date;
@@ -118,7 +118,8 @@ const Ledger: React.FC = () => {
           items: [],
           totalItems: 0,
           totalNet: 0,
-          totalGross: 0
+          totalGross: 0,
+          totalPure: 0
         });
       }
       
@@ -127,12 +128,18 @@ const Ledger: React.FC = () => {
       tx.totalItems++;
       const sw = Number(sale.stone_weight) || 0;
       const gw = Number(sale.weight) || 0;
+      const nw = gw > 0 ? Math.max(0, gw - sw) : Math.min(0, gw + sw);
+      
+      const purity = itemTypes.find(t => t.name === sale.type)?.purity ?? 1.0;
+      const pureWeight = nw * purity;
+      
       tx.totalGross += gw;
-      tx.totalNet += gw > 0 ? Math.max(0, gw - sw) : Math.min(0, gw + sw);
+      tx.totalNet += nw;
+      tx.totalPure += pureWeight;
     });
     
     return Array.from(txMap.values()).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  }, [filteredSales]);
+  }, [filteredSales, itemTypes]);
 
   const printTransactionInvoice = (tx: any, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -163,7 +170,9 @@ const Ledger: React.FC = () => {
       date: tx.date,
       type: tx.totalNet < 0 ? 'Return' as const : 'Sale' as const,
       totalItems: tx.totalItems,
+      grossWeight: tx.totalGross,
       netWeight: tx.totalNet,
+      pureWeight: tx.totalPure,
       items: tx.items
     }));
 
@@ -177,7 +186,8 @@ const Ledger: React.FC = () => {
       buyerName,
       dateRange: dateRangeStr,
       transactions: statementTx,
-      totalNetWeight: statementTx.reduce((acc, t) => acc + t.netWeight, 0)
+      totalNetWeight: statementTx.reduce((acc, t) => acc + t.netWeight, 0),
+      totalPureWeight: statementTx.reduce((acc, t) => acc + t.pureWeight, 0)
     });
     
     setTimeout(() => window.print(), 100);

@@ -112,6 +112,7 @@ model ItemType {
   id     String @id @default(uuid())
   shopId String
   name   String
+  purity Float  @default(1.0)
 
   shop Shop @relation(fields: [shopId], references: [id], onDelete: Cascade)
 

@@ -111,8 +111,13 @@ const ThermalPrintLayout: React.FC = () => {
           {/* Right Column */}
           <div className="flex flex-col text-[7px] font-bold text-right w-[30%] leading-tight">
             <span>GW: {parseFloat(printItem.weight as any || '0').toFixed(2)}g</span>
-            {parseFloat(printItem.stone_weight as any || '0') > 0 && (
-              <span>NW: {(parseFloat(printItem.weight as any || '0') - parseFloat(printItem.stone_weight as any || '0')).toFixed(2)}g</span>
+            {parseFloat(printItem.stone_weight as any || '0') > 0 ? (
+              <>
+                <span>SW: {parseFloat(printItem.stone_weight as any || '0').toFixed(2)}g</span>
+                <span>NW: {(parseFloat(printItem.weight as any || '0') - parseFloat(printItem.stone_weight as any || '0')).toFixed(2)}g</span>
+              </>
+            ) : (
+              <span>NW: {parseFloat(printItem.weight as any || '0').toFixed(2)}g</span>
             )}
           </div>
 

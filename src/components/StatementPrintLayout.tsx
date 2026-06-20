@@ -57,9 +57,10 @@ const StatementPrintLayout: React.FC = () => {
                 <th className="py-3 px-2 font-bold w-32">Date</th>
                 <th className="py-3 px-2 font-bold">Transaction Type</th>
                 <th className="py-3 px-2 font-bold text-center">Items</th>
-                <th className="py-3 px-2 font-bold text-right">Given Wt (g)</th>
-                <th className="py-3 px-2 font-bold text-right">Received Wt (g)</th>
-                <th className="py-3 px-2 font-bold text-right">Balance (g)</th>
+                <th className="py-3 px-2 font-bold text-right">Gross Wt (g)</th>
+                <th className="py-3 px-2 font-bold text-right">Pure Given (g)</th>
+                <th className="py-3 px-2 font-bold text-right">Pure Received (g)</th>
+                <th className="py-3 px-2 font-bold text-right">Pure Balance (g)</th>
               </tr>
             </thead>
             <tbody className="text-sm">
@@ -69,7 +70,7 @@ const StatementPrintLayout: React.FC = () => {
                 const sortedTx = [...printStatementData.transactions].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
                 
                 return sortedTx.map((tx, idx) => {
-                  runningBalance += tx.netWeight;
+                  runningBalance += tx.pureWeight;
                   return (
                     <tr key={idx} className="border-b border-slate-200">
                       <td className="py-4 px-2 text-slate-700">{format(new Date(tx.date), 'MMM dd, yyyy')}</td>
@@ -79,11 +80,12 @@ const StatementPrintLayout: React.FC = () => {
                         </span>
                       </td>
                       <td className="py-4 px-2 font-medium text-center text-slate-700">{tx.totalItems}</td>
+                      <td className="py-4 px-2 font-medium text-right text-slate-900">{tx.grossWeight?.toFixed(2) || '0.00'}</td>
                       <td className="py-4 px-2 font-medium text-right text-slate-900">
-                        {tx.netWeight > 0 ? tx.netWeight.toFixed(2) : '-'}
+                        {tx.pureWeight > 0 ? tx.pureWeight.toFixed(2) : '-'}
                       </td>
                       <td className="py-4 px-2 font-medium text-right text-slate-900">
-                        {tx.netWeight < 0 ? Math.abs(tx.netWeight).toFixed(2) : '-'}
+                        {tx.pureWeight < 0 ? Math.abs(tx.pureWeight).toFixed(2) : '-'}
                       </td>
                       <td className="py-4 px-2 font-bold text-right text-slate-900">{runningBalance.toFixed(2)}</td>
                     </tr>
@@ -101,9 +103,9 @@ const StatementPrintLayout: React.FC = () => {
                 <span className="font-medium">{printStatementData.transactions.length}</span>
               </div>
               <div className="flex justify-between items-center pt-4 border-t border-slate-200">
-                <span className="font-bold text-slate-800">Final Balance:</span>
+                <span className="font-bold text-slate-800">Final Pure Balance:</span>
                 <span className="text-xl font-bold text-slate-900">
-                  {printStatementData.totalNetWeight.toFixed(2)} g
+                  {printStatementData.totalPureWeight?.toFixed(2) || '0.00'} g
                 </span>
               </div>
             </div>

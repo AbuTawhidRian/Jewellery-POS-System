@@ -17,6 +17,7 @@ export interface Item {
 export interface ItemType {
   id: string;
   name: string;
+  purity?: number;
 }
 
 export interface ItemModel {
@@ -52,9 +53,10 @@ export interface InvoiceData {
 
 export interface StatementData {
   buyerName: string;
-  transactions: { date: string, type: 'Sale' | 'Return', totalItems: number, netWeight: number, items: Sale[] }[];
+  transactions: { date: string, type: 'Sale' | 'Return', totalItems: number, grossWeight: number, netWeight: number, pureWeight: number, items: Sale[] }[];
   dateRange: string;
   totalNetWeight: number;
+  totalPureWeight: number;
 }
 
 interface InventoryContextType {
@@ -69,8 +71,8 @@ interface InventoryContextType {
   addBuyer: (name: string) => Promise<Buyer | null>;
   editBuyer: (id: string, name: string) => Promise<boolean>;
   deleteBuyer: (id: string) => Promise<boolean>;
-  addItemType: (name: string) => Promise<ItemType | null>;
-  editItemType: (id: string, name: string) => Promise<boolean>;
+  addItemType: (name: string, purity?: number) => Promise<ItemType | null>;
+  editItemType: (id: string, name: string, purity?: number) => Promise<boolean>;
   deleteItemType: (id: string) => Promise<boolean>;
   models: ItemModel[];
   addModel: (name: string) => Promise<ItemModel | null>;
@@ -247,11 +249,11 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }
   };
 
-  const addItemType = async (name: string) => {
+  const addItemType = async (name: string, purity?: number) => {
     try {
       const res = await authFetch(`${API_URL}/item_types`, {
         method: 'POST',
-        body: JSON.stringify({ name })
+        body: JSON.stringify({ name, purity })
       });
       const result = await res.json();
       
@@ -266,12 +268,12 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }
   };
 
-  const editItemType = async (id: string, name: string) => {
+  const editItemType = async (id: string, name: string, purity?: number) => {
     try {
       const oldTypeObj = itemTypes.find(t => t.id === id);
       const res = await authFetch(`${API_URL}/item_types/${id}`, {
         method: 'PUT',
-        body: JSON.stringify({ name })
+        body: JSON.stringify({ name, purity })
       });
       const result = await res.json();
       if (res.ok) {

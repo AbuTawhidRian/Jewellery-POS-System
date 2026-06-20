@@ -18,8 +18,10 @@ const Vault: React.FC = () => {
 
   const [isManageTypesOpen, setIsManageTypesOpen] = useState(false);
   const [newTypeName, setNewTypeName] = useState('');
+  const [newTypePurity, setNewTypePurity] = useState('1.0');
   const [editingTypeId, setEditingTypeId] = useState<string | null>(null);
   const [editingTypeName, setEditingTypeName] = useState('');
+  const [editingTypePurity, setEditingTypePurity] = useState('1.0');
 
   const [isManageDescOpen, setIsManageDescOpen] = useState(false);
   const [newModelName, setNewModelName] = useState('');
@@ -460,15 +462,29 @@ const Vault: React.FC = () => {
                   itemTypes.map(t => (
                     <div key={t.id} className="flex justify-between items-center bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-3">
                       {editingTypeId === t.id ? (
-                        <input
-                          type="text"
-                          value={editingTypeName}
-                          onChange={(e) => setEditingTypeName(e.target.value)}
-                          className="flex-1 bg-slate-50 dark:bg-slate-900 border border-gold-500 rounded px-2 py-1 text-slate-900 dark:text-slate-100 text-sm focus:outline-none mr-2"
-                          autoFocus
-                        />
+                        <div className="flex flex-1 gap-2 mr-2">
+                          <input
+                            type="text"
+                            value={editingTypeName}
+                            onChange={(e) => setEditingTypeName(e.target.value)}
+                            className="flex-1 bg-slate-50 dark:bg-slate-900 border border-gold-500 rounded px-2 py-1 text-slate-900 dark:text-slate-100 text-sm focus:outline-none"
+                            autoFocus
+                            placeholder="Type Name"
+                          />
+                          <input
+                            type="number"
+                            step="0.001"
+                            value={editingTypePurity}
+                            onChange={(e) => setEditingTypePurity(e.target.value)}
+                            className="w-24 bg-slate-50 dark:bg-slate-900 border border-gold-500 rounded px-2 py-1 text-slate-900 dark:text-slate-100 text-sm focus:outline-none"
+                            placeholder="Purity (e.g. 0.75)"
+                          />
+                        </div>
                       ) : (
-                        <span className="text-slate-800 dark:text-slate-200 font-medium">{t.name}</span>
+                        <div className="flex flex-1 justify-between mr-4">
+                          <span className="text-slate-800 dark:text-slate-200 font-medium">{t.name}</span>
+                          <span className="text-slate-500 text-sm">Purity: {t.purity ?? 1.0}</span>
+                        </div>
                       )}
                       
                       <div className="flex items-center">
@@ -480,7 +496,7 @@ const Vault: React.FC = () => {
                                   setEditingTypeId(null);
                                   return;
                                 }
-                                const success = await editItemType(t.id, editingTypeName.trim());
+                                const success = await editItemType(t.id, editingTypeName.trim(), parseFloat(editingTypePurity) || 1.0);
                                 if (success && type === t.name) {
                                   setType(editingTypeName.trim());
                                   setTypeSearch(editingTypeName.trim());
@@ -504,6 +520,7 @@ const Vault: React.FC = () => {
                               onClick={() => {
                                 setEditingTypeId(t.id);
                                 setEditingTypeName(t.name);
+                                setEditingTypePurity((t.purity ?? 1.0).toString());
                               }}
                               className="p-2 text-slate-500 hover:text-blue-400 hover:bg-blue-400/10 rounded-lg transition-colors"
                               title="Edit type"
@@ -554,7 +571,7 @@ const Vault: React.FC = () => {
                 <label className="block text-sm font-bold tracking-wide text-slate-600 dark:text-slate-400 uppercase mb-2">
                   Add New Type
                 </label>
-                <div className="flex gap-2">
+                <div className="flex flex-col sm:flex-row gap-2">
                   <input 
                     type="text"
                     value={newTypeName}
@@ -562,12 +579,21 @@ const Vault: React.FC = () => {
                     className="flex-1 bg-white dark:bg-slate-950 border-2 border-slate-300 dark:border-slate-700 focus:border-gold-500 rounded-xl px-4 py-2 text-slate-900 dark:text-slate-100 focus:outline-none transition-colors"
                     placeholder="e.g. 21k Gold Bar"
                   />
+                  <input 
+                    type="number"
+                    step="0.001"
+                    value={newTypePurity}
+                    onChange={(e) => setNewTypePurity(e.target.value)}
+                    className="w-full sm:w-32 bg-white dark:bg-slate-950 border-2 border-slate-300 dark:border-slate-700 focus:border-gold-500 rounded-xl px-4 py-2 text-slate-900 dark:text-slate-100 focus:outline-none transition-colors"
+                    placeholder="Purity (0.75)"
+                  />
                   <button
                     onClick={async () => {
                       if (!newTypeName.trim()) return;
-                      const added = await addItemType(newTypeName.trim());
+                      const added = await addItemType(newTypeName.trim(), parseFloat(newTypePurity) || 1.0);
                       if (added) {
                         setNewTypeName('');
+                        setNewTypePurity('1.0');
                         setType(added.name);
                         setTypeSearch(added.name);
                       }

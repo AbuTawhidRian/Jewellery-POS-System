@@ -372,9 +372,13 @@ app.get('/api/item_types', authenticateToken, requireActiveOrTrial, async (req: 
 
 app.post('/api/item_types', authenticateToken, requireActiveOrTrial, requireAccess([Role.OWNER, Role.MANAGER], ['view_vault', 'edit_vault', 'manage_buyers']), async (req: AuthRequest, res) => {
   try {
-    const { name } = req.body;
+    const { name, purity } = req.body;
     const itemType = await prisma.itemType.create({
-      data: { name, shopId: req.user!.shopId! }
+      data: { 
+        name, 
+        shopId: req.user!.shopId!,
+        purity: purity !== undefined ? parseFloat(purity) : 1.0
+      }
     });
     res.json(itemType);
   } catch (error) {
@@ -385,13 +389,16 @@ app.post('/api/item_types', authenticateToken, requireActiveOrTrial, requireAcce
 app.put('/api/item_types/:id', authenticateToken, requireActiveOrTrial, requireAccess([Role.OWNER, Role.MANAGER], ['view_vault', 'edit_vault', 'manage_buyers']), async (req: AuthRequest, res) => {
   try {
     const id = String(req.params.id);
-    const { name } = req.body;
+    const { name, purity } = req.body;
     const existing = await prisma.itemType.findUnique({ where: { id } });
     if (!existing || existing.shopId !== req.user!.shopId) return res.status(404).json({ error: 'Not found' });
 
     const itemType = await prisma.itemType.update({
       where: { id },
-      data: { name }
+      data: { 
+        name: name !== undefined ? name : undefined,
+        purity: purity !== undefined ? parseFloat(purity) : undefined
+      }
     });
     res.json(itemType);
   } catch (error) {
