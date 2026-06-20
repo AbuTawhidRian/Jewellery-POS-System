@@ -1,13 +1,23 @@
-import React from 'react';
-import { Outlet } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { Outlet, useLocation } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import MobileNav from './MobileNav';
 import TopNav from './TopNav';
 import ThermalPrintLayout from './ThermalPrintLayout';
 import InvoicePrintLayout from './InvoicePrintLayout';
 import StatementPrintLayout from './StatementPrintLayout';
+import { useInventory } from '../store/InventoryContext';
 
 const Layout: React.FC = () => {
+  const location = useLocation();
+  const { setPrintItem, setPrintInvoiceData, setPrintStatementData } = useInventory();
+
+  useEffect(() => {
+    setPrintItem(null);
+    setPrintInvoiceData(null);
+    setPrintStatementData(null);
+  }, [location.pathname, setPrintItem, setPrintInvoiceData, setPrintStatementData]);
+
   return (
     <div className="flex h-screen bg-white dark:bg-[#0B0F19] transition-colors duration-300 overflow-hidden font-sans">
       <Sidebar />
