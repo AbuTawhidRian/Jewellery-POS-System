@@ -15,14 +15,14 @@ const StatementPrintLayout: React.FC = () => {
     <>
       <style type="text/css" media="print">
         {`
-          @page { size: auto; margin: 15mm; }
+          @page { size: landscape; margin: 15mm; }
           body * { visibility: hidden; }
           #statement-print-area, #statement-print-area * { visibility: visible; }
           #statement-print-area { position: absolute; left: 0; top: 0; width: 100%; }
         `}
       </style>
       <div id="statement-print-area" className="hidden print:block bg-white text-black min-h-screen font-sans">
-        <div className="max-w-[21cm] mx-auto p-12 bg-white">
+        <div className="max-w-[29.7cm] mx-auto p-12 bg-white">
           
           {/* Header */}
           <div className="flex justify-between items-start border-b-2 border-slate-200 pb-8 mb-8">
