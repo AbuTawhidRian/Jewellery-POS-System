@@ -57,8 +57,9 @@ const StatementPrintLayout: React.FC = () => {
                 <th className="py-3 px-2 font-bold w-32">Date</th>
                 <th className="py-3 px-2 font-bold">Transaction Type</th>
                 <th className="py-3 px-2 font-bold text-center">Items</th>
-                <th className="py-3 px-2 font-bold text-right">Net Weight (g)</th>
-                <th className="py-3 px-2 font-bold text-right">Running Balance (g)</th>
+                <th className="py-3 px-2 font-bold text-right">Given Wt (g)</th>
+                <th className="py-3 px-2 font-bold text-right">Received Wt (g)</th>
+                <th className="py-3 px-2 font-bold text-right">Balance (g)</th>
               </tr>
             </thead>
             <tbody className="text-sm">
@@ -78,10 +79,11 @@ const StatementPrintLayout: React.FC = () => {
                         </span>
                       </td>
                       <td className="py-4 px-2 font-medium text-center text-slate-700">{tx.totalItems}</td>
-                      <td className="py-4 px-2 font-medium text-right">
-                        <span className={tx.netWeight < 0 ? 'text-red-600' : 'text-slate-900'}>
-                          {tx.netWeight > 0 ? '+' : ''}{tx.netWeight.toFixed(2)}
-                        </span>
+                      <td className="py-4 px-2 font-medium text-right text-slate-900">
+                        {tx.netWeight > 0 ? tx.netWeight.toFixed(2) : '-'}
+                      </td>
+                      <td className="py-4 px-2 font-medium text-right text-slate-900">
+                        {tx.netWeight < 0 ? Math.abs(tx.netWeight).toFixed(2) : '-'}
                       </td>
                       <td className="py-4 px-2 font-bold text-right text-slate-900">{runningBalance.toFixed(2)}</td>
                     </tr>
