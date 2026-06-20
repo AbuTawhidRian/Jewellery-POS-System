@@ -3,6 +3,7 @@ import { useInventory } from '../store/InventoryContext';
 import { format } from 'date-fns';
 import { Diamond } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import clsx from 'clsx';
 
 const StatementPrintLayout: React.FC = () => {
   const { printStatementData } = useInventory();
@@ -78,10 +79,15 @@ const StatementPrintLayout: React.FC = () => {
                     return (
                       <tr key={idx} className="border-b border-slate-200">
                         <td className="py-4 px-2 text-slate-700">{format(new Date(tx.date), 'MMM dd, yyyy')}</td>
-                        <td className="py-4 px-2 font-bold">
-                          <span className={tx.type === 'Return' ? 'text-red-600' : 'text-slate-800'}>
+                        <td className="py-4 px-2">
+                          <div className={clsx("font-bold", tx.type === 'Return' ? 'text-red-600' : 'text-slate-800')}>
                             {tx.type === 'Return' ? 'Sales Return' : 'Sale'}
-                          </span>
+                          </div>
+                          {tx.items && tx.items.length > 0 && (
+                            <div className="text-xs text-slate-500 font-normal mt-0.5">
+                              {Array.from(new Set(tx.items.map((i: any) => i.type))).join(', ')}
+                            </div>
+                          )}
                         </td>
                         <td className="py-4 px-2 font-medium text-center text-slate-700">{tx.totalItems}</td>
                         <td className="py-4 px-2 font-medium text-right text-slate-900">{tx.grossWeight?.toFixed(2) || '0.00'}</td>
