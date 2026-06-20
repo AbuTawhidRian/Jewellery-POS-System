@@ -767,6 +767,34 @@ app.delete('/api/payments/:id', authenticateToken, requireActiveOrTrial, require
   }
 });
 
+app.put('/api/payments/:id', authenticateToken, requireActiveOrTrial, requireAccess([Role.OWNER, Role.MANAGER, Role.CASHIER], ['manage_buyers']), async (req: AuthRequest, res) => {
+  try {
+    const id = String(req.params.id);
+    const shopId = req.user!.shopId!;
+    const { buyerId, amount, notes } = req.body;
+    
+    const existing = await prisma.payment.findUnique({ where: { id } });
+    if (!existing || existing.shopId !== shopId) return res.status(404).json({ error: 'Not found' });
+
+    const updatedPayment = await prisma.payment.update({
+      where: { id },
+      data: {
+        buyerId: buyerId !== undefined ? buyerId : undefined,
+        amount: amount !== undefined ? Number(amount) : undefined,
+        notes: notes !== undefined ? notes : undefined
+      }
+    });
+    
+    const paymentWithBuyer = await prisma.payment.findUnique({
+      where: { id: updatedPayment.id },
+      include: { buyer: true }
+    });
+    res.json(paymentWithBuyer);
+  } catch (error) {
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
 app.post('/api/sales/wipe', authenticateToken, requireActiveOrTrial, requireAccess([Role.OWNER], []), async (req: AuthRequest, res) => {
   try {
     const shopId = req.user!.shopId!;

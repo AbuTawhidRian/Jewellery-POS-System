@@ -93,6 +93,7 @@ interface InventoryContextType {
   voidTransaction: (buyerId: string, date: string) => Promise<{ success: boolean; message: string }>;
   returnItems: (barcodes: string[]) => Promise<{ success: boolean; message: string }>;
   addPayment: (buyerId: string, amount: number, notes?: string) => Promise<boolean>;
+  editPayment: (id: string, buyerId: string, amount: number, notes?: string) => Promise<boolean>;
   deletePayment: (id: string) => Promise<boolean>;
   printItem: Item | null;
   setPrintItem: (item: Item | null) => void;
@@ -472,6 +473,24 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }
   };
 
+  const editPayment = async (id: string, buyerId: string, amount: number, notes?: string) => {
+    try {
+      const res = await authFetch(`${API_URL}/payments/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify({ buyerId, amount, notes })
+      });
+      const result = await res.json();
+      if (res.ok) {
+        setPayments(prev => prev.map(p => p.id === id ? result : p));
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error("Error editing payment:", error);
+      return false;
+    }
+  };
+
   const deletePayment = async (id: string) => {
     try {
       const res = await authFetch(`${API_URL}/payments/${id}`, { method: 'DELETE' });
@@ -487,7 +506,7 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   };
 
   return (
-    <InventoryContext.Provider value={{ items, buyers, sales, payments, itemTypes, models, isLoading, addItem, editItem, deleteItem, addBuyer, editBuyer, deleteBuyer, addItemType, editItemType, deleteItemType, addModel, editModel, deleteModel, processBulkSale, voidTransaction, returnItems, addPayment, deletePayment, printItem, setPrintItem, printInvoiceData, setPrintInvoiceData, printStatementData, setPrintStatementData }}>
+    <InventoryContext.Provider value={{ items, buyers, sales, payments, itemTypes, models, isLoading, addItem, editItem, deleteItem, addBuyer, editBuyer, deleteBuyer, addItemType, editItemType, deleteItemType, addModel, editModel, deleteModel, processBulkSale, voidTransaction, returnItems, addPayment, editPayment, deletePayment, printItem, setPrintItem, printInvoiceData, setPrintInvoiceData, printStatementData, setPrintStatementData }}>
       {children}
     </InventoryContext.Provider>
   );

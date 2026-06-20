@@ -8,18 +8,21 @@ import { useAuth } from '../contexts/AuthContext';
 
 const POS: React.FC = () => {
   const { hasPermission } = useAuth();
-  const { items, buyers, sales, processBulkSale, returnItems, addBuyer, editBuyer, deleteBuyer, addPayment, setPrintInvoiceData, setPrintItem } = useInventory();
+  const { items, buyers, sales, payments, processBulkSale, returnItems, addBuyer, editBuyer, deleteBuyer, addPayment, editPayment, deletePayment, setPrintInvoiceData, setPrintItem } = useInventory();
   const [selectedBuyer, setSelectedBuyer] = useState('');
   const [barcode, setBarcode] = useState('');
   const [notification, setNotification] = useState<{ type: 'success' | 'error', message: string } | null>(null);
   const [cart, setCart] = useState<Item[]>([]);
   const [isScanning, setIsScanning] = useState(false);
   const [isReturnMode, setIsReturnMode] = useState(false);
+  const [isCashMode, setIsCashMode] = useState(false);
   const [totalMakingCharge, setTotalMakingCharge] = useState<number | ''>('');
   
   // Payment Modal State
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [paymentFormData, setPaymentFormData] = useState({ buyerId: '', type: 'received', amount: '', notes: '' });
+  const [editingPaymentId, setEditingPaymentId] = useState<string | null>(null);
+  const [cashFilterBuyerId, setCashFilterBuyerId] = useState<string>('all');
   
   // New Buyer Modal State
   const [isBuyerModalOpen, setIsBuyerModalOpen] = useState(false);
@@ -323,13 +326,20 @@ const POS: React.FC = () => {
     const amountNum = Number(paymentFormData.amount);
     const finalAmount = paymentFormData.type === 'received' ? amountNum : -amountNum;
     
-    const success = await addPayment(paymentFormData.buyerId, finalAmount, paymentFormData.notes);
+    let success = false;
+    if (editingPaymentId) {
+      success = await editPayment(editingPaymentId, paymentFormData.buyerId, finalAmount, paymentFormData.notes);
+    } else {
+      success = await addPayment(paymentFormData.buyerId, finalAmount, paymentFormData.notes);
+    }
+
     if (success) {
-      showNotification('success', 'Payment recorded successfully!');
+      showNotification('success', editingPaymentId ? 'Payment updated successfully!' : 'Payment recorded successfully!');
       setIsPaymentModalOpen(false);
       setPaymentFormData({ buyerId: '', type: 'received', amount: '', notes: '' });
+      setEditingPaymentId(null);
     } else {
-      showNotification('error', 'Failed to record payment');
+      showNotification('error', editingPaymentId ? 'Failed to update payment' : 'Failed to record payment');
     }
   };
 
@@ -346,28 +356,28 @@ const POS: React.FC = () => {
         
         <div className="flex bg-slate-200 dark:bg-slate-800 p-1 rounded-xl w-max">
           <button 
-            onClick={() => { setIsReturnMode(false); setCart([]); setTotalMakingCharge(''); }}
+            onClick={() => { setIsReturnMode(false); setIsCashMode(false); setCart([]); setTotalMakingCharge(''); }}
             className={clsx(
               "px-6 py-2.5 rounded-lg text-sm font-bold transition-all", 
-              !isReturnMode && !isPaymentModalOpen ? "bg-white dark:bg-slate-950 text-gold-500 shadow-sm" : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
+              !isReturnMode && !isCashMode ? "bg-white dark:bg-slate-950 text-gold-500 shadow-sm" : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
             )}
           >
             Sale Mode
           </button>
           <button 
-            onClick={() => { setIsReturnMode(true); setCart([]); setTotalMakingCharge(''); }}
+            onClick={() => { setIsReturnMode(true); setIsCashMode(false); setCart([]); setTotalMakingCharge(''); }}
             className={clsx(
               "px-6 py-2.5 rounded-lg text-sm font-bold transition-all border-r border-slate-300 dark:border-slate-700 rounded-r-none", 
-              isReturnMode && !isPaymentModalOpen ? "bg-white dark:bg-slate-950 text-orange-500 shadow-sm" : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
+              isReturnMode && !isCashMode ? "bg-white dark:bg-slate-950 text-orange-500 shadow-sm" : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
             )}
           >
             Return Mode
           </button>
           <button 
-            onClick={() => { setIsPaymentModalOpen(true); }}
+            onClick={() => { setIsCashMode(true); }}
             className={clsx(
               "px-6 py-2.5 rounded-lg text-sm font-bold transition-all rounded-l-none", 
-              "text-emerald-600 hover:bg-white/50 dark:hover:bg-slate-950/50"
+              isCashMode ? "bg-white dark:bg-slate-950 text-emerald-600 shadow-sm" : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
             )}
           >
             Cash
@@ -375,7 +385,8 @@ const POS: React.FC = () => {
         </div>
       </header>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 flex-1 min-h-0 pb-8">
+      {!isCashMode ? (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 flex-1 min-h-0 pb-8">
         
         {/* Left Column: Scanner and Buyer */}
         <div className="lg:col-span-5 flex flex-col gap-6">
@@ -598,7 +609,135 @@ const POS: React.FC = () => {
           </div>
         </div>
 
-      </div>
+        </div>
+      ) : (
+        <div className="flex-1 flex flex-col min-h-0 pb-8 gap-6 animate-in fade-in duration-300">
+          <div className="bg-white dark:bg-slate-950 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-lg flex-1 flex flex-col min-h-[500px]">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
+                <span className="text-emerald-500">💰</span> Cash Ledger
+              </h2>
+              <div className="flex flex-col sm:flex-row items-center gap-4">
+                <select
+                  value={cashFilterBuyerId}
+                  onChange={(e) => setCashFilterBuyerId(e.target.value)}
+                  className="bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg px-4 py-2 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+                >
+                  <option value="all">All Accounts</option>
+                  {buyers.map(b => (
+                    <option key={b.id} value={b.id}>{b.name}</option>
+                  ))}
+                </select>
+                <button
+                  onClick={() => {
+                    setEditingPaymentId(null);
+                    setPaymentFormData({ buyerId: cashFilterBuyerId !== 'all' ? cashFilterBuyerId : '', type: 'received', amount: '', notes: '' });
+                    setIsPaymentModalOpen(true);
+                  }}
+                  className="bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-2 px-6 rounded-lg flex items-center gap-2 transition-colors shadow-lg shadow-emerald-500/20"
+                >
+                  Record Payment
+                </button>
+              </div>
+            </div>
+            
+            <div className="flex-1 overflow-auto rounded-xl border border-slate-200 dark:border-slate-700/50 bg-slate-50 dark:bg-slate-900/50">
+              <table className="w-full text-left border-collapse min-w-[800px]">
+                <thead className="sticky top-0 bg-slate-100 dark:bg-slate-800/80 backdrop-blur-md shadow-sm z-10">
+                  <tr className="border-b border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 text-sm tracking-wider uppercase">
+                    <th className="py-4 px-4 font-bold">Date</th>
+                    <th className="py-4 px-4 font-bold">Account (Buyer)</th>
+                    <th className="py-4 px-4 font-bold">Type</th>
+                    <th className="py-4 px-4 font-bold">Description / Notes</th>
+                    <th className="py-4 px-4 font-bold text-right">Amount (AED)</th>
+                    <th className="py-4 px-4 font-bold text-center">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-200 dark:divide-slate-700/50 text-slate-700 dark:text-slate-300">
+                  {(() => {
+                    const filteredPayments = payments.filter(p => cashFilterBuyerId === 'all' || p.buyerId === cashFilterBuyerId).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+                    
+                    if (filteredPayments.length === 0) {
+                      return (
+                        <tr>
+                          <td colSpan={6} className="py-12 text-center text-slate-500 bg-white dark:bg-slate-950">
+                            No cash transactions found.
+                          </td>
+                        </tr>
+                      );
+                    }
+                    
+                    return filteredPayments.map(p => {
+                      const buyer = buyers.find(b => b.id === p.buyerId);
+                      const isReceived = p.amount >= 0;
+                      return (
+                        <tr key={p.id} className="hover:bg-white dark:hover:bg-slate-900 transition-colors bg-white/50 dark:bg-slate-950/50">
+                          <td className="py-3 px-4 whitespace-nowrap">
+                            {new Date(p.date).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })}
+                          </td>
+                          <td className="py-3 px-4 font-medium">{buyer?.name || 'Unknown'}</td>
+                          <td className="py-3 px-4">
+                            <span className={clsx("px-2 py-1 rounded text-xs font-bold", isReceived ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400" : "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400")}>
+                              {isReceived ? 'Received (+)' : 'Paid (-)'}
+                            </span>
+                          </td>
+                          <td className="py-3 px-4 max-w-[200px] truncate">{p.notes || '-'}</td>
+                          <td className={clsx("py-3 px-4 font-bold text-right", isReceived ? "text-emerald-600" : "text-orange-500")}>
+                            {Math.abs(p.amount).toFixed(2)}
+                          </td>
+                          <td className="py-3 px-4 text-center">
+                            <div className="flex items-center justify-center gap-2">
+                              <button
+                                onClick={() => {
+                                  setEditingPaymentId(p.id);
+                                  setPaymentFormData({
+                                    buyerId: p.buyerId,
+                                    type: isReceived ? 'received' : 'paid',
+                                    amount: Math.abs(p.amount).toString(),
+                                    notes: p.notes || ''
+                                  });
+                                  setIsPaymentModalOpen(true);
+                                }}
+                                className="p-1.5 text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-500/10 rounded transition-colors"
+                                title="Edit Payment"
+                              >
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>
+                              </button>
+                              <button
+                                onClick={() => {
+                                  setDialogConfig({
+                                    isOpen: true,
+                                    type: 'confirm',
+                                    title: 'Delete Payment',
+                                    message: 'Are you sure you want to delete this payment record? This action cannot be undone.',
+                                    onConfirm: async () => {
+                                      const success = await deletePayment(p.id);
+                                      if (success) {
+                                        showNotification('success', 'Payment deleted successfully');
+                                      } else {
+                                        showNotification('error', 'Failed to delete payment');
+                                      }
+                                      setDialogConfig(prev => ({...prev, isOpen: false}));
+                                    }
+                                  });
+                                }}
+                                className="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded transition-colors"
+                                title="Delete Payment"
+                              >
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path></svg>
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    });
+                  })()}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Manage Buyers Modal */}
       {isBuyerModalOpen && (
