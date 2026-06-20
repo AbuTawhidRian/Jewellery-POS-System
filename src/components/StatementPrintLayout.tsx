@@ -21,11 +21,11 @@ const StatementPrintLayout: React.FC = () => {
           #statement-print-area { position: absolute; left: 0; top: 0; width: 100%; }
         `}
       </style>
-      <div id="statement-print-area" className="hidden print:block bg-white text-black min-h-screen font-sans">
-        <div className="max-w-[29.7cm] mx-auto p-12 bg-white">
+      <div id="statement-print-area" className="hidden print:block bg-white text-black min-h-screen font-sans text-xs">
+        <div className="max-w-[29.7cm] mx-auto p-6 bg-white">
           
           {/* Header */}
-          <div className="flex justify-between items-start border-b-2 border-slate-200 pb-8 mb-8">
+          <div className="flex justify-between items-start border-b-2 border-slate-200 pb-4 mb-4">
             <div className="flex items-center gap-3">
               <Diamond className="w-10 h-10 text-slate-800" />
               <div>
@@ -40,7 +40,7 @@ const StatementPrintLayout: React.FC = () => {
           </div>
 
           {/* Bill To & Date Range */}
-          <div className="flex justify-between mb-10">
+          <div className="flex justify-between mb-4">
             <div>
               <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-2">Account</h3>
               <p className="text-xl font-bold text-slate-800">{printStatementData.buyerName}</p>
@@ -52,20 +52,20 @@ const StatementPrintLayout: React.FC = () => {
           </div>
 
           {/* Gold Table */}
-          <div className="mb-6">
-            <h3 className="text-lg font-bold text-slate-800 mb-2 border-b border-slate-200 pb-2">Gold Ledger</h3>
-            <table className="w-full text-left border-collapse mb-4">
+          <div className="mb-4">
+            <h3 className="text-sm font-bold text-slate-800 mb-1 border-b border-slate-200 pb-1">Gold Ledger</h3>
+            <table className="w-full text-left border-collapse mb-2">
               <thead>
                 <tr className="border-b-2 border-slate-800 text-slate-800">
-                  <th className="py-3 px-2 font-bold w-32">Date</th>
-                  <th className="py-3 px-2 font-bold">Transaction Type</th>
-                  <th className="py-3 px-2 font-bold text-center">Items</th>
-                  <th className="py-3 px-2 font-bold text-right">Gross Wt (g)</th>
-                  <th className="py-3 px-2 font-bold text-right">Stone Wt (g)</th>
-                  <th className="py-3 px-2 font-bold text-right">Net Wt (g)</th>
-                  <th className="py-3 px-2 font-bold text-right">Pure Given (g)</th>
-                  <th className="py-3 px-2 font-bold text-right">Pure Received (g)</th>
-                  <th className="py-3 px-2 font-bold text-right">Pure Balance (g)</th>
+                  <th className="py-1.5 px-2 font-bold w-24">Date</th>
+                  <th className="py-1.5 px-2 font-bold">Transaction Type</th>
+                  <th className="py-1.5 px-2 font-bold text-center">Items</th>
+                  <th className="py-1.5 px-2 font-bold text-right">Gross Wt (g)</th>
+                  <th className="py-1.5 px-2 font-bold text-right">Stone Wt (g)</th>
+                  <th className="py-1.5 px-2 font-bold text-right">Net Wt (g)</th>
+                  <th className="py-1.5 px-2 font-bold text-right">Pure Given (g)</th>
+                  <th className="py-1.5 px-2 font-bold text-right">Pure Recvd (g)</th>
+                  <th className="py-1.5 px-2 font-bold text-right">Pure Bal (g)</th>
                 </tr>
               </thead>
               <tbody className="text-sm">
@@ -77,29 +77,29 @@ const StatementPrintLayout: React.FC = () => {
                   return sortedTx.map((tx, idx) => {
                     runningBalance += tx.pureWeight;
                     return (
-                      <tr key={idx} className="border-b border-slate-200">
-                        <td className="py-4 px-2 text-slate-700">{format(new Date(tx.date), 'MMM dd, yyyy')}</td>
-                        <td className="py-4 px-2">
+                      <tr key={idx} className="border-b border-slate-100">
+                        <td className="py-1.5 px-2 text-slate-700">{format(new Date(tx.date), 'dd/MM/yyyy')}</td>
+                        <td className="py-1.5 px-2">
                           <div className={clsx("font-bold", tx.type === 'Return' ? 'text-red-600' : 'text-slate-800')}>
                             {tx.type === 'Return' ? 'Sales Return' : 'Sale'}
                           </div>
                           {tx.items && tx.items.length > 0 && (
-                            <div className="text-xs text-slate-500 font-normal mt-0.5">
+                            <div className="text-[10px] text-slate-500 font-normal mt-0.5">
                               {Array.from(new Set(tx.items.map((i: any) => i.type))).join(', ')}
                             </div>
                           )}
                         </td>
-                        <td className="py-4 px-2 font-medium text-center text-slate-700">{tx.totalItems}</td>
-                        <td className="py-4 px-2 font-medium text-right text-slate-900">{tx.grossWeight?.toFixed(2) || '0.00'}</td>
-                        <td className="py-4 px-2 font-medium text-right text-slate-500">{tx.stoneWeight > 0 ? tx.stoneWeight.toFixed(2) : '-'}</td>
-                        <td className="py-4 px-2 font-medium text-right text-slate-900">{tx.netWeight?.toFixed(2) || '0.00'}</td>
-                        <td className="py-4 px-2 font-medium text-right text-slate-900">
+                        <td className="py-1.5 px-2 font-medium text-center text-slate-700">{tx.totalItems}</td>
+                        <td className="py-1.5 px-2 font-medium text-right text-slate-900">{tx.grossWeight?.toFixed(2) || '0.00'}</td>
+                        <td className="py-1.5 px-2 font-medium text-right text-slate-500">{tx.stoneWeight > 0 ? tx.stoneWeight.toFixed(2) : '-'}</td>
+                        <td className="py-1.5 px-2 font-medium text-right text-slate-900">{tx.netWeight?.toFixed(2) || '0.00'}</td>
+                        <td className="py-1.5 px-2 font-medium text-right text-slate-900">
                           {tx.pureWeight > 0 ? tx.pureWeight.toFixed(2) : '-'}
                         </td>
-                        <td className="py-4 px-2 font-medium text-right text-slate-900">
+                        <td className="py-1.5 px-2 font-medium text-right text-slate-900">
                           {tx.pureWeight < 0 ? Math.abs(tx.pureWeight).toFixed(2) : '-'}
                         </td>
-                        <td className="py-4 px-2 font-bold text-right text-slate-900">{runningBalance.toFixed(2)}</td>
+                        <td className="py-1.5 px-2 font-bold text-right text-slate-900">{runningBalance.toFixed(2)}</td>
                       </tr>
                     );
                   });
@@ -109,17 +109,18 @@ const StatementPrintLayout: React.FC = () => {
           </div>
 
           {/* Cash Table */}
-          <div className="mb-10 page-break-inside-avoid">
-            <h3 className="text-lg font-bold text-slate-800 mb-2 border-b border-slate-200 pb-2">Cash Ledger</h3>
+          <div className="mb-4 page-break-inside-avoid">
+            <h3 className="text-sm font-bold text-slate-800 mb-1 border-b border-slate-200 pb-1">Cash Ledger</h3>
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="border-b-2 border-slate-800 text-slate-800">
-                  <th className="py-3 px-2 font-bold w-32">Date</th>
-                  <th className="py-3 px-2 font-bold">Transaction Type</th>
-                  <th className="py-3 px-2 font-bold">Details</th>
-                  <th className="py-3 px-2 font-bold text-right">Charges (AED)</th>
-                  <th className="py-3 px-2 font-bold text-right">Payments (AED)</th>
-                  <th className="py-3 px-2 font-bold text-right">Cash Balance (AED)</th>
+                  <th className="py-1.5 px-2 font-bold w-24">Date</th>
+                  <th className="py-1.5 px-2 font-bold">Type</th>
+                  <th className="py-1.5 px-2 font-bold">Details</th>
+                  <th className="py-1.5 px-2 font-bold text-right">Charges</th>
+                  <th className="py-1.5 px-2 font-bold text-right">Paid Out</th>
+                  <th className="py-1.5 px-2 font-bold text-right">Received</th>
+                  <th className="py-1.5 px-2 font-bold text-right">Balance</th>
                 </tr>
               </thead>
               <tbody className="text-sm">
@@ -153,13 +154,14 @@ const StatementPrintLayout: React.FC = () => {
                     // charge increases balance (amount due), payment decreases balance
                     cashBalance = cashBalance + entry.charge - entry.payment;
                     return (
-                      <tr key={idx} className="border-b border-slate-200">
-                        <td className="py-4 px-2 text-slate-700">{format(new Date(entry.date), 'MMM dd, yyyy')}</td>
-                        <td className="py-4 px-2 font-bold text-slate-800">{entry.type}</td>
-                        <td className="py-4 px-2 text-slate-600">{entry.details}</td>
-                        <td className="py-4 px-2 font-medium text-right text-slate-900">{entry.charge !== 0 ? entry.charge.toFixed(2) : '-'}</td>
-                        <td className={`py-4 px-2 font-medium text-right ${entry.payment > 0 ? 'text-emerald-600' : 'text-orange-500'}`}>{entry.payment !== 0 ? entry.payment.toFixed(2) : '-'}</td>
-                        <td className={`py-4 px-2 font-bold text-right ${cashBalance > 0 ? 'text-red-600' : 'text-emerald-600'}`}>
+                      <tr key={idx} className="border-b border-slate-100">
+                        <td className="py-1.5 px-2 text-slate-700">{format(new Date(entry.date), 'dd/MM/yyyy')}</td>
+                        <td className="py-1.5 px-2 font-bold text-slate-800">{entry.type}</td>
+                        <td className="py-1.5 px-2 text-slate-600 truncate max-w-[150px]">{entry.details}</td>
+                        <td className="py-1.5 px-2 font-medium text-right text-slate-900">{entry.charge !== 0 ? entry.charge.toFixed(2) : '-'}</td>
+                        <td className="py-1.5 px-2 font-medium text-right text-orange-600">{entry.payment < 0 ? Math.abs(entry.payment).toFixed(2) : '-'}</td>
+                        <td className="py-1.5 px-2 font-medium text-right text-emerald-600">{entry.payment > 0 ? entry.payment.toFixed(2) : '-'}</td>
+                        <td className={`py-1.5 px-2 font-bold text-right ${cashBalance > 0 ? 'text-red-600' : 'text-emerald-600'}`}>
                           {cashBalance > 0 ? cashBalance.toFixed(2) : cashBalance < 0 ? `(${Math.abs(cashBalance).toFixed(2)})` : '0.00'}
                         </td>
                       </tr>
@@ -172,7 +174,7 @@ const StatementPrintLayout: React.FC = () => {
 
           {/* Summary */}
           <div className="flex justify-end page-break-inside-avoid">
-            <div className="w-1/2 bg-slate-50 p-6 rounded-xl border border-slate-100 flex flex-col gap-4">
+            <div className="w-1/2 bg-slate-50 p-4 rounded-lg border border-slate-100 flex flex-col gap-2">
               <div className="flex justify-between items-center text-slate-600">
                 <span>Total Transactions:</span>
                 <span className="font-medium">{printStatementData.transactions.length}</span>
@@ -198,7 +200,7 @@ const StatementPrintLayout: React.FC = () => {
           </div>
 
           {/* Footer */}
-          <div className="mt-20 pt-8 border-t border-slate-200 text-center text-sm text-slate-500">
+          <div className="mt-8 pt-4 border-t border-slate-200 text-center text-xs text-slate-500">
             <p>Thank you for your business!</p>
             <p className="mt-1">For any inquiries, please contact us at contact@rianjewellery.com</p>
           </div>
