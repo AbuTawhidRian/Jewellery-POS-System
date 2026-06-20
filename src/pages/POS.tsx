@@ -53,7 +53,7 @@ const POS: React.FC = () => {
   useEffect(() => {
     const focusInput = () => {
       const activeTag = document.activeElement?.tagName;
-      if (!isScanning && !isBuyerModalOpen && activeTag !== 'BUTTON' && activeTag !== 'INPUT' && inputRef.current) {
+      if (!isScanning && !isBuyerModalOpen && !isPaymentModalOpen && activeTag !== 'BUTTON' && activeTag !== 'INPUT' && activeTag !== 'SELECT' && activeTag !== 'TEXTAREA' && inputRef.current) {
         // Only auto-focus if we aren't typing in the buyer search
         if (document.activeElement?.id !== 'buyer-search') {
           inputRef.current.focus();
@@ -63,7 +63,7 @@ const POS: React.FC = () => {
     focusInput();
     document.addEventListener('click', focusInput);
     return () => document.removeEventListener('click', focusInput);
-  }, [isScanning, isBuyerModalOpen]);
+  }, [isScanning, isBuyerModalOpen, isPaymentModalOpen]);
 
   // Audio Beep Helper
   const playBeep = useCallback((type: 'success' | 'error') => {
