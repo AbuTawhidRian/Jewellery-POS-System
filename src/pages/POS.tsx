@@ -333,7 +333,8 @@ const POS: React.FC = () => {
               buyerName,
               items: completedCart,
               date: new Date().toISOString(),
-              totalWeight: weight
+              totalWeight: weight,
+              totalMakingCharge: Number(totalMakingCharge) || 0
             });
             showNotification('success', 'Sale completed successfully!');
             setTimeout(() => window.print(), 100);
@@ -368,8 +369,7 @@ const POS: React.FC = () => {
       if (typeof rate === 'number') {
         const gw = Number(item.weight) || 0;
         const sw = Number(item.stone_weight) || 0;
-        const nw = Math.max(0, gw - sw);
-        calculatedTotal += nw * rate;
+        calculatedTotal += gw * rate;
         anyCalculated = true;
       }
     });
