@@ -285,7 +285,7 @@ const Ledger: React.FC = () => {
           <div className="relative" ref={dateRef}>
             <button 
               onClick={() => { setDateDropdownOpen(!dateDropdownOpen); setBuyerDropdownOpen(false); }}
-              className="flex items-center justify-between gap-2 bg-slate-50 dark:bg-slate-900 hover:bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl px-4 py-2.5 transition-colors w-full sm:w-48 text-left"
+              className="flex items-center justify-between gap-2 bg-slate-50 dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl px-4 py-2.5 transition-colors w-full sm:w-48 text-left"
             >
               <div className="flex items-center gap-2 overflow-hidden">
                 <Calendar className="w-4 h-4 text-slate-600 dark:text-slate-400 shrink-0" />
@@ -349,7 +349,7 @@ const Ledger: React.FC = () => {
           <button 
             onClick={handlePrintStatement}
             disabled={filterBuyerId === 'all'}
-            className={`inline-flex items-center justify-center gap-2 font-semibold py-2 px-4 rounded-lg border transition-colors shadow-sm ${filterBuyerId === 'all' ? 'bg-slate-100 dark:bg-slate-800 text-slate-400 border-slate-200 dark:border-slate-700 cursor-not-allowed' : 'bg-slate-900 dark:bg-slate-100 hover:bg-slate-800 dark:hover:bg-white text-white dark:text-slate-900 border-slate-900 dark:border-slate-100'}`}
+            className={`inline-flex items-center justify-center gap-2 font-semibold py-2 px-4 rounded-lg border transition-colors shadow-sm ${filterBuyerId === 'all' ? 'bg-slate-100 dark:bg-slate-800 text-slate-400 border-slate-200 dark:border-slate-700 cursor-not-allowed' : 'bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-900 dark:text-slate-100 border-slate-300 dark:border-slate-700'}`}
           >
             <Printer className="w-4 h-4 text-gold-500" />
             <span className="hidden sm:inline">Print Statement</span>
