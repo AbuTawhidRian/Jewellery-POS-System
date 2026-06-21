@@ -1,6 +1,6 @@
 import React from 'react';
 import { useInventory } from '../store/InventoryContext';
-import { Package, Scale, TrendingUp, ShoppingBag, LayoutDashboard, Diamond } from 'lucide-react';
+import { Package, Scale, TrendingUp, ShoppingBag, LayoutDashboard, Diamond, Star, Clock } from 'lucide-react';
 import { isToday, parseISO } from 'date-fns';
 
 const Dashboard: React.FC = () => {
@@ -31,6 +31,20 @@ const Dashboard: React.FC = () => {
     acc[sale.type].weight += Math.max(0, (Number(sale.weight) || 0) - (Number(sale.stone_weight) || 0));
     return acc;
   }, {} as Record<string, { count: number, weight: number }>);
+
+  const modelWiseSales = sales.reduce((acc, sale) => {
+    if (!sale.model) return acc;
+    const model = sale.model.trim();
+    if (!model) return acc;
+    if (!acc[model]) acc[model] = { count: 0, weight: 0 };
+    acc[model].count += 1;
+    acc[model].weight += Math.max(0, (Number(sale.weight) || 0) - (Number(sale.stone_weight) || 0));
+    return acc;
+  }, {} as Record<string, { count: number, weight: number }>);
+
+  const topModels = Object.entries(modelWiseSales)
+    .sort((a, b) => b[1].count - a[1].count)
+    .slice(0, 5);
 
   const stats = [
     { label: 'Items In Stock', value: totalItemsInStock, icon: Package, color: 'text-blue-400', bg: 'bg-blue-400/10' },
@@ -69,10 +83,10 @@ const Dashboard: React.FC = () => {
         })}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
         
         {/* Type-wise Stock */}
-        <div className="bg-white dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-lg lg:col-span-1 transition-colors">
+        <div className="bg-white dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-lg transition-colors">
           <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 mb-4 flex items-center gap-2">
             <Diamond className="w-5 h-5 text-gold-500" />
             Stock by Type
@@ -95,7 +109,7 @@ const Dashboard: React.FC = () => {
         </div>
 
         {/* Type-wise Sales */}
-        <div className="bg-white dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-lg lg:col-span-1 transition-colors">
+        <div className="bg-white dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-lg transition-colors">
           <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 mb-4 flex items-center gap-2">
             <TrendingUp className="w-5 h-5 text-emerald-500" />
             Sales by Type
@@ -117,36 +131,71 @@ const Dashboard: React.FC = () => {
           )}
         </div>
 
-        {/* Quick overview of recent activity */}
-        <div className="bg-white dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-lg lg:col-span-2 transition-colors">
-          <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 mb-4">Recent Sales</h2>
-        {sales.length === 0 ? (
-          <p className="text-slate-500 text-center py-8">No sales recorded yet.</p>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse min-w-[600px]">
-              <thead>
-                <tr className="border-b border-slate-200 dark:border-slate-800 text-sm text-slate-500 dark:text-slate-400">
-                  <th className="pb-3 font-medium">Item</th>
-                  <th className="pb-3 font-medium">Barcode</th>
-                  <th className="pb-3 font-medium">Weight</th>
-                  <th className="pb-3 font-medium">Buyer</th>
-                </tr>
-              </thead>
-              <tbody className="text-sm">
-                {sales.slice(-5).reverse().map((sale) => (
-                  <tr key={sale.id} className="border-b border-slate-100 dark:border-slate-800/50 last:border-0 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
-                    <td className="py-3 text-slate-800 dark:text-slate-200">{sale.type}</td>
-                    <td className="py-3 text-slate-500 dark:text-slate-400 font-mono">{sale.barcode}</td>
-                    <td className="py-3 text-gold-600 dark:text-gold-400 font-medium">{Number(sale.weight).toFixed(2)}g</td>
-                    <td className="py-3 text-slate-700 dark:text-slate-300">{sale.buyer_name}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+        {/* Top Selling Models */}
+        <div className="bg-white dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-lg transition-colors">
+          <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 mb-4 flex items-center gap-2">
+            <Star className="w-5 h-5 text-amber-500" />
+            Top Selling Models
+          </h2>
+          {topModels.length === 0 ? (
+            <p className="text-slate-500 text-sm py-4">No model sales recorded.</p>
+          ) : (
+            <div className="space-y-3">
+              {topModels.map(([model, data], index) => (
+                <div key={model} className="flex justify-between items-center p-3 rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800/50 hover:border-slate-200 dark:hover:border-slate-700 transition-colors">
+                  <div className="flex items-center gap-3">
+                    <div className="w-6 h-6 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 flex items-center justify-center text-xs font-bold">
+                      {index + 1}
+                    </div>
+                    <span className="text-slate-700 dark:text-slate-300 font-medium">{model}</span>
+                  </div>
+                  <div className="text-right flex flex-col items-end">
+                    <span className="bg-slate-200 dark:bg-slate-800 text-slate-800 dark:text-slate-200 font-bold px-2 py-0.5 rounded text-xs mb-1">{data.count} sold</span>
+                    <span className="text-amber-600 dark:text-amber-500 font-bold text-sm">{data.weight.toFixed(2)}g</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
+
+      <div className="grid grid-cols-1 gap-6 mb-8">
+        {/* Quick overview of recent activity */}
+        <div className="bg-white dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-lg transition-colors">
+          <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 mb-4 flex items-center gap-2">
+            <Clock className="w-5 h-5 text-blue-500" />
+            Recent Sales
+          </h2>
+          {sales.length === 0 ? (
+            <p className="text-slate-500 text-center py-8">No sales recorded yet.</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse min-w-[600px]">
+                <thead>
+                  <tr className="border-b border-slate-200 dark:border-slate-800 text-sm text-slate-500 dark:text-slate-400">
+                    <th className="pb-3 font-medium">Item</th>
+                    <th className="pb-3 font-medium">Model</th>
+                    <th className="pb-3 font-medium">Barcode</th>
+                    <th className="pb-3 font-medium">Weight</th>
+                    <th className="pb-3 font-medium">Buyer</th>
+                  </tr>
+                </thead>
+                <tbody className="text-sm">
+                  {sales.slice(-5).reverse().map((sale) => (
+                    <tr key={sale.id} className="border-b border-slate-100 dark:border-slate-800/50 last:border-0 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+                      <td className="py-3 text-slate-800 dark:text-slate-200">{sale.type}</td>
+                      <td className="py-3 text-slate-700 dark:text-slate-300 font-medium">{sale.model || '-'}</td>
+                      <td className="py-3 text-slate-500 dark:text-slate-400 font-mono">{sale.barcode}</td>
+                      <td className="py-3 text-gold-600 dark:text-gold-400 font-medium">{Number(sale.weight).toFixed(2)}g</td>
+                      <td className="py-3 text-slate-700 dark:text-slate-300">{sale.buyer_name}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
