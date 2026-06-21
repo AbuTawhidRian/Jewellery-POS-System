@@ -186,8 +186,14 @@ const StatementPrintLayout: React.FC = () => {
                   const cashEntries: { date: string, type: string, details: string, charge: number, payment: number }[] = [];
                   
                   printStatementData.transactions.forEach(tx => {
-                    if (tx.makingCharge && tx.makingCharge > 0) {
-                      cashEntries.push({ date: tx.date, type: 'Making Charge', details: `${tx.totalItems} items`, charge: tx.makingCharge, payment: 0 });
+                    if (tx.makingCharge && tx.makingCharge !== 0) {
+                      cashEntries.push({ 
+                        date: tx.date, 
+                        type: tx.makingCharge > 0 ? 'Making Charge' : 'Making Charge (Refund)', 
+                        details: `${tx.totalItems} items`, 
+                        charge: tx.makingCharge, 
+                        payment: 0 
+                      });
                     }
                   });
                   
