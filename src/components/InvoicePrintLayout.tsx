@@ -112,7 +112,14 @@ const InvoicePrintLayout: React.FC = () => {
         {/* Footer */}
         <div className="mt-20 pt-8 border-t border-slate-200 text-center text-sm text-slate-500">
           <p>Thank you for your business!</p>
-          <p className="mt-1">For any inquiries, please contact us at contact@rianjewellery.com</p>
+          {(user?.shopEmail || user?.shopPhone) && (
+            <p className="mt-1">
+              For any inquiries, please contact us at 
+              {user?.shopEmail && <span className="font-medium ml-1">{user.shopEmail}</span>}
+              {user?.shopEmail && user?.shopPhone && <span> or </span>}
+              {user?.shopPhone && <span className="font-medium ml-1">{user.shopPhone}</span>}
+            </p>
+          )}
         </div>
 
       </div>
