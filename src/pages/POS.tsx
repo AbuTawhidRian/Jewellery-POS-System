@@ -670,7 +670,13 @@ const POS: React.FC = () => {
           </div>
 
           <div className="p-6 bg-slate-50 dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 mt-auto shrink-0">
-            <div className="flex justify-between items-center mb-4">
+            <div className="flex justify-between items-center mb-2">
+              <span className="text-slate-500 dark:text-slate-400 font-medium">Total Gross Weight</span>
+              <span className="text-xl font-bold text-slate-700 dark:text-slate-300">
+                {cart.reduce((acc, item) => acc + (Number(item.weight) || 0), 0).toFixed(2)}<span className="text-sm ml-1">g</span>
+              </span>
+            </div>
+            <div className="flex justify-between items-center mb-4 pt-2 border-t border-slate-200 dark:border-slate-800">
               <span className="text-slate-600 dark:text-slate-400 font-medium text-lg">Total Net Weight</span>
               <span className="text-3xl font-bold text-gold-500">{totalWeight.toFixed(2)}<span className="text-xl ml-1">g</span></span>
             </div>

@@ -100,6 +100,12 @@ const InvoicePrintLayout: React.FC = () => {
               <span>Total Items:</span>
               <span className="font-medium">{printInvoiceData.items.length}</span>
             </div>
+            <div className="flex justify-between items-center mb-2 text-slate-600">
+              <span>Total Gross Weight:</span>
+              <span className="font-medium">
+                {printInvoiceData.items.reduce((sum, item) => sum + (Number(item.weight) || 0), 0).toFixed(2)} g
+              </span>
+            </div>
             <div className="flex justify-between items-center pt-4 border-t border-slate-200">
               <span className="font-bold text-slate-800">Total Net Weight:</span>
               <span className="text-xl font-bold text-slate-900">
