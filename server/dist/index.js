@@ -727,7 +727,7 @@ app.get('/api/payments', authenticateToken, requireActiveOrTrial, async (req, re
         res.status(500).json({ error: 'Internal Server Error' });
     }
 });
-app.post('/api/payments', authenticateToken, requireActiveOrTrial, requireAccess([client_1.Role.OWNER, client_1.Role.MANAGER, client_1.Role.CASHIER], ['manage_buyers']), async (req, res) => {
+app.post('/api/payments', authenticateToken, requireActiveOrTrial, requireAccess([client_1.Role.OWNER, client_1.Role.MANAGER, client_1.Role.CASHIER], ['manage_buyers', 'take_payment']), async (req, res) => {
     try {
         const { buyerId, amount, notes } = req.body;
         const shopId = req.user.shopId;
@@ -798,7 +798,7 @@ app.get('/api/metal_receipts', authenticateToken, requireActiveOrTrial, async (r
         res.status(500).json({ error: 'Internal Server Error' });
     }
 });
-app.post('/api/metal_receipts', authenticateToken, requireActiveOrTrial, requireAccess([client_1.Role.OWNER, client_1.Role.MANAGER, client_1.Role.CASHIER], ['manage_buyers']), async (req, res) => {
+app.post('/api/metal_receipts', authenticateToken, requireActiveOrTrial, requireAccess([client_1.Role.OWNER, client_1.Role.MANAGER, client_1.Role.CASHIER], ['manage_buyers', 'receive_gold']), async (req, res) => {
     try {
         const { buyerId, weight, purity, notes } = req.body;
         const shopId = req.user.shopId;

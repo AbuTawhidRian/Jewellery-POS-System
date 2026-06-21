@@ -21,7 +21,9 @@ const AVAILABLE_PERMISSIONS = [
   { id: 'access_pos', label: 'Access POS Terminal' },
   { id: 'manage_buyers', label: 'Manage Buyers' },
   { id: 'view_ledger', label: 'View Sales Ledger' },
-  { id: 'delete_sale', label: 'Delete/Void Sales' }
+  { id: 'delete_sale', label: 'Delete/Void Sales' },
+  { id: 'receive_gold', label: 'Receive Gold (Metal Receipts)' },
+  { id: 'take_payment', label: 'Process Cash Payments' }
 ];
 
 const Settings: React.FC = () => {

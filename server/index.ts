@@ -765,7 +765,7 @@ app.get('/api/payments', authenticateToken, requireActiveOrTrial, async (req: Au
   }
 });
 
-app.post('/api/payments', authenticateToken, requireActiveOrTrial, requireAccess([Role.OWNER, Role.MANAGER, Role.CASHIER], ['manage_buyers']), async (req: AuthRequest, res) => {
+app.post('/api/payments', authenticateToken, requireActiveOrTrial, requireAccess([Role.OWNER, Role.MANAGER, Role.CASHIER], ['manage_buyers', 'take_payment']), async (req: AuthRequest, res) => {
   try {
     const { buyerId, amount, notes } = req.body;
     const shopId = req.user!.shopId!;
@@ -839,7 +839,7 @@ app.get('/api/metal_receipts', authenticateToken, requireActiveOrTrial, async (r
   }
 });
 
-app.post('/api/metal_receipts', authenticateToken, requireActiveOrTrial, requireAccess([Role.OWNER, Role.MANAGER, Role.CASHIER], ['manage_buyers']), async (req: AuthRequest, res) => {
+app.post('/api/metal_receipts', authenticateToken, requireActiveOrTrial, requireAccess([Role.OWNER, Role.MANAGER, Role.CASHIER], ['manage_buyers', 'receive_gold']), async (req: AuthRequest, res) => {
   try {
     const { buyerId, weight, purity, notes } = req.body;
     const shopId = req.user!.shopId!;
