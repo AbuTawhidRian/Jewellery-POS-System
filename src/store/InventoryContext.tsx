@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import toast from 'react-hot-toast';
 
 export type ItemStatus = 'In Stock' | 'Sold';
 
@@ -191,10 +192,13 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       
       if (res.ok) {
         setItems(prev => [...prev, result]);
+        toast.success('Item added successfully');
         return { success: true, data: result };
       }
+      toast.error(result.error || 'Failed to add item');
       return { success: false, error: result.error || 'Failed to add item' };
     } catch (error: any) {
+      toast.error(error.message);
       return { success: false, error: error.message };
     }
   };
@@ -209,10 +213,13 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       
       if (res.ok) {
         setItems(prev => prev.map(item => item.id === id ? result : item));
+        toast.success('Item updated successfully');
         return { success: true, data: result };
       }
+      toast.error(result.error || 'Failed to update item');
       return { success: false, error: result.error || 'Failed to update item' };
     } catch (error: any) {
+      toast.error(error.message);
       return { success: false, error: error.message };
     }
   };
@@ -222,11 +229,14 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       const res = await authFetch(`${API_URL}/inventory/${id}`, { method: 'DELETE' });
       if (res.ok) {
         setItems(prev => prev.filter(i => i.id !== id));
+        toast.success('Item deleted successfully');
         return true;
       }
+      toast.error('Failed to delete item');
       return false;
     } catch (error) {
       console.error("Error deleting item:", error);
+      toast.error('Failed to delete item');
       return false;
     }
   };
@@ -241,11 +251,14 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       
       if (res.ok) {
         setBuyers(prev => [...prev, result]);
+        toast.success('Buyer added successfully');
         return result;
       }
+      toast.error(result.error || 'Failed to add buyer');
       return null;
     } catch (error) {
       console.error("Error adding buyer:", error);
+      toast.error('Failed to add buyer');
       return null;
     }
   };
@@ -260,11 +273,14 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       if (res.ok) {
         setBuyers(prev => prev.map(b => b.id === id ? result : b));
         setSales(prev => prev.map(s => s.buyer_id === id ? { ...s, buyer_name: name } : s));
+        toast.success('Buyer updated successfully');
         return true;
       }
+      toast.error('Failed to update buyer');
       return false;
     } catch (error) {
       console.error("Error editing buyer:", error);
+      toast.error('Failed to update buyer');
       return false;
     }
   };
@@ -274,11 +290,14 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       const res = await authFetch(`${API_URL}/buyers/${id}`, { method: 'DELETE' });
       if (res.ok) {
         setBuyers(prev => prev.filter(b => b.id !== id));
+        toast.success('Buyer deleted successfully');
         return true;
       }
+      toast.error('Failed to delete buyer');
       return false;
     } catch (error) {
       console.error("Error deleting buyer:", error);
+      toast.error('Failed to delete buyer');
       return false;
     }
   };
@@ -293,11 +312,14 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       
       if (res.ok) {
         setItemTypes(prev => [...prev, result].sort((a, b) => a.name.localeCompare(b.name)));
+        toast.success('Item type added successfully');
         return result;
       }
+      toast.error('Failed to add item type');
       return null;
     } catch (error) {
       console.error("Error adding item type:", error);
+      toast.error('Failed to add item type');
       return null;
     }
   };
@@ -316,11 +338,14 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           setItems(prev => prev.map(i => i.type === oldTypeObj.name ? { ...i, type: name } : i));
           setSales(prev => prev.map(s => s.type === oldTypeObj.name ? { ...s, type: name } : s));
         }
+        toast.success('Item type updated');
         return true;
       }
+      toast.error('Failed to update item type');
       return false;
     } catch (error) {
       console.error("Error editing item type:", error);
+      toast.error('Failed to update item type');
       return false;
     }
   };
@@ -330,11 +355,14 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       const res = await authFetch(`${API_URL}/item_types/${id}`, { method: 'DELETE' });
       if (res.ok) {
         setItemTypes(prev => prev.filter(t => t.id !== id));
+        toast.success('Item type deleted');
         return true;
       }
+      toast.error('Failed to delete item type');
       return false;
     } catch (error) {
       console.error("Error deleting item type:", error);
+      toast.error('Failed to delete item type');
       return false;
     }
   };
@@ -349,11 +377,14 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       
       if (res.ok) {
         setModels(prev => [...prev, result].sort((a, b) => a.name.localeCompare(b.name)));
+        toast.success('Model added successfully');
         return result;
       }
+      toast.error('Failed to add model');
       return null;
     } catch (error) {
       console.error("Error adding model:", error);
+      toast.error('Failed to add model');
       return null;
     }
   };
@@ -419,9 +450,11 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         return { success: true, message: result.message };
       }
       
+      toast.error(result.message || 'Failed to process sale');
       return { success: false, message: result.message || 'Failed to process sale' };
     } catch (error: any) {
       console.error("Error processing bulk sale:", error);
+      toast.error(error.message || "Failed to process sale");
       return { success: false, message: error.message || "Failed to process sale" };
     }
   };
@@ -439,11 +472,14 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         authFetch(`${API_URL}/inventory`).then(res => res.json()).then(data => {
           if (Array.isArray(data)) setItems(data);
         });
+        toast.success(result.message || 'Transaction voided');
         return { success: true, message: result.message };
       }
+      toast.error(result.message || 'Failed to void transaction');
       return { success: false, message: result.message || 'Failed to void transaction' };
     } catch (error: any) {
       console.error("Error voiding transaction:", error);
+      toast.error(error.message);
       return { success: false, message: error.message };
     }
   };
@@ -464,12 +500,14 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         authFetch(`${API_URL}/sales`).then(res => res.json()).then(data => {
             if(Array.isArray(data)) setSales(data);
         });
-        
+        toast.success(result.message || 'Items returned');
         return { success: true, message: result.message };
       }
+      toast.error(result.message || 'Failed to return items');
       return { success: false, message: result.message || 'Failed to return items' };
     } catch (error: any) {
       console.error("Error returning items:", error);
+      toast.error(error.message);
       return { success: false, message: error.message };
     }
   };

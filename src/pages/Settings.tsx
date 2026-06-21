@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { Users, CreditCard, Plus, Edit2, Trash2, ShieldAlert, Building2, CheckCircle, XCircle, X, Lock } from 'lucide-react';
+import { Users, CreditCard, Plus, Edit2, Trash2, ShieldAlert, Building2, X, Lock } from 'lucide-react';
 import Dialog from '../components/Dialog';
 import api from '../lib/api';
+import toast from 'react-hot-toast';
 
 interface ShopUser {
   id: number;
@@ -30,10 +31,24 @@ const Settings: React.FC = () => {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<'company' | 'staff' | 'subscription' | 'security'>('company');
   
-  const [notification, setNotification] = useState<{ type: 'success' | 'error', message: string } | null>(null);
   const showNotification = useCallback((type: 'success' | 'error', message: string) => {
-    setNotification({ type, message });
-    setTimeout(() => setNotification(null), 3000);
+    if (type === 'success') {
+      toast.success(message, {
+        style: {
+          background: 'rgb(2, 6, 23)',
+          color: '#fff',
+          border: '1px solid rgb(30, 41, 59)'
+        }
+      });
+    } else {
+      toast.error(message, {
+        style: {
+          background: 'rgb(2, 6, 23)',
+          color: '#fff',
+          border: '1px solid rgb(30, 41, 59)'
+        }
+      });
+    }
   }, []);
   
   // Staff State
@@ -236,13 +251,6 @@ const Settings: React.FC = () => {
 
   return (
     <div className="max-w-6xl mx-auto space-y-6 relative">
-      {notification && (
-        <div className={`fixed top-4 right-4 z-50 flex items-center gap-2 px-4 py-3 rounded-xl font-medium shadow-lg animate-in fade-in slide-in-from-top-4 duration-300 ${notification.type === 'success' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-red-500/10 text-red-400 border border-red-500/20'}`}>
-          {notification.type === 'success' ? <CheckCircle className="w-5 h-5 shrink-0" /> : <XCircle className="w-5 h-5 shrink-0" />}
-          <span>{notification.message}</span>
-        </div>
-      )}
-
       <div>
         <h2 className="text-3xl font-bold text-slate-900 dark:text-white tracking-tight">Settings</h2>
         <p className="text-slate-600 dark:text-slate-400 mt-2">Manage your shop, staff, and billing</p>

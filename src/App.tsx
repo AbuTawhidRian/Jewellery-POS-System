@@ -21,9 +21,13 @@ const ProtectedRoute = () => {
   return <Outlet />;
 };
 
+import { Toaster } from 'react-hot-toast';
+
 const App: React.FC = () => {
   return (
-    <Routes>
+    <>
+      <Toaster position="top-right" />
+      <Routes>
       <Route path="/" element={<Landing />} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
@@ -39,6 +43,7 @@ const App: React.FC = () => {
         </Route>
       </Route>
     </Routes>
+    </>
   );
 };
 
