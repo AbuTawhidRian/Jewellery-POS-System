@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useInventory, type Item } from '../store/InventoryContext';
-import { ShoppingCart, CheckCircle, XCircle, ScanLine, Trash2, Camera, CameraOff, Building2, Settings, ChevronDown } from 'lucide-react';
+import { ShoppingCart, CheckCircle, XCircle, ScanLine, Trash2, Camera, CameraOff, Building2, Settings } from 'lucide-react';
 import clsx from 'clsx';
 import { Html5QrcodeScanner } from 'html5-qrcode';
 import Dialog from '../components/Dialog';
