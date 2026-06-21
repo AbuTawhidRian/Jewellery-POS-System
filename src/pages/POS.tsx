@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useInventory, type Item } from '../store/InventoryContext';
-import { ShoppingCart, CheckCircle, XCircle, ScanLine, Trash2, Camera, CameraOff, Building2, Settings } from 'lucide-react';
+import { ShoppingCart, CheckCircle, XCircle, ScanLine, Trash2, Camera, CameraOff, Building2, Settings, ChevronDown } from 'lucide-react';
 import clsx from 'clsx';
 import { Html5QrcodeScanner } from 'html5-qrcode';
 import Dialog from '../components/Dialog';
@@ -43,6 +43,14 @@ const POS: React.FC = () => {
   const [buyerSearch, setBuyerSearch] = useState('');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const [paymentBuyerSearch, setPaymentBuyerSearch] = useState('');
+  const [isPaymentBuyerDropdownOpen, setIsPaymentBuyerDropdownOpen] = useState(false);
+  const paymentBuyerRef = useRef<HTMLDivElement>(null);
+
+  const [metalBuyerSearch, setMetalBuyerSearch] = useState('');
+  const [isMetalBuyerDropdownOpen, setIsMetalBuyerDropdownOpen] = useState(false);
+  const metalBuyerRef = useRef<HTMLDivElement>(null);
 
   // Dialog State
   const [dialogConfig, setDialogConfig] = useState<{
@@ -109,6 +117,12 @@ const POS: React.FC = () => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setIsDropdownOpen(false);
+      }
+      if (paymentBuyerRef.current && !paymentBuyerRef.current.contains(event.target as Node)) {
+        setIsPaymentBuyerDropdownOpen(false);
+      }
+      if (metalBuyerRef.current && !metalBuyerRef.current.contains(event.target as Node)) {
+        setIsMetalBuyerDropdownOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -617,7 +631,7 @@ const POS: React.FC = () => {
                       const gw = Number(item.weight) || 0;
                       const nw = Math.max(0, gw - sw);
                       return (
-                      <tr key={item.id} className="border-b border-slate-200 dark:border-slate-800/50 hover:bg-slate-50 dark:hover:bg-slate-900/50 transition-colors">
+                      <tr key={item.id} className="border-b border-slate-200 dark:border-slate-800/50 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
                         <td className="py-3 px-4 font-mono text-slate-700 dark:text-slate-300">{item.barcode}</td>
                         <td className="py-3 px-4 text-slate-800 dark:text-slate-200">{item.type}</td>
                         <td className="py-3 px-4 text-slate-700 dark:text-slate-300 font-medium text-right">{gw.toFixed(2)}g</td>
@@ -757,7 +771,7 @@ const POS: React.FC = () => {
                       const buyer = buyers.find(b => b.id === p.buyerId);
                       const isReceived = p.amount >= 0;
                       return (
-                        <tr key={p.id} className="hover:bg-white dark:hover:bg-slate-900 transition-colors bg-white/50 dark:bg-slate-950/50">
+                        <tr key={p.id} className="border-b border-slate-200 dark:border-slate-800/50 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
                           <td className="py-3 px-4 whitespace-nowrap">
                             {new Date(p.date).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })}
                           </td>
@@ -884,7 +898,7 @@ const POS: React.FC = () => {
                     return filteredReceipts.map(m => {
                       const buyer = buyers.find(b => b.id === m.buyerId);
                       return (
-                        <tr key={m.id} className="hover:bg-white dark:hover:bg-slate-900 transition-colors bg-white/50 dark:bg-slate-950/50">
+                        <tr key={m.id} className="border-b border-slate-200 dark:border-slate-800/50 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
                           <td className="py-3 px-4 whitespace-nowrap">
                             {new Date(m.date).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })}
                           </td>
@@ -1138,17 +1152,42 @@ const POS: React.FC = () => {
               <form onSubmit={handleRecordPayment} className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Account (Buyer)</label>
-                  <select
-                    required
-                    value={paymentFormData.buyerId}
-                    onChange={(e) => setPaymentFormData({...paymentFormData, buyerId: e.target.value})}
-                    className="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg px-4 py-2.5 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500"
-                  >
-                    <option value="">Select an account...</option>
-                    {buyers.map(b => (
-                      <option key={b.id} value={b.id}>{b.name}</option>
-                    ))}
-                  </select>
+                  <div className="relative" ref={paymentBuyerRef}>
+                    <button 
+                      type="button"
+                      onClick={() => setIsPaymentBuyerDropdownOpen(!isPaymentBuyerDropdownOpen)}
+                      className="w-full text-left bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg px-4 py-2.5 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 flex justify-between items-center"
+                    >
+                      <span>{paymentFormData.buyerId ? buyers.find(b => b.id === paymentFormData.buyerId)?.name : 'Select an account...'}</span>
+                      <ChevronDown className="w-4 h-4 text-slate-500" />
+                    </button>
+                    {isPaymentBuyerDropdownOpen && (
+                      <div className="absolute top-full left-0 mt-1 w-full bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl shadow-xl z-50 overflow-hidden flex flex-col">
+                        <div className="p-2 border-b border-slate-200 dark:border-slate-700">
+                          <input
+                            type="text"
+                            placeholder="Search buyer..."
+                            value={paymentBuyerSearch}
+                            onChange={(e) => setPaymentBuyerSearch(e.target.value)}
+                            className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                        </div>
+                        <div className="max-h-48 overflow-y-auto py-1">
+                          {buyers.filter(b => b.name.toLowerCase().includes(paymentBuyerSearch.toLowerCase())).map(b => (
+                            <button
+                              key={b.id}
+                              type="button"
+                              onClick={() => { setPaymentFormData({...paymentFormData, buyerId: b.id}); setIsPaymentBuyerDropdownOpen(false); setPaymentBuyerSearch(''); }}
+                              className={`w-full text-left px-4 py-2 text-sm transition-colors ${paymentFormData.buyerId === b.id ? 'bg-emerald-500/10 text-emerald-500 font-bold border-l-2 border-emerald-500' : 'text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700/50 hover:text-white border-l-2 border-transparent'}`}
+                            >
+                              {b.name}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Transaction Type</label>
@@ -1226,17 +1265,42 @@ const POS: React.FC = () => {
               <form onSubmit={handleRecordMetalReceipt} className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Account (Buyer)</label>
-                  <select
-                    required
-                    value={metalFormData.buyerId}
-                    onChange={(e) => setMetalFormData({...metalFormData, buyerId: e.target.value})}
-                    className="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg px-4 py-2.5 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500"
-                  >
-                    <option value="">Select an account...</option>
-                    {buyers.map(b => (
-                      <option key={b.id} value={b.id}>{b.name}</option>
-                    ))}
-                  </select>
+                  <div className="relative" ref={metalBuyerRef}>
+                    <button 
+                      type="button"
+                      onClick={() => setIsMetalBuyerDropdownOpen(!isMetalBuyerDropdownOpen)}
+                      className="w-full text-left bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg px-4 py-2.5 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-amber-500/50 flex justify-between items-center"
+                    >
+                      <span>{metalFormData.buyerId ? buyers.find(b => b.id === metalFormData.buyerId)?.name : 'Select an account...'}</span>
+                      <ChevronDown className="w-4 h-4 text-slate-500" />
+                    </button>
+                    {isMetalBuyerDropdownOpen && (
+                      <div className="absolute top-full left-0 mt-1 w-full bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl shadow-xl z-50 overflow-hidden flex flex-col">
+                        <div className="p-2 border-b border-slate-200 dark:border-slate-700">
+                          <input
+                            type="text"
+                            placeholder="Search buyer..."
+                            value={metalBuyerSearch}
+                            onChange={(e) => setMetalBuyerSearch(e.target.value)}
+                            className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                        </div>
+                        <div className="max-h-48 overflow-y-auto py-1">
+                          {buyers.filter(b => b.name.toLowerCase().includes(metalBuyerSearch.toLowerCase())).map(b => (
+                            <button
+                              key={b.id}
+                              type="button"
+                              onClick={() => { setMetalFormData({...metalFormData, buyerId: b.id}); setIsMetalBuyerDropdownOpen(false); setMetalBuyerSearch(''); }}
+                              className={`w-full text-left px-4 py-2 text-sm transition-colors ${metalFormData.buyerId === b.id ? 'bg-amber-500/10 text-amber-500 font-bold border-l-2 border-amber-500' : 'text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700/50 hover:text-white border-l-2 border-transparent'}`}
+                            >
+                              {b.name}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
@@ -1253,16 +1317,17 @@ const POS: React.FC = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Purity (e.g. 995, 0.999)</label>
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Purity (e.g. 0.995, 0.875)</label>
                     <input
                       type="number"
                       required
                       step="0.001"
                       min="0.001"
+                      max="1.0"
                       value={metalFormData.purity}
                       onChange={(e) => setMetalFormData({...metalFormData, purity: e.target.value})}
                       className="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg px-4 py-2.5 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500"
-                      placeholder="995"
+                      placeholder="0.995"
                     />
                   </div>
                 </div>

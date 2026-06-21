@@ -93,7 +93,7 @@ const SuperAdmin: React.FC = () => {
                 <tr><td colSpan={7} className="p-8 text-center text-slate-500">No shops found.</td></tr>
               ) : (
                 shops.map((shop) => (
-                  <tr key={shop.id} className="border-b border-slate-200 dark:border-slate-800/50 hover:bg-slate-100 dark:bg-slate-800/20 transition-colors">
+                  <tr key={shop.id} className="border-b border-slate-200 dark:border-slate-800/50 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
                     <td className="p-4 text-slate-700 dark:text-slate-300">{shop.id}</td>
                     <td className="p-4 font-medium text-slate-900 dark:text-white">{shop.name}</td>
                     <td className="p-4 text-slate-600 dark:text-slate-400">

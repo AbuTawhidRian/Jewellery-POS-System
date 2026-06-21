@@ -14,6 +14,7 @@ const Ledger: React.FC = () => {
   const [customEndDate, setCustomEndDate] = useState<string>('');
   
   const [buyerDropdownOpen, setBuyerDropdownOpen] = useState(false);
+  const [buyerSearch, setBuyerSearch] = useState('');
   const [dateDropdownOpen, setDateDropdownOpen] = useState(false);
 
   const buyerRef = React.useRef<HTMLDivElement>(null);
@@ -257,18 +258,28 @@ const Ledger: React.FC = () => {
             </button>
             
             {buyerDropdownOpen && (
-              <div className="absolute top-full left-0 mt-2 w-full sm:w-64 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl shadow-xl z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+              <div className="absolute top-full left-0 mt-2 w-full sm:w-64 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl shadow-xl z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200 flex flex-col">
+                <div className="p-2 border-b border-slate-200 dark:border-slate-700">
+                  <input
+                    type="text"
+                    placeholder="Search buyer..."
+                    value={buyerSearch}
+                    onChange={(e) => setBuyerSearch(e.target.value)}
+                    className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-gold-500"
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                </div>
                 <div className="max-h-64 overflow-y-auto py-1">
                   <button
-                    onClick={() => { setFilterBuyerId('all'); setBuyerDropdownOpen(false); }}
+                    onClick={() => { setFilterBuyerId('all'); setBuyerDropdownOpen(false); setBuyerSearch(''); }}
                     className={`w-full text-left px-4 py-2.5 text-sm transition-colors ${filterBuyerId === 'all' ? 'bg-gold-500/10 text-gold-500 font-bold border-l-2 border-gold-500' : 'text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700/50 hover:text-white border-l-2 border-transparent'}`}
                   >
                     All Buyers Report
                   </button>
-                  {buyers.map(b => (
+                  {buyers.filter(b => b.name.toLowerCase().includes(buyerSearch.toLowerCase())).map(b => (
                     <button
                       key={b.id}
-                      onClick={() => { setFilterBuyerId(b.id); setBuyerDropdownOpen(false); }}
+                      onClick={() => { setFilterBuyerId(b.id); setBuyerDropdownOpen(false); setBuyerSearch(''); }}
                       className={`w-full text-left px-4 py-2.5 text-sm transition-colors ${filterBuyerId === b.id ? 'bg-gold-500/10 text-gold-500 font-bold border-l-2 border-gold-500' : 'text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700/50 hover:text-white border-l-2 border-transparent'}`}
                     >
                       {b.name}
@@ -386,7 +397,7 @@ const Ledger: React.FC = () => {
                     <React.Fragment key={tx.date}>
                       <tr 
                         onClick={() => setExpandedTx(isExpanded ? null : tx.date)}
-                        className={`border-b border-slate-200 dark:border-slate-800/50 hover:bg-slate-50 dark:hover:bg-slate-900/50 cursor-pointer transition-colors ${isReturn ? 'bg-red-50/30 dark:bg-red-900/10' : ''}`}
+                        className={`border-b border-slate-200 dark:border-slate-800/50 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer transition-colors ${isReturn ? 'bg-red-50/30 dark:bg-red-900/10' : ''}`}
                       >
                         <td className="py-4 px-4 text-slate-500">
                           {isExpanded ? <ChevronDown className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}

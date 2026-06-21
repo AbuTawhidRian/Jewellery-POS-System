@@ -135,7 +135,7 @@ const Dashboard: React.FC = () => {
               </thead>
               <tbody className="text-sm">
                 {sales.slice(-5).reverse().map((sale) => (
-                  <tr key={sale.id} className="border-b border-slate-100 dark:border-slate-800/50 last:border-0 hover:bg-slate-50 dark:hover:bg-slate-900/50 transition-colors">
+                  <tr key={sale.id} className="border-b border-slate-100 dark:border-slate-800/50 last:border-0 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
                     <td className="py-3 text-slate-800 dark:text-slate-200">{sale.type}</td>
                     <td className="py-3 text-slate-500 dark:text-slate-400 font-mono">{sale.barcode}</td>
                     <td className="py-3 text-gold-600 dark:text-gold-400 font-medium">{Number(sale.weight).toFixed(2)}g</td>

@@ -353,7 +353,7 @@ const Vault: React.FC = () => {
                         const gw = Number(item.weight) || 0;
                         const nw = Math.max(0, gw - sw);
                         return (
-                        <tr key={item.id} className="border-b border-slate-200 dark:border-slate-800/50 hover:bg-slate-50 dark:hover:bg-slate-900/50 transition-colors group">
+                        <tr key={item.id} className="border-b border-slate-200 dark:border-slate-800/50 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors group">
                           <td className="py-3 px-4 font-mono text-slate-700 dark:text-slate-300">{item.barcode}</td>
                           <td className="py-3 px-4 text-slate-800 dark:text-slate-200">{item.type}</td>
                           <td className="py-3 px-4 text-slate-600 dark:text-slate-400 hidden md:table-cell truncate max-w-[200px]">{item.model || '-'}</td>
