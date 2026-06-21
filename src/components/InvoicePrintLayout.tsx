@@ -112,6 +112,14 @@ const InvoicePrintLayout: React.FC = () => {
                 {printInvoiceData.totalWeight.toFixed(2)} g
               </span>
             </div>
+            {printInvoiceData.totalMakingCharge !== undefined && printInvoiceData.totalMakingCharge !== 0 && (
+              <div className="flex justify-between items-center pt-4 mt-4 border-t border-slate-200">
+                <span className="font-bold text-slate-800">Total Making Charge:</span>
+                <span className="text-xl font-bold text-slate-900">
+                  {printInvoiceData.totalMakingCharge.toFixed(2)} AED
+                </span>
+              </div>
+            )}
           </div>
         </div>
 

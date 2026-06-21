@@ -70,6 +70,7 @@ export interface InvoiceData {
   items: { barcode?: string; type: string; model?: string; weight: number; stone_weight: number }[];
   date: string;
   totalWeight: number;
+  totalMakingCharge?: number;
 }
 
 export interface StatementData {
