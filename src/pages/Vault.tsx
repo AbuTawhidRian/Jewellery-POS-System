@@ -87,6 +87,7 @@ const Vault: React.FC = () => {
 
   const handlePrint = (item: Item) => {
     setPrintInvoiceData(null); // Clear any pending invoice
+    setPrintStatementData(null); // Clear any pending statement
     setPrintItem(item);
     setTimeout(() => {
       window.print();

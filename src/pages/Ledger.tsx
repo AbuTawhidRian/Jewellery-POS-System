@@ -149,6 +149,7 @@ const Ledger: React.FC = () => {
   const printTransactionInvoice = (tx: any, e: React.MouseEvent) => {
     e.stopPropagation();
     setPrintItem(null); // Clear any pending barcode
+    setPrintStatementData(null); // Clear any pending statement
     setPrintInvoiceData({
       buyerName: tx.buyerName,
       items: tx.items,
@@ -192,6 +193,8 @@ const Ledger: React.FC = () => {
     const statementPayments = payments.filter(p => p.buyerId === filterBuyerId);
     const statementMetalReceipts = metalReceipts.filter(m => m.buyerId === filterBuyerId);
 
+    setPrintItem(null);
+    setPrintInvoiceData(null);
     setPrintStatementData({
       buyerName,
       dateRange: dateRangeStr,

@@ -300,6 +300,7 @@ const POS: React.FC = () => {
           
           if (result.success) {
             setPrintItem(null); // Clear any pending barcode
+            setPrintStatementData(null); // Clear any pending statement
             setPrintInvoiceData({
               buyerName,
               items: completedCart,
