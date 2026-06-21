@@ -241,53 +241,44 @@ const Ledger: React.FC = () => {
           <p className="text-slate-600 dark:text-slate-400 mt-1">Complete history of all checkout transactions.</p>
         </div>
         
-        <div className="flex flex-col sm:flex-row gap-3 flex-wrap md:flex-nowrap">
-          {/* Custom Buyer Dropdown */}
-          <div className="relative" ref={buyerRef}>
-            <button 
-              onClick={() => { setBuyerDropdownOpen(!buyerDropdownOpen); setDateDropdownOpen(false); }}
-              className="flex items-center justify-between gap-2 bg-slate-50 dark:bg-slate-900 hover:bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl px-4 py-2.5 transition-colors w-full sm:w-56 text-left"
-            >
-              <div className="flex items-center gap-2 overflow-hidden">
-                <Filter className="w-4 h-4 text-slate-600 dark:text-slate-400 shrink-0" />
-                <span className="text-sm text-slate-800 dark:text-slate-200 truncate font-medium">
-                  {filterBuyerId === 'all' ? 'All Buyers Report' : buyers.find(b => b.id === filterBuyerId)?.name}
-                </span>
-              </div>
-              <ChevronDown className="w-4 h-4 text-slate-500 shrink-0" />
-            </button>
-            
-            {buyerDropdownOpen && (
-              <div className="absolute top-full left-0 mt-2 w-full sm:w-64 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl shadow-xl z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200 flex flex-col">
-                <div className="p-2 border-b border-slate-200 dark:border-slate-700">
-                  <input
-                    type="text"
-                    placeholder="Search buyer..."
-                    value={buyerSearch}
-                    onChange={(e) => setBuyerSearch(e.target.value)}
-                    className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-gold-500"
-                    onClick={(e) => e.stopPropagation()}
-                  />
-                </div>
-                <div className="max-h-64 overflow-y-auto py-1">
+          <div className="flex flex-col sm:flex-row items-center gap-4">
+          <div className="flex items-center gap-2">
+            <Filter className="w-5 h-5 text-gold-500" />
+            <div className="relative w-full sm:w-64" ref={buyerRef}>
+              <input
+                type="text"
+                value={buyerDropdownOpen ? buyerSearch : (filterBuyerId === 'all' ? 'All Buyers Report' : buyers.find(b => b.id === filterBuyerId)?.name || '')}
+                onChange={(e) => {
+                  setBuyerSearch(e.target.value);
+                  setBuyerDropdownOpen(true);
+                }}
+                onFocus={() => {
+                  setBuyerSearch('');
+                  setBuyerDropdownOpen(true);
+                }}
+                className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg px-4 py-2 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:border-gold-500 focus:ring-1 focus:ring-gold-500 transition-colors"
+                placeholder="Search buyer..."
+              />
+              {buyerDropdownOpen && (
+                <div className="absolute top-full left-0 mt-1 w-full sm:w-64 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg shadow-xl z-50 overflow-hidden max-h-60 overflow-y-auto">
                   <button
-                    onClick={() => { setFilterBuyerId('all'); setBuyerDropdownOpen(false); setBuyerSearch(''); }}
-                    className={`w-full text-left px-4 py-2.5 text-sm transition-colors ${filterBuyerId === 'all' ? 'bg-gold-500/10 text-gold-500 font-bold border-l-2 border-gold-500' : 'text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700/50 hover:text-white border-l-2 border-transparent'}`}
+                    onClick={() => { setFilterBuyerId('all'); setBuyerDropdownOpen(false); }}
+                    className={`w-full text-left px-4 py-2.5 text-sm transition-colors ${filterBuyerId === 'all' ? 'bg-gold-500/10 text-gold-500 font-bold border-l-2 border-gold-500' : 'text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white border-l-2 border-transparent'}`}
                   >
                     All Buyers Report
                   </button>
                   {buyers.filter(b => b.name.toLowerCase().includes(buyerSearch.toLowerCase())).map(b => (
                     <button
                       key={b.id}
-                      onClick={() => { setFilterBuyerId(b.id); setBuyerDropdownOpen(false); setBuyerSearch(''); }}
-                      className={`w-full text-left px-4 py-2.5 text-sm transition-colors ${filterBuyerId === b.id ? 'bg-gold-500/10 text-gold-500 font-bold border-l-2 border-gold-500' : 'text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700/50 hover:text-white border-l-2 border-transparent'}`}
+                      onClick={() => { setFilterBuyerId(b.id); setBuyerDropdownOpen(false); }}
+                      className={`w-full text-left px-4 py-2.5 text-sm transition-colors ${filterBuyerId === b.id ? 'bg-gold-500/10 text-gold-500 font-bold border-l-2 border-gold-500' : 'text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white border-l-2 border-transparent'}`}
                     >
                       {b.name}
                     </button>
                   ))}
                 </div>
-              </div>
-            )}
+              )}
+            </div>
           </div>
 
           {/* Custom Date Dropdown */}

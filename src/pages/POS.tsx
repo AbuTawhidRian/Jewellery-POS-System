@@ -52,6 +52,14 @@ const POS: React.FC = () => {
   const [isMetalBuyerDropdownOpen, setIsMetalBuyerDropdownOpen] = useState(false);
   const metalBuyerRef = useRef<HTMLDivElement>(null);
 
+  const [cashFilterSearch, setCashFilterSearch] = useState('');
+  const [isCashFilterOpen, setIsCashFilterOpen] = useState(false);
+  const cashFilterRef = useRef<HTMLDivElement>(null);
+
+  const [metalFilterSearch, setMetalFilterSearch] = useState('');
+  const [isMetalFilterOpen, setIsMetalFilterOpen] = useState(false);
+  const metalFilterRef = useRef<HTMLDivElement>(null);
+
   // Dialog State
   const [dialogConfig, setDialogConfig] = useState<{
     isOpen: boolean;
@@ -123,6 +131,12 @@ const POS: React.FC = () => {
       }
       if (metalBuyerRef.current && !metalBuyerRef.current.contains(event.target as Node)) {
         setIsMetalBuyerDropdownOpen(false);
+      }
+      if (cashFilterRef.current && !cashFilterRef.current.contains(event.target as Node)) {
+        setIsCashFilterOpen(false);
+      }
+      if (metalFilterRef.current && !metalFilterRef.current.contains(event.target as Node)) {
+        setIsMetalFilterOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -718,16 +732,45 @@ const POS: React.FC = () => {
                 <span className="text-emerald-500">💰</span> Cash Ledger
               </h2>
               <div className="flex flex-col sm:flex-row items-center gap-4">
-                <select
-                  value={cashFilterBuyerId}
-                  onChange={(e) => setCashFilterBuyerId(e.target.value)}
-                  className="bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg px-4 py-2 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
-                >
-                  <option value="all">All Accounts</option>
-                  {buyers.map(b => (
-                    <option key={b.id} value={b.id}>{b.name}</option>
-                  ))}
-                </select>
+                <div className="relative w-full sm:w-64" ref={cashFilterRef}>
+                  <input
+                    type="text"
+                    value={isCashFilterOpen ? cashFilterSearch : (cashFilterBuyerId === 'all' ? 'All Accounts' : buyers.find(b => b.id === cashFilterBuyerId)?.name || '')}
+                    onChange={(e) => {
+                      setCashFilterSearch(e.target.value);
+                      setIsCashFilterOpen(true);
+                    }}
+                    onFocus={() => {
+                      setCashFilterSearch('');
+                      setIsCashFilterOpen(true);
+                    }}
+                    className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg px-4 py-2 text-slate-900 dark:text-slate-100 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-colors"
+                    placeholder="Search account..."
+                  />
+                  {isCashFilterOpen && (
+                    <div className="absolute top-full right-0 mt-1 w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg shadow-xl z-50 overflow-hidden flex flex-col">
+                      <div className="max-h-48 overflow-y-auto py-1">
+                        <button
+                          type="button"
+                          onClick={() => { setCashFilterBuyerId('all'); setIsCashFilterOpen(false); }}
+                          className={`w-full text-left px-4 py-2.5 text-sm transition-colors ${cashFilterBuyerId === 'all' ? 'bg-emerald-500/10 text-emerald-500 font-bold border-l-2 border-emerald-500' : 'text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white border-l-2 border-transparent'}`}
+                        >
+                          All Accounts
+                        </button>
+                        {buyers.filter(b => b.name.toLowerCase().includes(cashFilterSearch.toLowerCase())).map(b => (
+                          <button
+                            key={b.id}
+                            type="button"
+                            onClick={() => { setCashFilterBuyerId(b.id); setIsCashFilterOpen(false); }}
+                            className={`w-full text-left px-4 py-2.5 text-sm transition-colors ${cashFilterBuyerId === b.id ? 'bg-emerald-500/10 text-emerald-500 font-bold border-l-2 border-emerald-500' : 'text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white border-l-2 border-transparent'}`}
+                          >
+                            {b.name}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
                 <button
                   onClick={() => {
                     setEditingPaymentId(null);
@@ -845,16 +888,45 @@ const POS: React.FC = () => {
                 <span className="text-amber-500">🪙</span> Pure Gold Ledger
               </h2>
               <div className="flex flex-col sm:flex-row items-center gap-4">
-                <select
-                  value={metalFilterBuyerId}
-                  onChange={(e) => setMetalFilterBuyerId(e.target.value)}
-                  className="bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg px-4 py-2 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-amber-500/50"
-                >
-                  <option value="all">All Accounts</option>
-                  {buyers.map(b => (
-                    <option key={b.id} value={b.id}>{b.name}</option>
-                  ))}
-                </select>
+                <div className="relative w-full sm:w-64" ref={metalFilterRef}>
+                  <input
+                    type="text"
+                    value={isMetalFilterOpen ? metalFilterSearch : (metalFilterBuyerId === 'all' ? 'All Accounts' : buyers.find(b => b.id === metalFilterBuyerId)?.name || '')}
+                    onChange={(e) => {
+                      setMetalFilterSearch(e.target.value);
+                      setIsMetalFilterOpen(true);
+                    }}
+                    onFocus={() => {
+                      setMetalFilterSearch('');
+                      setIsMetalFilterOpen(true);
+                    }}
+                    className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg px-4 py-2 text-slate-900 dark:text-slate-100 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-colors"
+                    placeholder="Search account..."
+                  />
+                  {isMetalFilterOpen && (
+                    <div className="absolute top-full right-0 mt-1 w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg shadow-xl z-50 overflow-hidden flex flex-col">
+                      <div className="max-h-48 overflow-y-auto py-1">
+                        <button
+                          type="button"
+                          onClick={() => { setMetalFilterBuyerId('all'); setIsMetalFilterOpen(false); }}
+                          className={`w-full text-left px-4 py-2.5 text-sm transition-colors ${metalFilterBuyerId === 'all' ? 'bg-amber-500/10 text-amber-500 font-bold border-l-2 border-amber-500' : 'text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white border-l-2 border-transparent'}`}
+                        >
+                          All Accounts
+                        </button>
+                        {buyers.filter(b => b.name.toLowerCase().includes(metalFilterSearch.toLowerCase())).map(b => (
+                          <button
+                            key={b.id}
+                            type="button"
+                            onClick={() => { setMetalFilterBuyerId(b.id); setIsMetalFilterOpen(false); }}
+                            className={`w-full text-left px-4 py-2.5 text-sm transition-colors ${metalFilterBuyerId === b.id ? 'bg-amber-500/10 text-amber-500 font-bold border-l-2 border-amber-500' : 'text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white border-l-2 border-transparent'}`}
+                          >
+                            {b.name}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
                 <button
                   onClick={() => {
                     setEditingMetalId(null);
@@ -1153,37 +1225,42 @@ const POS: React.FC = () => {
                 <div>
                   <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Account (Buyer)</label>
                   <div className="relative" ref={paymentBuyerRef}>
-                    <button 
-                      type="button"
-                      onClick={() => setIsPaymentBuyerDropdownOpen(!isPaymentBuyerDropdownOpen)}
-                      className="w-full text-left bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg px-4 py-2.5 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 flex justify-between items-center"
-                    >
-                      <span>{paymentFormData.buyerId ? buyers.find(b => b.id === paymentFormData.buyerId)?.name : 'Select an account...'}</span>
-                      <ChevronDown className="w-4 h-4 text-slate-500" />
-                    </button>
+                    <input
+                      type="text"
+                      required={!paymentFormData.buyerId}
+                      value={isPaymentBuyerDropdownOpen ? paymentBuyerSearch : (buyers.find(b => b.id === paymentFormData.buyerId)?.name || '')}
+                      onChange={(e) => {
+                        setPaymentBuyerSearch(e.target.value);
+                        setIsPaymentBuyerDropdownOpen(true);
+                      }}
+                      onFocus={() => {
+                        setPaymentBuyerSearch('');
+                        setIsPaymentBuyerDropdownOpen(true);
+                      }}
+                      className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg px-4 py-2.5 text-slate-900 dark:text-slate-100 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-colors"
+                      placeholder="Search or select account..."
+                    />
                     {isPaymentBuyerDropdownOpen && (
-                      <div className="absolute top-full left-0 mt-1 w-full bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl shadow-xl z-50 overflow-hidden flex flex-col">
-                        <div className="p-2 border-b border-slate-200 dark:border-slate-700">
-                          <input
-                            type="text"
-                            placeholder="Search buyer..."
-                            value={paymentBuyerSearch}
-                            onChange={(e) => setPaymentBuyerSearch(e.target.value)}
-                            className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                            onClick={(e) => e.stopPropagation()}
-                          />
-                        </div>
+                      <div className="absolute top-full left-0 mt-1 w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg shadow-xl z-50 overflow-hidden flex flex-col">
                         <div className="max-h-48 overflow-y-auto py-1">
-                          {buyers.filter(b => b.name.toLowerCase().includes(paymentBuyerSearch.toLowerCase())).map(b => (
-                            <button
-                              key={b.id}
-                              type="button"
-                              onClick={() => { setPaymentFormData({...paymentFormData, buyerId: b.id}); setIsPaymentBuyerDropdownOpen(false); setPaymentBuyerSearch(''); }}
-                              className={`w-full text-left px-4 py-2 text-sm transition-colors ${paymentFormData.buyerId === b.id ? 'bg-emerald-500/10 text-emerald-500 font-bold border-l-2 border-emerald-500' : 'text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700/50 hover:text-white border-l-2 border-transparent'}`}
-                            >
-                              {b.name}
-                            </button>
-                          ))}
+                          {buyers.filter(b => b.name.toLowerCase().includes(paymentBuyerSearch.toLowerCase())).length === 0 ? (
+                            <div className="p-3 text-slate-500 text-sm text-center">No matching accounts.</div>
+                          ) : (
+                            buyers.filter(b => b.name.toLowerCase().includes(paymentBuyerSearch.toLowerCase())).map(b => (
+                              <button
+                                key={b.id}
+                                type="button"
+                                onClick={() => { 
+                                  setPaymentFormData({...paymentFormData, buyerId: b.id}); 
+                                  setIsPaymentBuyerDropdownOpen(false); 
+                                  setPaymentBuyerSearch(''); 
+                                }}
+                                className={`w-full text-left px-4 py-2.5 text-sm transition-colors ${paymentFormData.buyerId === b.id ? 'bg-emerald-500/10 text-emerald-500 font-bold border-l-2 border-emerald-500' : 'text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white border-l-2 border-transparent'}`}
+                              >
+                                {b.name}
+                              </button>
+                            ))
+                          )}
                         </div>
                       </div>
                     )}
@@ -1266,37 +1343,42 @@ const POS: React.FC = () => {
                 <div>
                   <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Account (Buyer)</label>
                   <div className="relative" ref={metalBuyerRef}>
-                    <button 
-                      type="button"
-                      onClick={() => setIsMetalBuyerDropdownOpen(!isMetalBuyerDropdownOpen)}
-                      className="w-full text-left bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg px-4 py-2.5 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-amber-500/50 flex justify-between items-center"
-                    >
-                      <span>{metalFormData.buyerId ? buyers.find(b => b.id === metalFormData.buyerId)?.name : 'Select an account...'}</span>
-                      <ChevronDown className="w-4 h-4 text-slate-500" />
-                    </button>
+                    <input
+                      type="text"
+                      required={!metalFormData.buyerId}
+                      value={isMetalBuyerDropdownOpen ? metalBuyerSearch : (buyers.find(b => b.id === metalFormData.buyerId)?.name || '')}
+                      onChange={(e) => {
+                        setMetalBuyerSearch(e.target.value);
+                        setIsMetalBuyerDropdownOpen(true);
+                      }}
+                      onFocus={() => {
+                        setMetalBuyerSearch('');
+                        setIsMetalBuyerDropdownOpen(true);
+                      }}
+                      className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg px-4 py-2.5 text-slate-900 dark:text-slate-100 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-colors"
+                      placeholder="Search or select account..."
+                    />
                     {isMetalBuyerDropdownOpen && (
-                      <div className="absolute top-full left-0 mt-1 w-full bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl shadow-xl z-50 overflow-hidden flex flex-col">
-                        <div className="p-2 border-b border-slate-200 dark:border-slate-700">
-                          <input
-                            type="text"
-                            placeholder="Search buyer..."
-                            value={metalBuyerSearch}
-                            onChange={(e) => setMetalBuyerSearch(e.target.value)}
-                            className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
-                            onClick={(e) => e.stopPropagation()}
-                          />
-                        </div>
+                      <div className="absolute top-full left-0 mt-1 w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg shadow-xl z-50 overflow-hidden flex flex-col">
                         <div className="max-h-48 overflow-y-auto py-1">
-                          {buyers.filter(b => b.name.toLowerCase().includes(metalBuyerSearch.toLowerCase())).map(b => (
-                            <button
-                              key={b.id}
-                              type="button"
-                              onClick={() => { setMetalFormData({...metalFormData, buyerId: b.id}); setIsMetalBuyerDropdownOpen(false); setMetalBuyerSearch(''); }}
-                              className={`w-full text-left px-4 py-2 text-sm transition-colors ${metalFormData.buyerId === b.id ? 'bg-amber-500/10 text-amber-500 font-bold border-l-2 border-amber-500' : 'text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700/50 hover:text-white border-l-2 border-transparent'}`}
-                            >
-                              {b.name}
-                            </button>
-                          ))}
+                          {buyers.filter(b => b.name.toLowerCase().includes(metalBuyerSearch.toLowerCase())).length === 0 ? (
+                            <div className="p-3 text-slate-500 text-sm text-center">No matching accounts.</div>
+                          ) : (
+                            buyers.filter(b => b.name.toLowerCase().includes(metalBuyerSearch.toLowerCase())).map(b => (
+                              <button
+                                key={b.id}
+                                type="button"
+                                onClick={() => { 
+                                  setMetalFormData({...metalFormData, buyerId: b.id}); 
+                                  setIsMetalBuyerDropdownOpen(false); 
+                                  setMetalBuyerSearch(''); 
+                                }}
+                                className={`w-full text-left px-4 py-2.5 text-sm transition-colors ${metalFormData.buyerId === b.id ? 'bg-amber-500/10 text-amber-500 font-bold border-l-2 border-amber-500' : 'text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white border-l-2 border-transparent'}`}
+                              >
+                                {b.name}
+                              </button>
+                            ))
+                          )}
                         </div>
                       </div>
                     )}
