@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { Users, CreditCard, Plus, Edit2, Trash2, ShieldAlert, Building2, CheckCircle, XCircle, X } from 'lucide-react';
+import { Users, CreditCard, Plus, Edit2, Trash2, ShieldAlert, Building2, CheckCircle, XCircle, X, Lock } from 'lucide-react';
 import Dialog from '../components/Dialog';
 import api from '../lib/api';
 
@@ -26,7 +26,7 @@ const AVAILABLE_PERMISSIONS = [
 
 const Settings: React.FC = () => {
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState<'company' | 'staff' | 'subscription'>('company');
+  const [activeTab, setActiveTab] = useState<'company' | 'staff' | 'subscription' | 'security'>('company');
   
   const [notification, setNotification] = useState<{ type: 'success' | 'error', message: string } | null>(null);
   const showNotification = useCallback((type: 'success' | 'error', message: string) => {
@@ -58,6 +58,10 @@ const Settings: React.FC = () => {
   const [shopInfo, setShopInfo] = useState({ name: '', trn: '', address: '', email: '', phone: '' });
   const [loadingShop, setLoadingShop] = useState(true);
   const [savingShop, setSavingShop] = useState(false);
+
+  // Security State
+  const [passwordData, setPasswordData] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
+  const [savingPassword, setSavingPassword] = useState(false);
 
   useEffect(() => {
     if (user?.role === 'OWNER') {
@@ -114,6 +118,27 @@ const Settings: React.FC = () => {
       showNotification('error', 'Failed to update company information');
     } finally {
       setSavingShop(false);
+    }
+  };
+
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      showNotification('error', 'New passwords do not match');
+      return;
+    }
+    setSavingPassword(true);
+    try {
+      await api.put('/auth/change-password', {
+        currentPassword: passwordData.currentPassword,
+        newPassword: passwordData.newPassword
+      });
+      showNotification('success', 'Password updated successfully!');
+      setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+    } catch (err: any) {
+      showNotification('error', err.response?.data?.error || 'Failed to change password');
+    } finally {
+      setSavingPassword(false);
     }
   };
 
@@ -232,6 +257,13 @@ const Settings: React.FC = () => {
           <CreditCard className="w-5 h-5" />
           Subscription & Billing
         </button>
+        <button 
+          onClick={() => setActiveTab('security')}
+          className={`flex items-center gap-2 px-4 py-2 font-medium rounded-lg transition-colors whitespace-nowrap ${activeTab === 'security' ? 'bg-gold-500/10 text-gold-500' : 'text-slate-600 dark:text-slate-400 hover:text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:bg-slate-800/50'}`}
+        >
+          <Lock className="w-5 h-5" />
+          Security
+        </button>
       </div>
 
       {activeTab === 'company' && (
@@ -272,6 +304,32 @@ const Settings: React.FC = () => {
           )}
         </div>
       )}
+
+      {activeTab === 'security' && (
+        <div className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 rounded-2xl shadow-xl max-w-xl">
+          <h3 className="text-xl font-semibold text-slate-900 dark:text-white mb-6">Change Password</h3>
+          <form onSubmit={handleChangePassword} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">Current Password</label>
+              <input required type="password" value={passwordData.currentPassword} onChange={(e) => setPasswordData({...passwordData, currentPassword: e.target.value})} className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-4 py-3 text-slate-900 dark:text-white focus:outline-none focus:border-gold-500" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">New Password</label>
+              <input required minLength={6} type="password" value={passwordData.newPassword} onChange={(e) => setPasswordData({...passwordData, newPassword: e.target.value})} className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-4 py-3 text-slate-900 dark:text-white focus:outline-none focus:border-gold-500" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">Confirm New Password</label>
+              <input required minLength={6} type="password" value={passwordData.confirmPassword} onChange={(e) => setPasswordData({...passwordData, confirmPassword: e.target.value})} className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-4 py-3 text-slate-900 dark:text-white focus:outline-none focus:border-gold-500" />
+            </div>
+            <div className="pt-4 mt-6 border-t border-slate-200 dark:border-slate-800">
+              <button type="submit" disabled={savingPassword} className="bg-gold-500 hover:bg-gold-600 disabled:opacity-50 text-slate-950 px-6 py-3 rounded-lg font-bold transition-colors w-full sm:w-auto">
+                {savingPassword ? 'Updating...' : 'Update Password'}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
 
       {activeTab === 'staff' && (
         <div className="space-y-6">

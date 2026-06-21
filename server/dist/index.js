@@ -165,6 +165,30 @@ app.get('/api/auth/me', authenticateToken, async (req, res) => {
         res.status(500).json({ error: 'Internal Server Error' });
     }
 });
+app.put('/api/auth/change-password', authenticateToken, async (req, res) => {
+    try {
+        const { currentPassword, newPassword } = req.body;
+        // SuperAdmin bypass (they shouldn't change password here, but just in case)
+        if (req.user?.role === 'SUPERADMIN') {
+            return res.status(403).json({ error: 'Super Admin password cannot be changed here' });
+        }
+        const user = await prisma.user.findUnique({ where: { id: req.user.id } });
+        if (!user)
+            return res.status(404).json({ error: 'User not found' });
+        const validPassword = await bcrypt_1.default.compare(currentPassword, user.passwordHash);
+        if (!validPassword)
+            return res.status(400).json({ error: 'Incorrect current password' });
+        const newPasswordHash = await bcrypt_1.default.hash(newPassword, 10);
+        await prisma.user.update({
+            where: { id: user.id },
+            data: { passwordHash: newPasswordHash }
+        });
+        res.json({ success: true, message: 'Password updated successfully' });
+    }
+    catch (error) {
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
 // --- Owner Staff Management Routes ---
 app.get('/api/users', authenticateToken, requireRole(client_1.Role.OWNER), async (req, res) => {
     try {
