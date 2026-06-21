@@ -155,7 +155,7 @@ const Ledger: React.FC = () => {
       buyerName: tx.buyerName,
       items: tx.items,
       date: tx.date,
-      totalWeight: Math.abs(tx.totalNet),
+      totalWeight: tx.totalNet,
       totalMakingCharge: tx.totalMakingCharge
     });
     setTimeout(() => window.print(), 100);
