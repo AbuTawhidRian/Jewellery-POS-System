@@ -362,6 +362,7 @@ const Ledger: React.FC = () => {
                 <th className="pb-3 px-4 font-medium">Date/Time Sold</th>
                 <th className="pb-3 px-4 font-medium">Buyer Company</th>
                 <th className="pb-3 px-4 font-medium text-center">Total Items</th>
+                <th className="pb-3 px-4 font-medium text-right">Total Gross Wt</th>
                 <th className="pb-3 px-4 font-medium text-right">Total Net Wt</th>
                 <th className="pb-3 px-4 font-medium text-right">Total Pure Wt</th>
                 <th className="pb-3 px-4 font-medium text-right">Action</th>
@@ -395,6 +396,7 @@ const Ledger: React.FC = () => {
                           {tx.buyerName} {isReturn && <span className="ml-2 text-[10px] font-bold text-red-500 px-2 py-0.5 rounded-full bg-red-100 dark:bg-red-900/30">RETURN</span>}
                         </td>
                         <td className="py-4 px-4 font-medium text-slate-700 dark:text-slate-300 text-center">{tx.totalItems}</td>
+                        <td className={`py-4 px-4 font-bold text-right ${isReturn ? 'text-red-500' : 'text-slate-700 dark:text-slate-300'}`}>{tx.totalGross.toFixed(2)}g</td>
                         <td className={`py-4 px-4 font-bold text-right ${isReturn ? 'text-red-500' : 'text-slate-700 dark:text-slate-300'}`}>{tx.totalNet.toFixed(2)}g</td>
                         <td className={`py-4 px-4 font-bold text-right ${isReturn ? 'text-red-500' : 'text-gold-400'}`}>{tx.totalPure.toFixed(2)}g</td>
                         <td className="py-4 px-4 text-right">
@@ -407,7 +409,7 @@ const Ledger: React.FC = () => {
                               <Printer className="w-3.5 h-3.5 text-gold-500" />
                               <span className="hidden sm:inline">Print</span>
                             </button>
-                            {!isReturn && hasPermission('delete_sale') && (
+                            {hasPermission('delete_sale') && (
                               <button 
                                 onClick={(e) => handleDeleteTransaction(tx, e)}
                                 className="inline-flex items-center gap-2 bg-red-900/30 hover:bg-red-900/50 text-red-400 text-xs font-semibold py-1.5 px-3 rounded-lg border border-red-900/50 transition-colors"

@@ -40,6 +40,7 @@ const Settings: React.FC = () => {
   const [showAddStaff, setShowAddStaff] = useState(false);
   const [newStaff, setNewStaff] = useState<{name: string, email: string, password: string, role: string, customRole: string, permissions: string[]}>({ name: '', email: '', password: '', role: 'STAFF', customRole: '', permissions: [] });
   const [editingStaff, setEditingStaff] = useState<ShopUser | null>(null);
+  const [editingStaffPassword, setEditingStaffPassword] = useState('');
   
   // Sub State
   const [subscription, setSubscription] = useState<any>(null);
@@ -163,14 +164,24 @@ const Settings: React.FC = () => {
     e.preventDefault();
     if (!editingStaff) return;
     try {
-      await api.patch(`/users/${editingStaff.id}`, {
+      const payload: any = {
         name: editingStaff.name,
         role: editingStaff.role,
         customRole: editingStaff.customRole,
         permissions: editingStaff.permissions
-      });
+      };
+      if (editingStaffPassword.trim()) {
+        if (editingStaffPassword.length < 6) {
+          showNotification('error', 'Password must be at least 6 characters');
+          return;
+        }
+        payload.password = editingStaffPassword;
+      }
+      
+      await api.patch(`/users/${editingStaff.id}`, payload);
       showNotification('success', 'Staff member updated successfully!');
       setEditingStaff(null);
+      setEditingStaffPassword('');
       fetchStaff();
     } catch (err: any) {
       showNotification('error', 'Failed to update staff member');
@@ -409,7 +420,7 @@ const Settings: React.FC = () => {
                 </div>
                 
                 <form onSubmit={handleEditStaffSave} className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">Name</label>
                       <input required type="text" value={editingStaff.name} onChange={(e) => setEditingStaff({...editingStaff, name: e.target.value})} className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg px-4 py-2 text-slate-900 dark:text-white focus:outline-none focus:border-gold-500" />
@@ -417,6 +428,10 @@ const Settings: React.FC = () => {
                     <div>
                       <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">Role Name</label>
                       <input required type="text" value={editingStaff.customRole || ''} onChange={(e) => setEditingStaff({...editingStaff, customRole: e.target.value})} className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg px-4 py-2 text-slate-900 dark:text-white focus:outline-none focus:border-gold-500" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">New Password (Optional)</label>
+                      <input type="password" placeholder="Leave blank to keep current" value={editingStaffPassword} onChange={(e) => setEditingStaffPassword(e.target.value)} className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg px-4 py-2 text-slate-900 dark:text-white focus:outline-none focus:border-gold-500 placeholder:text-xs" />
                     </div>
                   </div>
 

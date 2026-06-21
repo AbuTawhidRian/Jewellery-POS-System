@@ -249,7 +249,7 @@ app.get('/api/users', authenticateToken, requireRole(Role.OWNER), async (req: Au
 
   app.patch('/api/users/:id', authenticateToken, requireRole(Role.OWNER), async (req: AuthRequest, res) => {
     try {
-      const { name, role, customRole, permissions } = req.body;
+      const { name, role, customRole, permissions, password } = req.body;
       const userId = String(req.params.id);
       // Don't allow modifying other shop's users
       const existing = await prisma.user.findUnique({ where: { id: userId } });
@@ -260,6 +260,9 @@ app.get('/api/users', authenticateToken, requireRole(Role.OWNER), async (req: Au
       const updateData: any = { name, role: role as Role };
       if (customRole !== undefined) updateData.customRole = customRole;
       if (permissions !== undefined) updateData.permissions = permissions;
+      if (password) {
+        updateData.passwordHash = await bcrypt.hash(password, 10);
+      }
       
       const updated = await prisma.user.update({
         where: { id: userId },
@@ -936,24 +939,38 @@ app.post('/api/sales/void', authenticateToken, requireActiveOrTrial, requireAcce
         throw new Error('No transactions found to void');
       }
 
+      const isVoidingReturn = salesToVoid.some(s => s.weight < 0);
+
       const itemIds = salesToVoid.map(s => s.itemId);
 
-      // Update items back to 'In Stock'
-      await tx.item.updateMany({
-        where: { id: { in: itemIds } },
-        data: { status: 'In Stock' }
-      });
+      if (isVoidingReturn) {
+        // We are voiding a return. Delete the return records and mark items back to 'Sold'
+        await tx.sale.deleteMany({
+          where: { id: { in: salesToVoid.map(s => s.id) } }
+        });
+        await tx.item.updateMany({
+          where: { id: { in: itemIds } },
+          data: { status: 'Sold' }
+        });
+      } else {
+        // Update items back to 'In Stock'
+        await tx.item.updateMany({
+          where: { id: { in: itemIds } },
+          data: { status: 'In Stock' }
+        });
 
-      // Create return records with negative weight instead of deleting
-      const returnSales = salesToVoid.filter(s => s.weight > 0).map(s => ({
-        shopId: s.shopId,
-        itemId: s.itemId,
-        buyerId: s.buyerId,
-        weight: -Math.abs(s.weight)
-      }));
+        // Create return records with negative weight instead of deleting
+        const returnSales = salesToVoid.filter(s => s.weight > 0).map(s => ({
+          shopId: s.shopId,
+          itemId: s.itemId,
+          buyerId: s.buyerId,
+          weight: -Math.abs(s.weight),
+          date: new Date()
+        }));
 
-      if (returnSales.length > 0) {
-        await tx.sale.createMany({ data: returnSales });
+        if (returnSales.length > 0) {
+          await tx.sale.createMany({ data: returnSales });
+        }
       }
 
       return salesToVoid.length;
