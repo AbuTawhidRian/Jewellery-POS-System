@@ -8,7 +8,7 @@ import { useAuth } from '../contexts/AuthContext';
 
 const POS: React.FC = () => {
   const { hasPermission } = useAuth();
-  const { items, buyers, sales, payments, metalReceipts, processBulkSale, returnItems, addBuyer, editBuyer, deleteBuyer, addPayment, editPayment, deletePayment, addMetalReceipt, editMetalReceipt, deleteMetalReceipt, setPrintInvoiceData, setPrintItem } = useInventory();
+  const { items, buyers, sales, payments, metalReceipts, processBulkSale, returnItems, addBuyer, editBuyer, deleteBuyer, addPayment, editPayment, deletePayment, addMetalReceipt, editMetalReceipt, deleteMetalReceipt, setPrintInvoiceData, setPrintItem, setPrintStatementData } = useInventory();
   const [selectedBuyer, setSelectedBuyer] = useState('');
   const [barcode, setBarcode] = useState('');
   const [notification, setNotification] = useState<{ type: 'success' | 'error', message: string } | null>(null);

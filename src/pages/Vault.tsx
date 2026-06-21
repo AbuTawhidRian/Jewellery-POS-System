@@ -7,7 +7,7 @@ import { useAuth } from '../contexts/AuthContext';
 const Vault: React.FC = () => {
   const { hasPermission } = useAuth();
   const canEditVault = hasPermission('edit_vault');
-  const { items, itemTypes, addItem, editItem, deleteItem, setPrintItem, setPrintInvoiceData, addItemType, editItemType, deleteItemType, models, addModel, editModel, deleteModel } = useInventory();
+  const { items, itemTypes, addItem, editItem, deleteItem, setPrintItem, setPrintInvoiceData, setPrintStatementData, addItemType, editItemType, deleteItemType, models, addModel, editModel, deleteModel } = useInventory();
   const [searchTerm, setSearchTerm] = useState('');
   
   // Form State
