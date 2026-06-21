@@ -29,7 +29,7 @@ const InvoicePrintLayout: React.FC = () => {
             <Diamond className="w-10 h-10 text-slate-800" />
             <div>
               <h1 className="text-3xl font-bold tracking-tight text-slate-900">{user?.shopName || 'Jewellery Shop'}</h1>
-              <p className="text-sm text-slate-500 mt-1">Wholesale & Retail Trading</p>
+              <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Wholesale & Retail Trading</p>
             </div>
           </div>
           <div className="text-right">
@@ -80,12 +80,12 @@ const InvoicePrintLayout: React.FC = () => {
               const nw = gw > 0 ? Math.max(0, gw - sw) : Math.min(0, gw + sw);
               return (
               <tr key={`${group.model}-${group.type}`} className="border-b border-slate-200">
-                <td className="py-4 px-2 text-slate-500">{idx + 1}</td>
+                <td className="py-4 px-2 text-slate-500 dark:text-slate-400">{idx + 1}</td>
                 <td className="py-4 px-2 font-bold text-slate-800">{group.model}</td>
                 <td className="py-4 px-2 text-slate-600">{group.type}</td>
                 <td className="py-4 px-2 font-medium text-center text-slate-700">{group.qty}</td>
                 <td className="py-4 px-2 font-medium text-right text-slate-700">{gw.toFixed(2)}</td>
-                <td className="py-4 px-2 text-right text-slate-500">{sw > 0 ? sw.toFixed(2) : '-'}</td>
+                <td className="py-4 px-2 text-right text-slate-500 dark:text-slate-400">{sw > 0 ? sw.toFixed(2) : '-'}</td>
                 <td className="py-4 px-2 font-medium text-right text-slate-900">{nw.toFixed(2)}</td>
               </tr>
               );
@@ -110,7 +110,7 @@ const InvoicePrintLayout: React.FC = () => {
         </div>
 
         {/* Footer */}
-        <div className="mt-20 pt-8 border-t border-slate-200 text-center text-sm text-slate-500">
+        <div className="mt-20 pt-8 border-t border-slate-200 text-center text-sm text-slate-500 dark:text-slate-400">
           <p>Thank you for your business!</p>
           {(user?.shopEmail || user?.shopPhone) && (
             <p className="mt-1">

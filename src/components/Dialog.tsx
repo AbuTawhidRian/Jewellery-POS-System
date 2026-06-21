@@ -67,7 +67,7 @@ const Dialog: React.FC<DialogProps> = ({
           </h3>
           <button 
             onClick={onCancel}
-            className="text-slate-500 hover:text-slate-700 dark:text-slate-300 transition-colors"
+            className="text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:text-slate-300 transition-colors"
           >
             <XCircle className="w-5 h-5" />
           </button>

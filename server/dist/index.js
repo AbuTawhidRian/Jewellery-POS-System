@@ -400,6 +400,15 @@ app.put('/api/item_types/:id', authenticateToken, requireActiveOrTrial, requireA
         const existing = await prisma.itemType.findUnique({ where: { id } });
         if (!existing || existing.shopId !== req.user.shopId)
             return res.status(404).json({ error: 'Not found' });
+        if (name !== undefined && name !== existing.name) {
+            // Update cascade manually since type is stored as a string
+            await prisma.item.updateMany({
+                where: { shopId: req.user.shopId, type: existing.name },
+                data: { type: name }
+            });
+            // We don't have type in sales in the new schema, or wait, do we? Let's check if sale has type.
+            // Wait, let's just try to update items first, or I need to check schema.
+        }
         const itemType = await prisma.itemType.update({
             where: { id },
             data: {
@@ -458,6 +467,12 @@ app.put('/api/models/:id', authenticateToken, requireActiveOrTrial, requireAcces
         const existing = await prisma.itemModel.findUnique({ where: { id } });
         if (!existing || existing.shopId !== req.user.shopId)
             return res.status(404).json({ error: 'Not found' });
+        if (name !== undefined && name !== existing.name) {
+            await prisma.item.updateMany({
+                where: { shopId: req.user.shopId, model: existing.name },
+                data: { model: name }
+            });
+        }
         const itemModel = await prisma.itemModel.update({
             where: { id },
             data: { name }

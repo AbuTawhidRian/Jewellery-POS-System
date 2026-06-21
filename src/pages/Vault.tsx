@@ -169,7 +169,7 @@ const Vault: React.FC = () => {
                     {isTypeDropdownOpen && (
                       <div className="absolute z-50 w-full mt-1 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg shadow-xl max-h-60 overflow-y-auto">
                         {itemTypes.filter(t => t.name.toLowerCase().includes(typeSearch.toLowerCase())).length === 0 ? (
-                          <div className="p-3 text-slate-500 text-sm text-center">No matching types.</div>
+                          <div className="p-3 text-slate-500 dark:text-slate-400 text-sm text-center">No matching types.</div>
                         ) : (
                           itemTypes
                             .filter(t => t.name.toLowerCase().includes(typeSearch.toLowerCase()))
@@ -182,7 +182,7 @@ const Vault: React.FC = () => {
                                   setTypeSearch(t.name);
                                   setIsTypeDropdownOpen(false);
                                 }}
-                                className="w-full text-left px-4 py-3 text-sm text-slate-800 dark:text-slate-200 hover:bg-slate-100 dark:bg-slate-800 transition-colors border-b border-slate-200 dark:border-slate-800/50 last:border-0"
+                                className="w-full text-left px-4 py-3 text-sm text-slate-800 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors border-b border-slate-200 dark:border-slate-800/50 last:border-0"
                               >
                                 {t.name}
                               </button>
@@ -223,7 +223,7 @@ const Vault: React.FC = () => {
                     {isModelDropdownOpen && (
                       <div className="absolute z-50 w-full mt-1 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg shadow-xl max-h-60 overflow-y-auto">
                         {models.filter(d => d.name.toLowerCase().includes(modelSearch.toLowerCase())).length === 0 ? (
-                          <div className="p-3 text-slate-500 text-sm text-center">No matching models.</div>
+                          <div className="p-3 text-slate-500 dark:text-slate-400 text-sm text-center">No matching models.</div>
                         ) : (
                           models
                             .filter(d => d.name.toLowerCase().includes(modelSearch.toLowerCase()))
@@ -236,7 +236,7 @@ const Vault: React.FC = () => {
                                   setModelSearch(d.name);
                                   setIsModelDropdownOpen(false);
                                 }}
-                                className="w-full text-left px-4 py-3 text-sm text-slate-800 dark:text-slate-200 hover:bg-slate-100 dark:bg-slate-800 transition-colors border-b border-slate-200 dark:border-slate-800/50 last:border-0"
+                                className="w-full text-left px-4 py-3 text-sm text-slate-800 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors border-b border-slate-200 dark:border-slate-800/50 last:border-0"
                               >
                                 {d.name}
                               </button>
@@ -315,7 +315,7 @@ const Vault: React.FC = () => {
               <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">Active Stock ({activeStock.length})</h2>
               
               <div className="relative w-full sm:w-64">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 dark:text-slate-400" />
                 <input 
                   type="text" 
                   placeholder="Search barcode or type..."
@@ -343,7 +343,7 @@ const Vault: React.FC = () => {
                   <tbody className="text-sm">
                     {filteredStock.length === 0 ? (
                       <tr>
-                        <td colSpan={7} className="py-8 text-center text-slate-500">
+                        <td colSpan={7} className="py-8 text-center text-slate-500 dark:text-slate-400">
                           No items found in active stock.
                         </td>
                       </tr>
@@ -449,16 +449,16 @@ const Vault: React.FC = () => {
               </h3>
               <button 
                 onClick={() => setIsManageTypesOpen(false)}
-                className="text-slate-500 hover:text-slate-700 dark:text-slate-300 transition-colors"
+                className="text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:text-slate-300 transition-colors"
               >
                 <XCircle className="w-6 h-6" />
               </button>
             </div>
             
-            <div className="p-6 overflow-y-auto flex-1">
+            <div className="p-6 overflow-y-auto overflow-x-hidden flex-1">
               <div className="space-y-2 mb-6">
                 {itemTypes.length === 0 ? (
-                  <p className="text-slate-500 text-sm text-center py-4">No item types found.</p>
+                  <p className="text-slate-500 dark:text-slate-400 text-sm text-center py-4">No item types found.</p>
                 ) : (
                   itemTypes.map(t => (
                     <div key={t.id} className="flex justify-between items-center bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-3">
@@ -484,7 +484,7 @@ const Vault: React.FC = () => {
                       ) : (
                         <div className="flex flex-1 justify-between mr-4">
                           <span className="text-slate-800 dark:text-slate-200 font-medium">{t.name}</span>
-                          <span className="text-slate-500 text-sm">Purity: {t.purity ?? 1.0}</span>
+                          <span className="text-slate-500 dark:text-slate-400 text-sm">Purity: {t.purity ?? 1.0}</span>
                         </div>
                       )}
                       
@@ -493,7 +493,7 @@ const Vault: React.FC = () => {
                           <>
                             <button
                               onClick={async () => {
-                                if (!editingTypeName.trim() || editingTypeName === t.name) {
+                                if (!editingTypeName.trim() || (editingTypeName === t.name && parseFloat(editingTypePurity) === (t.purity ?? 1.0))) {
                                   setEditingTypeId(null);
                                   return;
                                 }
@@ -510,7 +510,7 @@ const Vault: React.FC = () => {
                             </button>
                             <button
                               onClick={() => setEditingTypeId(null)}
-                              className="p-2 text-slate-500 hover:text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:bg-slate-800 rounded-lg transition-colors"
+                              className="p-2 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
                             >
                               <XCircle className="w-4 h-4" />
                             </button>
@@ -523,7 +523,7 @@ const Vault: React.FC = () => {
                                 setEditingTypeName(t.name);
                                 setEditingTypePurity((t.purity ?? 1.0).toString());
                               }}
-                              className="p-2 text-slate-500 hover:text-blue-400 hover:bg-blue-400/10 rounded-lg transition-colors"
+                              className="p-2 text-slate-500 dark:text-slate-400 hover:text-blue-400 hover:bg-blue-400/10 rounded-lg transition-colors"
                               title="Edit type"
                             >
                               <Settings className="w-4 h-4" />
@@ -555,7 +555,7 @@ const Vault: React.FC = () => {
                                   }
                                 });
                               }}
-                              className="p-2 text-slate-500 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors"
+                              className="p-2 text-slate-500 dark:text-slate-400 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors"
                               title="Delete type"
                             >
                               <Trash2 className="w-4 h-4" />
@@ -600,7 +600,7 @@ const Vault: React.FC = () => {
                       }
                     }}
                     disabled={!newTypeName.trim()}
-                    className="bg-gold-500 hover:bg-gold-400 disabled:bg-slate-100 dark:bg-slate-800 disabled:text-slate-500 text-slate-950 font-bold px-4 rounded-xl transition-colors shrink-0"
+                    className="bg-gold-500 hover:bg-gold-400 disabled:bg-slate-200 dark:disabled:bg-slate-800 disabled:text-slate-400 dark:disabled:text-slate-500 dark:text-slate-400 text-slate-950 font-bold px-4 rounded-xl transition-colors shrink-0"
                   >
                     Add
                   </button>
@@ -622,16 +622,16 @@ const Vault: React.FC = () => {
               </h3>
               <button 
                 onClick={() => setIsManageDescOpen(false)}
-                className="text-slate-500 hover:text-slate-700 dark:text-slate-300 transition-colors"
+                className="text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:text-slate-300 transition-colors"
               >
                 <XCircle className="w-6 h-6" />
               </button>
             </div>
             
-            <div className="p-6 overflow-y-auto flex-1">
+            <div className="p-6 overflow-y-auto overflow-x-hidden flex-1">
               <div className="space-y-2 mb-6">
                 {models.length === 0 ? (
-                  <p className="text-slate-500 text-sm text-center py-4">No models found.</p>
+                  <p className="text-slate-500 dark:text-slate-400 text-sm text-center py-4">No models found.</p>
                 ) : (
                   models.map(d => (
                     <div key={d.id} className="flex justify-between items-center bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-3">
@@ -669,7 +669,7 @@ const Vault: React.FC = () => {
                             </button>
                             <button
                               onClick={() => setEditingDescId(null)}
-                              className="p-2 text-slate-500 hover:text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:bg-slate-800 rounded-lg transition-colors"
+                              className="p-2 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
                             >
                               <XCircle className="w-4 h-4" />
                             </button>
@@ -681,7 +681,7 @@ const Vault: React.FC = () => {
                                 setEditingDescId(d.id);
                                 setEditingModelName(d.name);
                               }}
-                              className="p-2 text-slate-500 hover:text-blue-400 hover:bg-blue-400/10 rounded-lg transition-colors"
+                              className="p-2 text-slate-500 dark:text-slate-400 hover:text-blue-400 hover:bg-blue-400/10 rounded-lg transition-colors"
                               title="Edit model"
                             >
                               <Settings className="w-4 h-4" />
@@ -713,7 +713,7 @@ const Vault: React.FC = () => {
                                   }
                                 });
                               }}
-                              className="p-2 text-slate-500 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors"
+                              className="p-2 text-slate-500 dark:text-slate-400 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors"
                               title="Delete model"
                             >
                               <Trash2 className="w-4 h-4" />
@@ -749,7 +749,7 @@ const Vault: React.FC = () => {
                       }
                     }}
                     disabled={!newModelName.trim()}
-                    className="bg-gold-500 hover:bg-gold-400 disabled:bg-slate-100 dark:bg-slate-800 disabled:text-slate-500 text-slate-950 font-bold px-4 rounded-xl transition-colors shrink-0"
+                    className="bg-gold-500 hover:bg-gold-400 disabled:bg-slate-200 dark:disabled:bg-slate-800 disabled:text-slate-400 dark:disabled:text-slate-500 dark:text-slate-400 text-slate-950 font-bold px-4 rounded-xl transition-colors shrink-0"
                   >
                     Add
                   </button>
@@ -771,7 +771,7 @@ const Vault: React.FC = () => {
               </h3>
               <button 
                 onClick={() => setIsEditItemModalOpen(false)}
-                className="text-slate-500 hover:text-slate-700 dark:text-slate-300 transition-colors"
+                className="text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:text-slate-300 transition-colors"
               >
                 <XCircle className="w-6 h-6" />
               </button>
@@ -833,8 +833,8 @@ const Vault: React.FC = () => {
                     const res = await editItem(editingItem.id, {
                       type: editingItem.type,
                       model: editingItem.model,
-                      weight: editingItem.weight as unknown as number,
-                      stone_weight: editingItem.stone_weight as unknown as number
+                      weight: parseFloat(editingItem.weight as string) || 0,
+                      stone_weight: editingItem.stone_weight ? parseFloat(editingItem.stone_weight as string) : 0
                     });
                     if (res.success) {
                       setIsEditItemModalOpen(false);

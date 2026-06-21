@@ -92,7 +92,7 @@ const Dashboard: React.FC = () => {
             Stock by Type
           </h2>
           {Object.keys(typeWiseStock).length === 0 ? (
-            <p className="text-slate-500 text-sm py-4">No items in stock.</p>
+            <p className="text-slate-500 dark:text-slate-400 text-sm py-4">No items in stock.</p>
           ) : (
             <div className="space-y-3">
               {Object.entries(typeWiseStock).map(([type, data]) => (
@@ -115,7 +115,7 @@ const Dashboard: React.FC = () => {
             Sales by Type
           </h2>
           {Object.keys(typeWiseSales).length === 0 ? (
-            <p className="text-slate-500 text-sm py-4">No sales recorded.</p>
+            <p className="text-slate-500 dark:text-slate-400 text-sm py-4">No sales recorded.</p>
           ) : (
             <div className="space-y-3">
               {Object.entries(typeWiseSales).map(([type, data]) => (
@@ -138,7 +138,7 @@ const Dashboard: React.FC = () => {
             Top Selling Models
           </h2>
           {topModels.length === 0 ? (
-            <p className="text-slate-500 text-sm py-4">No model sales recorded.</p>
+            <p className="text-slate-500 dark:text-slate-400 text-sm py-4">No model sales recorded.</p>
           ) : (
             <div className="space-y-3">
               {topModels.map(([model, data], index) => (
@@ -168,7 +168,7 @@ const Dashboard: React.FC = () => {
             Recent Sales
           </h2>
           {sales.length === 0 ? (
-            <p className="text-slate-500 text-center py-8">No sales recorded yet.</p>
+            <p className="text-slate-500 dark:text-slate-400 text-center py-8">No sales recorded yet.</p>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse min-w-[600px]">

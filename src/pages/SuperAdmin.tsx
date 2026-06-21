@@ -88,9 +88,9 @@ const SuperAdmin: React.FC = () => {
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={7} className="p-8 text-center text-slate-500">Loading...</td></tr>
+                <tr><td colSpan={7} className="p-8 text-center text-slate-500 dark:text-slate-400">Loading...</td></tr>
               ) : shops.length === 0 ? (
-                <tr><td colSpan={7} className="p-8 text-center text-slate-500">No shops found.</td></tr>
+                <tr><td colSpan={7} className="p-8 text-center text-slate-500 dark:text-slate-400">No shops found.</td></tr>
               ) : (
                 shops.map((shop) => (
                   <tr key={shop.id} className="border-b border-slate-200 dark:border-slate-800/50 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">

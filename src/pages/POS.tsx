@@ -445,7 +445,7 @@ const POS: React.FC = () => {
             onClick={() => { setIsReturnMode(false); setIsCashMode(false); setIsGoldMode(false); setCart([]); setTotalMakingCharge(''); }}
             className={clsx(
               "px-6 py-2.5 rounded-lg text-sm font-bold transition-all", 
-              !isReturnMode && !isCashMode && !isGoldMode ? "bg-white dark:bg-slate-950 text-gold-500 shadow-sm" : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
+              !isReturnMode && !isCashMode && !isGoldMode ? "bg-white dark:bg-slate-950 text-gold-500 shadow-sm" : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300"
             )}
           >
             Sale Mode
@@ -454,7 +454,7 @@ const POS: React.FC = () => {
             onClick={() => { setIsReturnMode(true); setIsCashMode(false); setIsGoldMode(false); setCart([]); setTotalMakingCharge(''); }}
             className={clsx(
               "px-6 py-2.5 rounded-lg text-sm font-bold transition-all border-r border-slate-300 dark:border-slate-700 rounded-r-none", 
-              isReturnMode && !isCashMode && !isGoldMode ? "bg-white dark:bg-slate-950 text-orange-500 shadow-sm" : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
+              isReturnMode && !isCashMode && !isGoldMode ? "bg-white dark:bg-slate-950 text-orange-500 shadow-sm" : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300"
             )}
           >
             Return Mode
@@ -463,7 +463,7 @@ const POS: React.FC = () => {
             onClick={() => { setIsCashMode(true); setIsGoldMode(false); }}
             className={clsx(
               "px-6 py-2.5 rounded-lg text-sm font-bold transition-all border-r border-slate-300 dark:border-slate-700 rounded-none", 
-              isCashMode ? "bg-white dark:bg-slate-950 text-emerald-600 shadow-sm" : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
+              isCashMode ? "bg-white dark:bg-slate-950 text-emerald-600 shadow-sm" : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300"
             )}
           >
             Cash
@@ -472,7 +472,7 @@ const POS: React.FC = () => {
             onClick={() => { setIsGoldMode(true); setIsCashMode(false); }}
             className={clsx(
               "px-6 py-2.5 rounded-lg text-sm font-bold transition-all rounded-l-none", 
-              isGoldMode ? "bg-white dark:bg-slate-950 text-amber-500 shadow-sm" : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
+              isGoldMode ? "bg-white dark:bg-slate-950 text-amber-500 shadow-sm" : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300"
             )}
           >
             Receive Gold
@@ -539,7 +539,7 @@ const POS: React.FC = () => {
               {hasPermission('manage_buyers') && (
                 <button
                   onClick={() => setIsBuyerModalOpen(true)}
-                  className="bg-slate-50 dark:bg-slate-900 hover:bg-slate-100 dark:bg-slate-800 border-2 border-slate-300 dark:border-slate-700 hover:border-gold-500 text-gold-500 rounded-xl px-4 flex flex-col items-center justify-center transition-all"
+                  className="bg-slate-50 dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 border-2 border-slate-300 dark:border-slate-700 hover:border-gold-500 text-gold-500 rounded-xl px-4 flex flex-col items-center justify-center transition-all"
                   title="Manage Buyers"
                 >
                   <Building2 className="w-6 h-6" />
@@ -588,7 +588,7 @@ const POS: React.FC = () => {
                   placeholder="WAITING..."
                   autoComplete="off"
                 />
-                <p className="text-center text-slate-500 mt-4 text-sm font-medium">
+                <p className="text-center text-slate-500 dark:text-slate-400 mt-4 text-sm font-medium">
                   Type or scan with a physical scanner, then press ENTER
                 </p>
               </div>
@@ -622,7 +622,7 @@ const POS: React.FC = () => {
 
           <div className="flex-1 overflow-y-auto p-0 md:p-2">
             {cart.length === 0 ? (
-              <div className="h-full flex flex-col items-center justify-center text-slate-500 p-4">
+              <div className="h-full flex flex-col items-center justify-center text-slate-500 dark:text-slate-400 p-4">
                 <ShoppingCart className="w-16 h-16 mb-4 opacity-20" />
                 <p className="text-center">Scan items to add them to the cart.</p>
               </div>
@@ -654,7 +654,7 @@ const POS: React.FC = () => {
                         <td className="py-3 px-4 text-center">
                           <button 
                             onClick={() => removeFromCart(item.barcode)}
-                            className="p-2 text-slate-500 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors"
+                            className="p-2 text-slate-500 dark:text-slate-400 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors"
                             title="Remove item"
                           >
                             <Trash2 className="w-4 h-4" />
@@ -713,7 +713,7 @@ const POS: React.FC = () => {
               onClick={handleCheckout}
               disabled={cart.length === 0}
               className={clsx(
-                "w-full disabled:bg-slate-100 dark:bg-slate-800 disabled:text-slate-500 text-slate-950 font-bold py-4 px-4 rounded-xl transition-all disabled:shadow-none text-lg flex justify-center items-center gap-2",
+                "w-full disabled:bg-slate-200 dark:disabled:bg-slate-800 disabled:text-slate-400 dark:disabled:text-slate-500 dark:text-slate-400 text-slate-950 font-bold py-4 px-4 rounded-xl transition-all disabled:shadow-none text-lg flex justify-center items-center gap-2",
                 isReturnMode ? "bg-orange-500 hover:bg-orange-400 shadow-[0_0_15px_rgba(249,115,22,0.3)]" : "bg-gold-500 hover:bg-gold-400 shadow-[0_0_15px_rgba(212,175,55,0.3)]"
               )}
             >
@@ -803,7 +803,7 @@ const POS: React.FC = () => {
                     if (filteredPayments.length === 0) {
                       return (
                         <tr>
-                          <td colSpan={6} className="py-12 text-center text-slate-500 bg-white dark:bg-slate-950">
+                          <td colSpan={6} className="py-12 text-center text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-950">
                             No cash transactions found.
                           </td>
                         </tr>
@@ -960,7 +960,7 @@ const POS: React.FC = () => {
                     if (filteredReceipts.length === 0) {
                       return (
                         <tr>
-                          <td colSpan={7} className="py-12 text-center text-slate-500 bg-white dark:bg-slate-950">
+                          <td colSpan={7} className="py-12 text-center text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-950">
                             No metal receipts found.
                           </td>
                         </tr>
@@ -976,7 +976,7 @@ const POS: React.FC = () => {
                           </td>
                           <td className="py-3 px-4 font-medium">{buyer?.name || 'Unknown'}</td>
                           <td className="py-3 px-4 text-right">{m.weight.toFixed(2)}</td>
-                          <td className="py-3 px-4 text-right text-slate-500">{(m.purity * 1000).toFixed(0)}</td>
+                          <td className="py-3 px-4 text-right text-slate-500 dark:text-slate-400">{(m.purity * 1000).toFixed(0)}</td>
                           <td className="py-3 px-4 text-right font-bold text-amber-500">{(m.weight * m.purity).toFixed(3)}</td>
                           <td className="py-3 px-4 max-w-[150px] truncate">{m.notes || '-'}</td>
                           <td className="py-3 px-4 text-center">
@@ -1044,7 +1044,7 @@ const POS: React.FC = () => {
               </h3>
               <button 
                 onClick={() => setIsBuyerModalOpen(false)}
-                className="text-slate-500 hover:text-slate-700 dark:text-slate-300 transition-colors"
+                className="text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:text-slate-300 transition-colors"
               >
                 <XCircle className="w-6 h-6" />
               </button>
@@ -1053,7 +1053,7 @@ const POS: React.FC = () => {
             <div className="p-6 overflow-y-auto flex-1">
               <div className="space-y-2 mb-6">
                 {buyers.length === 0 ? (
-                  <p className="text-slate-500 text-sm text-center py-4">No buyers found.</p>
+                  <p className="text-slate-500 dark:text-slate-400 text-sm text-center py-4">No buyers found.</p>
                 ) : (
                   buyers.map(b => (
                     <div key={b.id} className="flex justify-between items-center bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-3">
@@ -1090,7 +1090,7 @@ const POS: React.FC = () => {
                             </button>
                             <button
                               onClick={() => setEditingBuyerId(null)}
-                              className="p-2 text-slate-500 hover:text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:bg-slate-800 rounded-lg transition-colors"
+                              className="p-2 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
                             >
                               <XCircle className="w-4 h-4" />
                             </button>
@@ -1102,7 +1102,7 @@ const POS: React.FC = () => {
                                 setEditingBuyerId(b.id);
                                 setEditingBuyerName(b.name);
                               }}
-                              className="p-2 text-slate-500 hover:text-blue-400 hover:bg-blue-400/10 rounded-lg transition-colors"
+                              className="p-2 text-slate-500 dark:text-slate-400 hover:text-blue-400 hover:bg-blue-400/10 rounded-lg transition-colors"
                               title="Edit buyer"
                             >
                               <Settings className="w-4 h-4" />
@@ -1133,7 +1133,7 @@ const POS: React.FC = () => {
                                   }
                                 });
                               }}
-                              className="p-2 text-slate-500 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors"
+                              className="p-2 text-slate-500 dark:text-slate-400 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors"
                               title="Delete buyer"
                             >
                               <Trash2 className="w-4 h-4" />
@@ -1171,7 +1171,7 @@ const POS: React.FC = () => {
                       }
                     }}
                     disabled={isAddingBuyer || !newBuyerName.trim()}
-                    className="bg-gold-500 hover:bg-gold-400 disabled:bg-slate-100 dark:bg-slate-800 disabled:text-slate-500 text-slate-950 font-bold px-4 rounded-xl transition-colors shrink-0"
+                    className="bg-gold-500 hover:bg-gold-400 disabled:bg-slate-200 dark:disabled:bg-slate-800 disabled:text-slate-400 dark:disabled:text-slate-500 dark:text-slate-400 text-slate-950 font-bold px-4 rounded-xl transition-colors shrink-0"
                   >
                     {isAddingBuyer ? '...' : 'Add'}
                   </button>
@@ -1244,7 +1244,7 @@ const POS: React.FC = () => {
                       <div className="absolute top-full left-0 mt-1 w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg shadow-xl z-50 overflow-hidden flex flex-col">
                         <div className="max-h-48 overflow-y-auto py-1">
                           {buyers.filter(b => b.name.toLowerCase().includes(paymentBuyerSearch.toLowerCase())).length === 0 ? (
-                            <div className="p-3 text-slate-500 text-sm text-center">No matching accounts.</div>
+                            <div className="p-3 text-slate-500 dark:text-slate-400 text-sm text-center">No matching accounts.</div>
                           ) : (
                             buyers.filter(b => b.name.toLowerCase().includes(paymentBuyerSearch.toLowerCase())).map(b => (
                               <button
@@ -1362,7 +1362,7 @@ const POS: React.FC = () => {
                       <div className="absolute top-full left-0 mt-1 w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg shadow-xl z-50 overflow-hidden flex flex-col">
                         <div className="max-h-48 overflow-y-auto py-1">
                           {buyers.filter(b => b.name.toLowerCase().includes(metalBuyerSearch.toLowerCase())).length === 0 ? (
-                            <div className="p-3 text-slate-500 text-sm text-center">No matching accounts.</div>
+                            <div className="p-3 text-slate-500 dark:text-slate-400 text-sm text-center">No matching accounts.</div>
                           ) : (
                             buyers.filter(b => b.name.toLowerCase().includes(metalBuyerSearch.toLowerCase())).map(b => (
                               <button

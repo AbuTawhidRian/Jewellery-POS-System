@@ -296,7 +296,7 @@ const Ledger: React.FC = () => {
                    filterDateRange === 'month' ? 'This Month' : 'Custom Range'}
                 </span>
               </div>
-              <ChevronDown className="w-4 h-4 text-slate-500 shrink-0" />
+              <ChevronDown className="w-4 h-4 text-slate-500 dark:text-slate-400 shrink-0" />
             </button>
             
             {dateDropdownOpen && (
@@ -328,7 +328,7 @@ const Ledger: React.FC = () => {
                 onChange={(e) => setCustomStartDate(e.target.value)}
                 className="bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg px-2 py-2 text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:border-gold-500"
               />
-              <span className="text-slate-500">-</span>
+              <span className="text-slate-500 dark:text-slate-400">-</span>
               <input 
                 type="date" 
                 value={customEndDate}
@@ -376,7 +376,7 @@ const Ledger: React.FC = () => {
             <tbody className="text-sm">
               {transactions.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="py-12 text-center text-slate-500">
+                  <td colSpan={7} className="py-12 text-center text-slate-500 dark:text-slate-400">
                     No transactions recorded for this filter.
                   </td>
                 </tr>
@@ -390,12 +390,12 @@ const Ledger: React.FC = () => {
                         onClick={() => setExpandedTx(isExpanded ? null : tx.date)}
                         className={`border-b border-slate-200 dark:border-slate-800/50 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer transition-colors ${isReturn ? 'bg-red-50/30 dark:bg-red-900/10' : ''}`}
                       >
-                        <td className="py-4 px-4 text-slate-500">
+                        <td className="py-4 px-4 text-slate-500 dark:text-slate-400">
                           {isExpanded ? <ChevronDown className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
                         </td>
                         <td className="py-4 px-4 text-slate-700 dark:text-slate-300">
                           {format(parseISO(tx.date), 'MMM dd, yyyy')} <br/>
-                          <span className="text-xs text-slate-500">{format(parseISO(tx.date), 'hh:mm:ss a')}</span>
+                          <span className="text-xs text-slate-500 dark:text-slate-400">{format(parseISO(tx.date), 'hh:mm:ss a')}</span>
                         </td>
                         <td className="py-4 px-4 font-bold text-slate-800 dark:text-slate-200">
                           {tx.buyerName} {isReturn && <span className="ml-2 text-[10px] font-bold text-red-500 px-2 py-0.5 rounded-full bg-red-100 dark:bg-red-900/30">RETURN</span>}
@@ -431,12 +431,12 @@ const Ledger: React.FC = () => {
                         <tr className="bg-slate-50 dark:bg-slate-900/30">
                           <td colSpan={7} className="p-0 border-b-4 border-slate-100 dark:border-slate-900">
                             <div className="bg-slate-50 dark:bg-slate-900/50 p-6 animate-in slide-in-from-top-2 duration-200">
-                              <h4 className={`text-xs font-bold uppercase tracking-wider mb-2 ${isReturn ? 'text-red-500' : 'text-slate-500'}`}>
+                              <h4 className={`text-xs font-bold uppercase tracking-wider mb-2 ${isReturn ? 'text-red-500' : 'text-slate-500 dark:text-slate-400'}`}>
                                 {isReturn ? 'Returned Items' : 'Transaction Details'}
                               </h4>
                               <table className="w-full text-left border-collapse text-xs">
                                 <thead>
-                                  <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-500">
+                                  <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400">
                                     <th className="pb-2 px-2 font-medium text-center w-12">Qty</th>
                                     <th className="pb-2 px-2 font-medium">Model</th>
                                     <th className="pb-2 px-2 font-medium">Type</th>
@@ -478,7 +478,7 @@ const Ledger: React.FC = () => {
                                         <td className="py-2 px-2 text-slate-700 dark:text-slate-300">{group.model}</td>
                                         <td className="py-2 px-2 text-slate-600 dark:text-slate-400">{group.type}</td>
                                         <td className="py-2 px-2 text-right text-slate-600 dark:text-slate-400">{gw.toFixed(2)}g</td>
-                                        <td className="py-2 px-2 text-right text-slate-500">{sw > 0 ? sw.toFixed(2) + 'g' : '-'}</td>
+                                        <td className="py-2 px-2 text-right text-slate-500 dark:text-slate-400">{sw > 0 ? sw.toFixed(2) + 'g' : '-'}</td>
                                         <td className="py-2 px-2 text-right font-medium text-slate-700 dark:text-slate-300">{nw.toFixed(2)}g</td>
                                         <td className="py-2 px-2 text-right font-medium text-gold-500">{group.pure_weight.toFixed(2)}g</td>
                                       </tr>

@@ -333,13 +333,13 @@ export default function Landing() {
               </div>
             </div>
 
-            <div className="mt-4 text-center text-[11px] font-bold text-[#94A3B8] dark:text-slate-500">
+            <div className="mt-4 text-center text-[11px] font-bold text-[#94A3B8] dark:text-slate-500 dark:text-slate-400">
               <span className="flex items-center justify-center gap-2">
-                <Check className="w-3 h-3 text-[#94A3B8] dark:text-slate-500" strokeWidth={3} /> 14-day free trial 
+                <Check className="w-3 h-3 text-[#94A3B8] dark:text-slate-500 dark:text-slate-400" strokeWidth={3} /> 14-day free trial 
                 <span className="text-[#CBD5E1] dark:text-slate-600">•</span> 
-                <Check className="w-3 h-3 text-[#94A3B8] dark:text-slate-500" strokeWidth={3} /> Cancel anytime 
+                <Check className="w-3 h-3 text-[#94A3B8] dark:text-slate-500 dark:text-slate-400" strokeWidth={3} /> Cancel anytime 
                 <span className="text-[#CBD5E1] dark:text-slate-600">•</span> 
-                <Check className="w-3 h-3 text-[#94A3B8] dark:text-slate-500" strokeWidth={3} /> No hidden fees
+                <Check className="w-3 h-3 text-[#94A3B8] dark:text-slate-500 dark:text-slate-400" strokeWidth={3} /> No hidden fees
               </span>
             </div>
 

@@ -30,7 +30,7 @@ const StatementPrintLayout: React.FC = () => {
               <Diamond className="w-10 h-10 text-slate-800" />
               <div>
                 <h1 className="text-3xl font-bold tracking-tight text-slate-900">{user?.shopName || 'Jewellery Shop'}</h1>
-                <p className="text-sm text-slate-500 mt-1">Wholesale & Retail Trading</p>
+                <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Wholesale & Retail Trading</p>
               </div>
             </div>
             <div className="text-right">
@@ -97,7 +97,7 @@ const StatementPrintLayout: React.FC = () => {
                   if (allGoldEntries.length === 0) {
                     return (
                       <tr>
-                        <td colSpan={9} className="py-8 text-center text-slate-500">No gold transactions recorded.</td>
+                        <td colSpan={9} className="py-8 text-center text-slate-500 dark:text-slate-400">No gold transactions recorded.</td>
                       </tr>
                     );
                   }
@@ -112,14 +112,14 @@ const StatementPrintLayout: React.FC = () => {
                           <td className="py-1.5 px-2">
                             <div className="font-bold text-amber-600">Metal Receipt</div>
                             {entry.notes && (
-                              <div className="text-[10px] text-slate-500 font-normal mt-0.5 max-w-[150px] truncate">
+                              <div className="text-[10px] text-slate-500 dark:text-slate-400 font-normal mt-0.5 max-w-[150px] truncate">
                                 {entry.notes}
                               </div>
                             )}
                           </td>
                           <td className="py-1.5 px-2 font-medium text-center text-slate-700">-</td>
                           <td className="py-1.5 px-2 font-medium text-right text-slate-900">{entry.weight.toFixed(2)}</td>
-                          <td className="py-1.5 px-2 font-medium text-right text-slate-500">-</td>
+                          <td className="py-1.5 px-2 font-medium text-right text-slate-500 dark:text-slate-400">-</td>
                           <td className="py-1.5 px-2 font-medium text-right text-slate-900">{entry.weight.toFixed(2)}</td>
                           <td className="py-1.5 px-2 font-medium text-right text-slate-900">-</td>
                           <td className="py-1.5 px-2 font-medium text-right text-emerald-600">{pureRecv.toFixed(2)}</td>
@@ -138,14 +138,14 @@ const StatementPrintLayout: React.FC = () => {
                               {entry.type === 'Return' ? 'Sales Return' : 'Sale'}
                             </div>
                             {entry.items && entry.items.length > 0 && (
-                              <div className="text-[10px] text-slate-500 font-normal mt-0.5">
+                              <div className="text-[10px] text-slate-500 dark:text-slate-400 font-normal mt-0.5">
                                 {Array.from(new Set(entry.items.map((i: any) => i.type))).join(', ')}
                               </div>
                             )}
                           </td>
                           <td className="py-1.5 px-2 font-medium text-center text-slate-700">{entry.totalItems}</td>
                           <td className="py-1.5 px-2 font-medium text-right text-slate-900">{entry.grossWeight?.toFixed(2) || '0.00'}</td>
-                          <td className="py-1.5 px-2 font-medium text-right text-slate-500">{entry.stoneWeight > 0 ? entry.stoneWeight.toFixed(2) : '-'}</td>
+                          <td className="py-1.5 px-2 font-medium text-right text-slate-500 dark:text-slate-400">{entry.stoneWeight > 0 ? entry.stoneWeight.toFixed(2) : '-'}</td>
                           <td className="py-1.5 px-2 font-medium text-right text-slate-900">{entry.netWeight?.toFixed(2) || '0.00'}</td>
                           <td className="py-1.5 px-2 font-medium text-right text-red-600">
                             {entry.pureWeight > 0 ? entry.pureWeight.toFixed(2) : '-'}
@@ -202,7 +202,7 @@ const StatementPrintLayout: React.FC = () => {
                   if (cashEntries.length === 0) {
                     return (
                       <tr>
-                        <td colSpan={6} className="py-8 text-center text-slate-500">No cash transactions recorded.</td>
+                        <td colSpan={6} className="py-8 text-center text-slate-500 dark:text-slate-400">No cash transactions recorded.</td>
                       </tr>
                     );
                   }
@@ -273,7 +273,7 @@ const StatementPrintLayout: React.FC = () => {
           </div>
 
           {/* Footer */}
-          <div className="mt-8 pt-4 border-t border-slate-200 text-center text-xs text-slate-500">
+          <div className="mt-8 pt-4 border-t border-slate-200 text-center text-xs text-slate-500 dark:text-slate-400">
             <p>Thank you for your business!</p>
             {(user?.shopEmail || user?.shopPhone) && (
               <p className="mt-1">

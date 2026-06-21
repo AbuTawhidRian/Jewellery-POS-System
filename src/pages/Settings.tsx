@@ -259,28 +259,28 @@ const Settings: React.FC = () => {
       <div className="flex gap-4 border-b border-slate-200 dark:border-slate-800 pb-4 overflow-x-auto">
         <button 
           onClick={() => setActiveTab('company')}
-          className={`flex items-center gap-2 px-4 py-2 font-medium rounded-lg transition-colors whitespace-nowrap ${activeTab === 'company' ? 'bg-gold-500/10 text-gold-500' : 'text-slate-600 dark:text-slate-400 hover:text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:bg-slate-800/50'}`}
+          className={`flex items-center gap-2 px-4 py-2 font-medium rounded-lg transition-colors whitespace-nowrap ${activeTab === 'company' ? 'bg-gold-500/10 text-gold-500' : 'text-slate-600 dark:text-slate-400 hover:text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 dark:bg-slate-800/50'}`}
         >
           <Building2 className="w-5 h-5" />
           Company Profile
         </button>
         <button 
           onClick={() => setActiveTab('staff')}
-          className={`flex items-center gap-2 px-4 py-2 font-medium rounded-lg transition-colors whitespace-nowrap ${activeTab === 'staff' ? 'bg-gold-500/10 text-gold-500' : 'text-slate-600 dark:text-slate-400 hover:text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:bg-slate-800/50'}`}
+          className={`flex items-center gap-2 px-4 py-2 font-medium rounded-lg transition-colors whitespace-nowrap ${activeTab === 'staff' ? 'bg-gold-500/10 text-gold-500' : 'text-slate-600 dark:text-slate-400 hover:text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 dark:bg-slate-800/50'}`}
         >
           <Users className="w-5 h-5" />
           Staff Management
         </button>
         <button 
           onClick={() => setActiveTab('subscription')}
-          className={`flex items-center gap-2 px-4 py-2 font-medium rounded-lg transition-colors whitespace-nowrap ${activeTab === 'subscription' ? 'bg-gold-500/10 text-gold-500' : 'text-slate-600 dark:text-slate-400 hover:text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:bg-slate-800/50'}`}
+          className={`flex items-center gap-2 px-4 py-2 font-medium rounded-lg transition-colors whitespace-nowrap ${activeTab === 'subscription' ? 'bg-gold-500/10 text-gold-500' : 'text-slate-600 dark:text-slate-400 hover:text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 dark:bg-slate-800/50'}`}
         >
           <CreditCard className="w-5 h-5" />
           Subscription & Billing
         </button>
         <button 
           onClick={() => setActiveTab('security')}
-          className={`flex items-center gap-2 px-4 py-2 font-medium rounded-lg transition-colors whitespace-nowrap ${activeTab === 'security' ? 'bg-gold-500/10 text-gold-500' : 'text-slate-600 dark:text-slate-400 hover:text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:bg-slate-800/50'}`}
+          className={`flex items-center gap-2 px-4 py-2 font-medium rounded-lg transition-colors whitespace-nowrap ${activeTab === 'security' ? 'bg-gold-500/10 text-gold-500' : 'text-slate-600 dark:text-slate-400 hover:text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 dark:bg-slate-800/50'}`}
         >
           <Lock className="w-5 h-5" />
           Security
@@ -491,7 +491,7 @@ const Settings: React.FC = () => {
               </thead>
               <tbody>
                 {loadingStaff ? (
-                  <tr><td colSpan={4} className="p-8 text-center text-slate-500">Loading...</td></tr>
+                  <tr><td colSpan={4} className="p-8 text-center text-slate-500 dark:text-slate-400">Loading...</td></tr>
                 ) : (
                   staff.map((s) => (
                     <tr key={s.id} className="border-b border-slate-200 dark:border-slate-800/50 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
@@ -560,10 +560,10 @@ const Settings: React.FC = () => {
             
             <div className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-4 mb-6">
               <div className="space-y-2 text-sm">
-                <div className="flex justify-between"><span className="text-slate-500">Account Holder:</span> <span className="text-slate-900 dark:text-white font-medium">MUHAMMAD ABU TAWHID RIAN MUHAMMAD</span></div>
-                <div className="flex justify-between"><span className="text-slate-500">Bank Name:</span> <span className="text-slate-900 dark:text-white font-medium">Mashreq Bank</span></div>
-                <div className="flex justify-between"><span className="text-slate-500">Account Number:</span> <span className="text-slate-900 dark:text-white font-medium">019101135322</span></div>
-                <div className="flex justify-between"><span className="text-slate-500">IBAN:</span> <span className="text-slate-900 dark:text-white font-medium font-mono text-xs mt-1">AE310330000019101135322</span></div>
+                <div className="flex justify-between"><span className="text-slate-500 dark:text-slate-400">Account Holder:</span> <span className="text-slate-900 dark:text-white font-medium">MUHAMMAD ABU TAWHID RIAN MUHAMMAD</span></div>
+                <div className="flex justify-between"><span className="text-slate-500 dark:text-slate-400">Bank Name:</span> <span className="text-slate-900 dark:text-white font-medium">Mashreq Bank</span></div>
+                <div className="flex justify-between"><span className="text-slate-500 dark:text-slate-400">Account Number:</span> <span className="text-slate-900 dark:text-white font-medium">019101135322</span></div>
+                <div className="flex justify-between"><span className="text-slate-500 dark:text-slate-400">IBAN:</span> <span className="text-slate-900 dark:text-white font-medium font-mono text-xs mt-1">AE310330000019101135322</span></div>
               </div>
             </div>
 
