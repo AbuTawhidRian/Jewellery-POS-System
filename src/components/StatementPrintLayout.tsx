@@ -71,37 +71,94 @@ const StatementPrintLayout: React.FC = () => {
               <tbody className="text-sm">
                 {(() => {
                   let runningBalance = 0;
-                  // Sort transactions chronologically (oldest to newest) to calculate running balance
-                  const sortedTx = [...printStatementData.transactions].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
                   
-                  return sortedTx.map((tx, idx) => {
-                    runningBalance += tx.pureWeight;
+                  const allGoldEntries: any[] = [];
+                  
+                  printStatementData.transactions.forEach((tx: any) => {
+                    allGoldEntries.push({
+                      date: tx.date,
+                      isTx: true,
+                      ...tx
+                    });
+                  });
+                  
+                  if (printStatementData.metalReceipts) {
+                    printStatementData.metalReceipts.forEach((mr: any) => {
+                      allGoldEntries.push({
+                        date: mr.date,
+                        isMetalReceipt: true,
+                        ...mr
+                      });
+                    });
+                  }
+                  
+                  allGoldEntries.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+                  if (allGoldEntries.length === 0) {
                     return (
-                      <tr key={idx} className="border-b border-slate-100">
-                        <td className="py-1.5 px-2 text-slate-700">{format(new Date(tx.date), 'dd/MM/yyyy')}</td>
-                        <td className="py-1.5 px-2">
-                          <div className={clsx("font-bold", tx.type === 'Return' ? 'text-red-600' : 'text-slate-800')}>
-                            {tx.type === 'Return' ? 'Sales Return' : 'Sale'}
-                          </div>
-                          {tx.items && tx.items.length > 0 && (
-                            <div className="text-[10px] text-slate-500 font-normal mt-0.5">
-                              {Array.from(new Set(tx.items.map((i: any) => i.type))).join(', ')}
-                            </div>
-                          )}
-                        </td>
-                        <td className="py-1.5 px-2 font-medium text-center text-slate-700">{tx.totalItems}</td>
-                        <td className="py-1.5 px-2 font-medium text-right text-slate-900">{tx.grossWeight?.toFixed(2) || '0.00'}</td>
-                        <td className="py-1.5 px-2 font-medium text-right text-slate-500">{tx.stoneWeight > 0 ? tx.stoneWeight.toFixed(2) : '-'}</td>
-                        <td className="py-1.5 px-2 font-medium text-right text-slate-900">{tx.netWeight?.toFixed(2) || '0.00'}</td>
-                        <td className="py-1.5 px-2 font-medium text-right text-slate-900">
-                          {tx.pureWeight > 0 ? tx.pureWeight.toFixed(2) : '-'}
-                        </td>
-                        <td className="py-1.5 px-2 font-medium text-right text-slate-900">
-                          {tx.pureWeight < 0 ? Math.abs(tx.pureWeight).toFixed(2) : '-'}
-                        </td>
-                        <td className="py-1.5 px-2 font-bold text-right text-slate-900">{runningBalance.toFixed(2)}</td>
+                      <tr>
+                        <td colSpan={9} className="py-8 text-center text-slate-500">No gold transactions recorded.</td>
                       </tr>
                     );
+                  }
+
+                  return allGoldEntries.map((entry, idx) => {
+                    if (entry.isMetalReceipt) {
+                      const pureRecv = entry.weight * entry.purity;
+                      runningBalance -= pureRecv; // Receipt reduces pure balance due
+                      return (
+                        <tr key={idx} className="border-b border-slate-100">
+                          <td className="py-1.5 px-2 text-slate-700">{format(new Date(entry.date), 'dd/MM/yyyy')}</td>
+                          <td className="py-1.5 px-2">
+                            <div className="font-bold text-amber-600">Metal Receipt</div>
+                            {entry.notes && (
+                              <div className="text-[10px] text-slate-500 font-normal mt-0.5 max-w-[150px] truncate">
+                                {entry.notes}
+                              </div>
+                            )}
+                          </td>
+                          <td className="py-1.5 px-2 font-medium text-center text-slate-700">-</td>
+                          <td className="py-1.5 px-2 font-medium text-right text-slate-900">{entry.weight.toFixed(2)}</td>
+                          <td className="py-1.5 px-2 font-medium text-right text-slate-500">-</td>
+                          <td className="py-1.5 px-2 font-medium text-right text-slate-900">{entry.weight.toFixed(2)}</td>
+                          <td className="py-1.5 px-2 font-medium text-right text-slate-900">-</td>
+                          <td className="py-1.5 px-2 font-medium text-right text-emerald-600">{pureRecv.toFixed(2)}</td>
+                          <td className={`py-1.5 px-2 font-bold text-right ${runningBalance > 0 ? 'text-red-600' : 'text-emerald-600'}`}>
+                            {runningBalance > 0 ? runningBalance.toFixed(2) : runningBalance < 0 ? `(${Math.abs(runningBalance).toFixed(2)})` : '0.00'}
+                          </td>
+                        </tr>
+                      );
+                    } else {
+                      runningBalance += entry.pureWeight;
+                      return (
+                        <tr key={idx} className="border-b border-slate-100">
+                          <td className="py-1.5 px-2 text-slate-700">{format(new Date(entry.date), 'dd/MM/yyyy')}</td>
+                          <td className="py-1.5 px-2">
+                            <div className={clsx("font-bold", entry.type === 'Return' ? 'text-red-600' : 'text-slate-800')}>
+                              {entry.type === 'Return' ? 'Sales Return' : 'Sale'}
+                            </div>
+                            {entry.items && entry.items.length > 0 && (
+                              <div className="text-[10px] text-slate-500 font-normal mt-0.5">
+                                {Array.from(new Set(entry.items.map((i: any) => i.type))).join(', ')}
+                              </div>
+                            )}
+                          </td>
+                          <td className="py-1.5 px-2 font-medium text-center text-slate-700">{entry.totalItems}</td>
+                          <td className="py-1.5 px-2 font-medium text-right text-slate-900">{entry.grossWeight?.toFixed(2) || '0.00'}</td>
+                          <td className="py-1.5 px-2 font-medium text-right text-slate-500">{entry.stoneWeight > 0 ? entry.stoneWeight.toFixed(2) : '-'}</td>
+                          <td className="py-1.5 px-2 font-medium text-right text-slate-900">{entry.netWeight?.toFixed(2) || '0.00'}</td>
+                          <td className="py-1.5 px-2 font-medium text-right text-red-600">
+                            {entry.pureWeight > 0 ? entry.pureWeight.toFixed(2) : '-'}
+                          </td>
+                          <td className="py-1.5 px-2 font-medium text-right text-emerald-600">
+                            {entry.pureWeight < 0 ? Math.abs(entry.pureWeight).toFixed(2) : '-'}
+                          </td>
+                          <td className={`py-1.5 px-2 font-bold text-right ${runningBalance > 0 ? 'text-red-600' : 'text-emerald-600'}`}>
+                            {runningBalance > 0 ? runningBalance.toFixed(2) : runningBalance < 0 ? `(${Math.abs(runningBalance).toFixed(2)})` : '0.00'}
+                          </td>
+                        </tr>
+                      );
+                    }
                   });
                 })()}
               </tbody>
@@ -179,23 +236,39 @@ const StatementPrintLayout: React.FC = () => {
                 <span>Total Transactions:</span>
                 <span className="font-medium">{printStatementData.transactions.length}</span>
               </div>
-              <div className="flex justify-between items-center pt-4 border-t border-slate-200">
-                <span className="font-bold text-slate-800">Final Pure Balance:</span>
-                <span className="text-xl font-bold text-slate-900">
-                  {printStatementData.totalPureWeight?.toFixed(2) || '0.00'} g
-                </span>
-              </div>
-              <div className="flex justify-between items-center pt-2 border-t border-slate-200">
-                <span className="font-bold text-slate-800">Final Cash Balance Due:</span>
-                <span className="text-xl font-bold text-red-600">
-                  {(() => {
-                    let bal = 0;
-                    printStatementData.transactions.forEach(tx => { if(tx.makingCharge) bal += tx.makingCharge; });
-                    if(printStatementData.payments) printStatementData.payments.forEach(p => bal -= p.amount);
-                    return bal > 0 ? bal.toFixed(2) + ' AED' : bal < 0 ? `(${Math.abs(bal).toFixed(2)}) AED` : '0.00 AED';
-                  })()}
-                </span>
-              </div>
+              {(() => {
+                const pureBal = printStatementData.totalPureWeight || 0;
+                const isPureDue = pureBal > 0;
+                
+                return (
+                  <div className="flex justify-between items-center pt-4 border-t border-slate-200">
+                    <span className="font-bold text-slate-800">
+                      {isPureDue ? 'Final Pure Balance Due:' : 'Final Pure Balance:'}
+                    </span>
+                    <span className={`text-xl font-bold ${isPureDue ? 'text-red-600' : 'text-emerald-600'}`}>
+                      {pureBal > 0 ? pureBal.toFixed(2) + ' g' : pureBal < 0 ? `(${Math.abs(pureBal).toFixed(2)}) g` : '0.00 g'}
+                    </span>
+                  </div>
+                );
+              })()}
+              {(() => {
+                let bal = 0;
+                printStatementData.transactions.forEach(tx => { if(tx.makingCharge) bal += tx.makingCharge; });
+                if(printStatementData.payments) printStatementData.payments.forEach(p => bal -= p.amount);
+                
+                const isDue = bal > 0;
+                
+                return (
+                  <div className="flex justify-between items-center pt-2 border-t border-slate-200">
+                    <span className="font-bold text-slate-800">
+                      {isDue ? 'Final Cash Balance Due:' : 'Final Cash Balance:'}
+                    </span>
+                    <span className={`text-xl font-bold ${isDue ? 'text-red-600' : 'text-emerald-600'}`}>
+                      {bal > 0 ? bal.toFixed(2) + ' AED' : bal < 0 ? `(${Math.abs(bal).toFixed(2)}) AED` : '0.00 AED'}
+                    </span>
+                  </div>
+                );
+              })()}
             </div>
           </div>
 

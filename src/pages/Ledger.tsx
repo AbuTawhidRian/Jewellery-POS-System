@@ -7,7 +7,7 @@ import { useAuth } from '../contexts/AuthContext';
 
 const Ledger: React.FC = () => {
   const { hasPermission } = useAuth();
-  const { sales, buyers, itemTypes, payments, setPrintInvoiceData, setPrintStatementData, setPrintItem, voidTransaction } = useInventory();
+  const { sales, buyers, itemTypes, payments, metalReceipts, setPrintInvoiceData, setPrintStatementData, setPrintItem, voidTransaction } = useInventory();
   const [filterBuyerId, setFilterBuyerId] = useState<string>('all');
   const [filterDateRange, setFilterDateRange] = useState<string>('all');
   const [customStartDate, setCustomStartDate] = useState<string>('');
@@ -190,14 +190,16 @@ const Ledger: React.FC = () => {
                          `${format(new Date(customStartDate || 0), 'MMM d, yyyy')} - ${format(new Date(customEndDate || Date.now()), 'MMM d, yyyy')}`;
 
     const statementPayments = payments.filter(p => p.buyerId === filterBuyerId);
+    const statementMetalReceipts = metalReceipts.filter(m => m.buyerId === filterBuyerId);
 
     setPrintStatementData({
       buyerName,
       dateRange: dateRangeStr,
       transactions: statementTx,
       totalNetWeight: statementTx.reduce((acc, t) => acc + t.netWeight, 0),
-      totalPureWeight: statementTx.reduce((acc, t) => acc + t.pureWeight, 0),
-      payments: statementPayments
+      totalPureWeight: statementTx.reduce((acc, t) => acc + t.pureWeight, 0) - statementMetalReceipts.reduce((acc, m) => acc + (m.weight * m.purity), 0),
+      payments: statementPayments,
+      metalReceipts: statementMetalReceipts
     });
     
     setTimeout(() => window.print(), 100);
@@ -380,7 +382,7 @@ const Ledger: React.FC = () => {
                     <React.Fragment key={tx.date}>
                       <tr 
                         onClick={() => setExpandedTx(isExpanded ? null : tx.date)}
-                        className={`border-b border-slate-200 dark:border-slate-800/50 hover:bg-slate-50 dark:bg-slate-900/50 cursor-pointer transition-colors ${isReturn ? 'bg-red-50/30 dark:bg-red-900/10' : ''}`}
+                        className={`border-b border-slate-200 dark:border-slate-800/50 hover:bg-slate-50 dark:hover:bg-slate-900/50 cursor-pointer transition-colors ${isReturn ? 'bg-red-50/30 dark:bg-red-900/10' : ''}`}
                       >
                         <td className="py-4 px-4 text-slate-500">
                           {isExpanded ? <ChevronDown className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}

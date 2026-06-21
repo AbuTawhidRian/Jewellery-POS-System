@@ -53,6 +53,17 @@ export interface Payment {
   notes?: string;
 }
 
+export interface MetalReceipt {
+  id: string;
+  buyerId: string;
+  date: string;
+  weight: number;
+  purity: number;
+  notes?: string;
+  buyer?: Buyer;
+}
+
+
 export interface InvoiceData {
   buyerName: string;
   items: { barcode?: string; type: string; model?: string; weight: number; stone_weight: number }[];
@@ -67,6 +78,7 @@ export interface StatementData {
   totalNetWeight: number;
   totalPureWeight: number;
   payments: Payment[];
+  metalReceipts: MetalReceipt[];
 }
 
 interface InventoryContextType {
@@ -74,6 +86,7 @@ interface InventoryContextType {
   buyers: Buyer[];
   sales: Sale[];
   payments: Payment[];
+  metalReceipts: MetalReceipt[];
   itemTypes: ItemType[];
   isLoading: boolean;
   addItem: (item: Partial<Pick<Item, 'barcode'>> & Omit<Item, 'id' | 'status' | 'dateAdded' | 'date_added' | 'barcode'>) => Promise<{ success: boolean, data?: Item, error?: string }>;
@@ -95,6 +108,9 @@ interface InventoryContextType {
   addPayment: (buyerId: string, amount: number, notes?: string) => Promise<boolean>;
   editPayment: (id: string, buyerId: string, amount: number, notes?: string) => Promise<boolean>;
   deletePayment: (id: string) => Promise<boolean>;
+  addMetalReceipt: (buyerId: string, weight: number, purity: number, notes?: string) => Promise<boolean>;
+  editMetalReceipt: (id: string, buyerId: string, weight: number, purity: number, notes?: string) => Promise<boolean>;
+  deleteMetalReceipt: (id: string) => Promise<boolean>;
   printItem: Item | null;
   setPrintItem: (item: Item | null) => void;
   printInvoiceData: InvoiceData | null;
@@ -113,6 +129,7 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const [buyers, setBuyers] = useState<Buyer[]>([]);
   const [sales, setSales] = useState<Sale[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
+  const [metalReceipts, setMetalReceipts] = useState<MetalReceipt[]>([]);
   const [itemTypes, setItemTypes] = useState<ItemType[]>([]);
   const [models, setModels] = useState<ItemModel[]>([]);
   const [printItem, setPrintItem] = useState<Item | null>(null);
@@ -138,13 +155,14 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     const fetchData = async () => {
       setIsLoading(true);
       try {
-        const [itemsRes, buyersRes, salesRes, typesRes, descRes, paymentsRes] = await Promise.all([
+        const [itemsRes, buyersRes, salesRes, typesRes, descRes, paymentsRes, metalRes] = await Promise.all([
           authFetch(`${API_URL}/inventory`).then(res => res.json()),
           authFetch(`${API_URL}/buyers`).then(res => res.json()),
           authFetch(`${API_URL}/sales`).then(res => res.json()),
           authFetch(`${API_URL}/item_types`).then(res => res.ok ? res.json() : []),
           authFetch(`${API_URL}/models`).then(res => res.ok ? res.json() : []),
-          authFetch(`${API_URL}/payments`).then(res => res.ok ? res.json() : [])
+          authFetch(`${API_URL}/payments`).then(res => res.ok ? res.json() : []),
+          authFetch(`${API_URL}/metal_receipts`).then(res => res.ok ? res.json() : [])
         ]);
 
         if (Array.isArray(itemsRes)) setItems(itemsRes);
@@ -153,6 +171,7 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         if (Array.isArray(typesRes)) setItemTypes(typesRes);
         if (Array.isArray(descRes)) setModels(descRes);
         if (Array.isArray(paymentsRes)) setPayments(paymentsRes);
+        if (Array.isArray(metalRes)) setMetalReceipts(metalRes);
       } catch (error) {
         console.error("Error fetching data:", error);
       } finally {
@@ -505,8 +524,58 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }
   };
 
+  const addMetalReceipt = async (buyerId: string, weight: number, purity: number, notes?: string) => {
+    try {
+      const res = await authFetch(`${API_URL}/metal_receipts`, {
+        method: 'POST',
+        body: JSON.stringify({ buyerId, weight, purity, notes })
+      });
+      const result = await res.json();
+      if (res.ok) {
+        setMetalReceipts(prev => [result, ...prev]);
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error("Error adding metal receipt:", error);
+      return false;
+    }
+  };
+
+  const editMetalReceipt = async (id: string, buyerId: string, weight: number, purity: number, notes?: string) => {
+    try {
+      const res = await authFetch(`${API_URL}/metal_receipts/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify({ buyerId, weight, purity, notes })
+      });
+      const result = await res.json();
+      if (res.ok) {
+        setMetalReceipts(prev => prev.map(m => m.id === id ? result : m));
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error("Error editing metal receipt:", error);
+      return false;
+    }
+  };
+
+  const deleteMetalReceipt = async (id: string) => {
+    try {
+      const res = await authFetch(`${API_URL}/metal_receipts/${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        setMetalReceipts(prev => prev.filter(m => m.id !== id));
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error("Error deleting metal receipt:", error);
+      return false;
+    }
+  };
+
   return (
-    <InventoryContext.Provider value={{ items, buyers, sales, payments, itemTypes, models, isLoading, addItem, editItem, deleteItem, addBuyer, editBuyer, deleteBuyer, addItemType, editItemType, deleteItemType, addModel, editModel, deleteModel, processBulkSale, voidTransaction, returnItems, addPayment, editPayment, deletePayment, printItem, setPrintItem, printInvoiceData, setPrintInvoiceData, printStatementData, setPrintStatementData }}>
+    <InventoryContext.Provider value={{ items, buyers, sales, payments, metalReceipts, itemTypes, models, isLoading, addItem, editItem, deleteItem, addBuyer, editBuyer, deleteBuyer, addItemType, editItemType, deleteItemType, addModel, editModel, deleteModel, processBulkSale, voidTransaction, returnItems, addPayment, editPayment, deletePayment, addMetalReceipt, editMetalReceipt, deleteMetalReceipt, printItem, setPrintItem, printInvoiceData, setPrintInvoiceData, printStatementData, setPrintStatementData }}>
       {children}
     </InventoryContext.Provider>
   );

@@ -8,7 +8,7 @@ import { useAuth } from '../contexts/AuthContext';
 
 const POS: React.FC = () => {
   const { hasPermission } = useAuth();
-  const { items, buyers, sales, payments, processBulkSale, returnItems, addBuyer, editBuyer, deleteBuyer, addPayment, editPayment, deletePayment, setPrintInvoiceData, setPrintItem } = useInventory();
+  const { items, buyers, sales, payments, metalReceipts, processBulkSale, returnItems, addBuyer, editBuyer, deleteBuyer, addPayment, editPayment, deletePayment, addMetalReceipt, editMetalReceipt, deleteMetalReceipt, setPrintInvoiceData, setPrintItem } = useInventory();
   const [selectedBuyer, setSelectedBuyer] = useState('');
   const [barcode, setBarcode] = useState('');
   const [notification, setNotification] = useState<{ type: 'success' | 'error', message: string } | null>(null);
@@ -24,6 +24,13 @@ const POS: React.FC = () => {
   const [paymentFormData, setPaymentFormData] = useState({ buyerId: '', type: 'received', amount: '', notes: '' });
   const [editingPaymentId, setEditingPaymentId] = useState<string | null>(null);
   const [cashFilterBuyerId, setCashFilterBuyerId] = useState<string>('all');
+  
+  // Metal Modal State
+  const [isGoldMode, setIsGoldMode] = useState(false);
+  const [isMetalModalOpen, setIsMetalModalOpen] = useState(false);
+  const [metalFormData, setMetalFormData] = useState({ buyerId: '', weight: '', purity: '995', notes: '' });
+  const [editingMetalId, setEditingMetalId] = useState<string | null>(null);
+  const [metalFilterBuyerId, setMetalFilterBuyerId] = useState<string>('all');
   
   // New Buyer Modal State
   const [isBuyerModalOpen, setIsBuyerModalOpen] = useState(false);
@@ -57,7 +64,7 @@ const POS: React.FC = () => {
   useEffect(() => {
     const focusInput = () => {
       const activeTag = document.activeElement?.tagName;
-      if (!isScanning && !isBuyerModalOpen && !isPaymentModalOpen && activeTag !== 'BUTTON' && activeTag !== 'INPUT' && activeTag !== 'SELECT' && activeTag !== 'TEXTAREA' && inputRef.current) {
+      if (!isScanning && !isBuyerModalOpen && !isPaymentModalOpen && !isMetalModalOpen && activeTag !== 'BUTTON' && activeTag !== 'INPUT' && activeTag !== 'SELECT' && activeTag !== 'TEXTAREA' && inputRef.current) {
         // Only auto-focus if we aren't typing in the buyer search
         if (document.activeElement?.id !== 'buyer-search') {
           inputRef.current.focus();
@@ -67,7 +74,7 @@ const POS: React.FC = () => {
     focusInput();
     document.addEventListener('click', focusInput);
     return () => document.removeEventListener('click', focusInput);
-  }, [isScanning, isBuyerModalOpen, isPaymentModalOpen]);
+  }, [isScanning, isBuyerModalOpen, isPaymentModalOpen, isMetalModalOpen]);
 
   // Audio Beep Helper
   const playBeep = useCallback((type: 'success' | 'error') => {
@@ -367,6 +374,32 @@ const POS: React.FC = () => {
     }
   };
 
+  const handleRecordMetalReceipt = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!metalFormData.buyerId || !metalFormData.weight || !metalFormData.purity) return;
+    
+    let purityVal = Number(metalFormData.purity);
+    if (purityVal > 1) {
+      purityVal = purityVal / 1000;
+    }
+
+    let success = false;
+    if (editingMetalId) {
+      success = await editMetalReceipt(editingMetalId, metalFormData.buyerId, Number(metalFormData.weight), purityVal, metalFormData.notes);
+    } else {
+      success = await addMetalReceipt(metalFormData.buyerId, Number(metalFormData.weight), purityVal, metalFormData.notes);
+    }
+
+    if (success) {
+      showNotification('success', editingMetalId ? 'Metal receipt updated!' : 'Metal receipt recorded!');
+      setIsMetalModalOpen(false);
+      setMetalFormData({ buyerId: '', weight: '', purity: '995', notes: '' });
+      setEditingMetalId(null);
+    } else {
+      showNotification('error', editingMetalId ? 'Failed to update receipt' : 'Failed to record receipt');
+    }
+  };
+
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 ease-out h-full flex flex-col relative">
       <header className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -380,36 +413,45 @@ const POS: React.FC = () => {
         
         <div className="flex bg-slate-200 dark:bg-slate-800 p-1 rounded-xl w-max">
           <button 
-            onClick={() => { setIsReturnMode(false); setIsCashMode(false); setCart([]); setTotalMakingCharge(''); }}
+            onClick={() => { setIsReturnMode(false); setIsCashMode(false); setIsGoldMode(false); setCart([]); setTotalMakingCharge(''); }}
             className={clsx(
               "px-6 py-2.5 rounded-lg text-sm font-bold transition-all", 
-              !isReturnMode && !isCashMode ? "bg-white dark:bg-slate-950 text-gold-500 shadow-sm" : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
+              !isReturnMode && !isCashMode && !isGoldMode ? "bg-white dark:bg-slate-950 text-gold-500 shadow-sm" : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
             )}
           >
             Sale Mode
           </button>
           <button 
-            onClick={() => { setIsReturnMode(true); setIsCashMode(false); setCart([]); setTotalMakingCharge(''); }}
+            onClick={() => { setIsReturnMode(true); setIsCashMode(false); setIsGoldMode(false); setCart([]); setTotalMakingCharge(''); }}
             className={clsx(
               "px-6 py-2.5 rounded-lg text-sm font-bold transition-all border-r border-slate-300 dark:border-slate-700 rounded-r-none", 
-              isReturnMode && !isCashMode ? "bg-white dark:bg-slate-950 text-orange-500 shadow-sm" : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
+              isReturnMode && !isCashMode && !isGoldMode ? "bg-white dark:bg-slate-950 text-orange-500 shadow-sm" : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
             )}
           >
             Return Mode
           </button>
           <button 
-            onClick={() => { setIsCashMode(true); }}
+            onClick={() => { setIsCashMode(true); setIsGoldMode(false); }}
             className={clsx(
-              "px-6 py-2.5 rounded-lg text-sm font-bold transition-all rounded-l-none", 
+              "px-6 py-2.5 rounded-lg text-sm font-bold transition-all border-r border-slate-300 dark:border-slate-700 rounded-none", 
               isCashMode ? "bg-white dark:bg-slate-950 text-emerald-600 shadow-sm" : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
             )}
           >
             Cash
           </button>
+          <button 
+            onClick={() => { setIsGoldMode(true); setIsCashMode(false); }}
+            className={clsx(
+              "px-6 py-2.5 rounded-lg text-sm font-bold transition-all rounded-l-none", 
+              isGoldMode ? "bg-white dark:bg-slate-950 text-amber-500 shadow-sm" : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
+            )}
+          >
+            Receive Gold
+          </button>
         </div>
       </header>
 
-      {!isCashMode ? (
+      {!isCashMode && !isGoldMode ? (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 flex-1 min-h-0 pb-8">
         
         {/* Left Column: Scanner and Buyer */}
@@ -574,7 +616,7 @@ const POS: React.FC = () => {
                       const gw = Number(item.weight) || 0;
                       const nw = Math.max(0, gw - sw);
                       return (
-                      <tr key={item.id} className="border-b border-slate-200 dark:border-slate-800/50 hover:bg-slate-50 dark:bg-slate-900/50 transition-colors">
+                      <tr key={item.id} className="border-b border-slate-200 dark:border-slate-800/50 hover:bg-slate-50 dark:hover:bg-slate-900/50 transition-colors">
                         <td className="py-3 px-4 font-mono text-slate-700 dark:text-slate-300">{item.barcode}</td>
                         <td className="py-3 px-4 text-slate-800 dark:text-slate-200">{item.type}</td>
                         <td className="py-3 px-4 text-slate-700 dark:text-slate-300 font-medium text-right">{gw.toFixed(2)}g</td>
@@ -653,7 +695,7 @@ const POS: React.FC = () => {
         </div>
 
         </div>
-      ) : (
+      ) : isCashMode ? (
         <div className="flex-1 flex flex-col min-h-0 pb-8 gap-6 animate-in fade-in duration-300">
           <div className="bg-white dark:bg-slate-950 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-lg flex-1 flex flex-col min-h-[500px]">
             <div className="flex justify-between items-center mb-6">
@@ -780,7 +822,129 @@ const POS: React.FC = () => {
             </div>
           </div>
         </div>
-      )}
+      ) : isGoldMode ? (
+        <div className="flex-1 flex flex-col min-h-0 pb-8 gap-6 animate-in fade-in duration-300">
+          <div className="bg-white dark:bg-slate-950 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-lg flex-1 flex flex-col min-h-[500px]">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
+                <span className="text-amber-500">🪙</span> Pure Gold Ledger
+              </h2>
+              <div className="flex flex-col sm:flex-row items-center gap-4">
+                <select
+                  value={metalFilterBuyerId}
+                  onChange={(e) => setMetalFilterBuyerId(e.target.value)}
+                  className="bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg px-4 py-2 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-amber-500/50"
+                >
+                  <option value="all">All Accounts</option>
+                  {buyers.map(b => (
+                    <option key={b.id} value={b.id}>{b.name}</option>
+                  ))}
+                </select>
+                <button
+                  onClick={() => {
+                    setEditingMetalId(null);
+                    setMetalFormData({ buyerId: metalFilterBuyerId !== 'all' ? metalFilterBuyerId : '', weight: '', purity: '995', notes: '' });
+                    setIsMetalModalOpen(true);
+                  }}
+                  className="bg-amber-500 hover:bg-amber-600 text-white font-bold py-2 px-6 rounded-lg flex items-center gap-2 transition-colors shadow-lg shadow-amber-500/20"
+                >
+                  Receive Gold
+                </button>
+              </div>
+            </div>
+            
+            <div className="flex-1 overflow-auto rounded-xl border border-slate-200 dark:border-slate-700/50 bg-slate-50 dark:bg-slate-900/50">
+              <table className="w-full text-left border-collapse min-w-[800px]">
+                <thead className="sticky top-0 bg-slate-100 dark:bg-slate-800/80 backdrop-blur-md shadow-sm z-10">
+                  <tr className="border-b border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 text-sm tracking-wider uppercase">
+                    <th className="py-4 px-4 font-bold">Date</th>
+                    <th className="py-4 px-4 font-bold">Account (Buyer)</th>
+                    <th className="py-4 px-4 font-bold text-right">Weight (g)</th>
+                    <th className="py-4 px-4 font-bold text-right">Purity</th>
+                    <th className="py-4 px-4 font-bold text-right">Pure Weight (g)</th>
+                    <th className="py-4 px-4 font-bold">Notes</th>
+                    <th className="py-4 px-4 font-bold text-center">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-200 dark:divide-slate-700/50 text-slate-700 dark:text-slate-300">
+                  {(() => {
+                    const filteredReceipts = metalReceipts.filter(m => metalFilterBuyerId === 'all' || m.buyerId === metalFilterBuyerId).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+                    
+                    if (filteredReceipts.length === 0) {
+                      return (
+                        <tr>
+                          <td colSpan={7} className="py-12 text-center text-slate-500 bg-white dark:bg-slate-950">
+                            No metal receipts found.
+                          </td>
+                        </tr>
+                      );
+                    }
+                    
+                    return filteredReceipts.map(m => {
+                      const buyer = buyers.find(b => b.id === m.buyerId);
+                      return (
+                        <tr key={m.id} className="hover:bg-white dark:hover:bg-slate-900 transition-colors bg-white/50 dark:bg-slate-950/50">
+                          <td className="py-3 px-4 whitespace-nowrap">
+                            {new Date(m.date).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })}
+                          </td>
+                          <td className="py-3 px-4 font-medium">{buyer?.name || 'Unknown'}</td>
+                          <td className="py-3 px-4 text-right">{m.weight.toFixed(2)}</td>
+                          <td className="py-3 px-4 text-right text-slate-500">{(m.purity * 1000).toFixed(0)}</td>
+                          <td className="py-3 px-4 text-right font-bold text-amber-500">{(m.weight * m.purity).toFixed(3)}</td>
+                          <td className="py-3 px-4 max-w-[150px] truncate">{m.notes || '-'}</td>
+                          <td className="py-3 px-4 text-center">
+                            <div className="flex items-center justify-center gap-2">
+                              <button
+                                onClick={() => {
+                                  setEditingMetalId(m.id);
+                                  setMetalFormData({
+                                    buyerId: m.buyerId,
+                                    weight: m.weight.toString(),
+                                    purity: (m.purity >= 1 ? m.purity : m.purity * 1000).toString(),
+                                    notes: m.notes || ''
+                                  });
+                                  setIsMetalModalOpen(true);
+                                }}
+                                className="p-1.5 text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-500/10 rounded transition-colors"
+                                title="Edit Receipt"
+                              >
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>
+                              </button>
+                              <button
+                                onClick={() => {
+                                  setDialogConfig({
+                                    isOpen: true,
+                                    type: 'confirm',
+                                    title: 'Delete Metal Receipt',
+                                    message: 'Are you sure you want to delete this metal receipt? This action cannot be undone.',
+                                    onConfirm: async () => {
+                                      const success = await deleteMetalReceipt(m.id);
+                                      if (success) {
+                                        showNotification('success', 'Receipt deleted successfully');
+                                      } else {
+                                        showNotification('error', 'Failed to delete receipt');
+                                      }
+                                      setDialogConfig(prev => ({...prev, isOpen: false}));
+                                    }
+                                  });
+                                }}
+                                className="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded transition-colors"
+                                title="Delete Receipt"
+                              >
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path></svg>
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    });
+                  })()}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       {/* Manage Buyers Modal */}
       {isBuyerModalOpen && (
@@ -1033,6 +1197,97 @@ const POS: React.FC = () => {
                     className="px-6 py-2 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-lg transition-colors shadow-lg shadow-emerald-500/20"
                   >
                     Save Payment
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* POS Metal Receipt Modal */}
+      {isMetalModalOpen && (
+        <div className="fixed inset-0 bg-white dark:bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-md shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="p-6 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center bg-white dark:bg-slate-950/50">
+              <h3 className="text-xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                <span className="text-amber-500">🪙</span>
+                Record Metal Receipt
+              </h3>
+              <button 
+                onClick={() => setIsMetalModalOpen(false)}
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
+              >
+                <XCircle className="w-6 h-6" />
+              </button>
+            </div>
+            <div className="p-6">
+              <form onSubmit={handleRecordMetalReceipt} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Account (Buyer)</label>
+                  <select
+                    required
+                    value={metalFormData.buyerId}
+                    onChange={(e) => setMetalFormData({...metalFormData, buyerId: e.target.value})}
+                    className="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg px-4 py-2.5 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500"
+                  >
+                    <option value="">Select an account...</option>
+                    {buyers.map(b => (
+                      <option key={b.id} value={b.id}>{b.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Weight (g)</label>
+                    <input
+                      type="number"
+                      required
+                      step="0.01"
+                      min="0.01"
+                      value={metalFormData.weight}
+                      onChange={(e) => setMetalFormData({...metalFormData, weight: e.target.value})}
+                      className="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg px-4 py-2.5 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500"
+                      placeholder="e.g. 100.00"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Purity (e.g. 995, 0.999)</label>
+                    <input
+                      type="number"
+                      required
+                      step="0.001"
+                      min="0.001"
+                      value={metalFormData.purity}
+                      onChange={(e) => setMetalFormData({...metalFormData, purity: e.target.value})}
+                      className="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg px-4 py-2.5 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500"
+                      placeholder="995"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Description / Notes</label>
+                  <input
+                    type="text"
+                    value={metalFormData.notes}
+                    onChange={(e) => setMetalFormData({...metalFormData, notes: e.target.value})}
+                    className="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg px-4 py-2.5 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500"
+                    placeholder="e.g. Fine gold bar, Scrap gold..."
+                  />
+                </div>
+                <div className="pt-4 border-t border-slate-200 dark:border-slate-800 mt-6 flex justify-end gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setIsMetalModalOpen(false)}
+                    className="px-4 py-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 font-medium"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-6 py-2 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-lg transition-colors shadow-lg shadow-amber-500/20"
+                  >
+                    Save Receipt
                   </button>
                 </div>
               </form>

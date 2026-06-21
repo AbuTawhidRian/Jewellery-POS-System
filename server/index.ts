@@ -795,6 +795,81 @@ app.put('/api/payments/:id', authenticateToken, requireActiveOrTrial, requireAcc
   }
 });
 
+// --- Metal Receipts Routes ---
+
+app.get('/api/metal_receipts', authenticateToken, requireActiveOrTrial, async (req: AuthRequest, res) => {
+  try {
+    const receipts = await prisma.metalReceipt.findMany({
+      where: { shopId: req.user!.shopId! },
+      orderBy: { date: 'desc' },
+      include: { buyer: true }
+    });
+    res.json(receipts);
+  } catch (error) {
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+app.post('/api/metal_receipts', authenticateToken, requireActiveOrTrial, requireAccess([Role.OWNER, Role.MANAGER, Role.CASHIER], ['manage_buyers']), async (req: AuthRequest, res) => {
+  try {
+    const { buyerId, weight, purity, notes } = req.body;
+    const shopId = req.user!.shopId!;
+    const receipt = await prisma.metalReceipt.create({
+      data: { shopId, buyerId, weight: Number(weight), purity: Number(purity) || 0.995, notes }
+    });
+    const receiptWithBuyer = await prisma.metalReceipt.findUnique({
+      where: { id: receipt.id },
+      include: { buyer: true }
+    });
+    res.json(receiptWithBuyer);
+  } catch (error) {
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+app.put('/api/metal_receipts/:id', authenticateToken, requireActiveOrTrial, requireAccess([Role.OWNER, Role.MANAGER, Role.CASHIER], ['manage_buyers']), async (req: AuthRequest, res) => {
+  try {
+    const id = String(req.params.id);
+    const shopId = req.user!.shopId!;
+    const { buyerId, weight, purity, notes } = req.body;
+    
+    const existing = await prisma.metalReceipt.findUnique({ where: { id } });
+    if (!existing || existing.shopId !== shopId) return res.status(404).json({ error: 'Not found' });
+
+    const updated = await prisma.metalReceipt.update({
+      where: { id },
+      data: {
+        buyerId: buyerId !== undefined ? buyerId : undefined,
+        weight: weight !== undefined ? Number(weight) : undefined,
+        purity: purity !== undefined ? Number(purity) : undefined,
+        notes: notes !== undefined ? notes : undefined
+      }
+    });
+    
+    const receiptWithBuyer = await prisma.metalReceipt.findUnique({
+      where: { id: updated.id },
+      include: { buyer: true }
+    });
+    res.json(receiptWithBuyer);
+  } catch (error) {
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+app.delete('/api/metal_receipts/:id', authenticateToken, requireActiveOrTrial, requireAccess([Role.OWNER, Role.MANAGER], ['manage_buyers']), async (req: AuthRequest, res) => {
+  try {
+    const id = String(req.params.id);
+    const shopId = req.user!.shopId!;
+    const existing = await prisma.metalReceipt.findUnique({ where: { id } });
+    if (!existing || existing.shopId !== shopId) return res.status(404).json({ error: 'Not found' });
+    
+    await prisma.metalReceipt.delete({ where: { id } });
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
 app.post('/api/sales/wipe', authenticateToken, requireActiveOrTrial, requireAccess([Role.OWNER], []), async (req: AuthRequest, res) => {
   try {
     const shopId = req.user!.shopId!;

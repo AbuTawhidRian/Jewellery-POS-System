@@ -21,7 +21,7 @@ const MobileNav: React.FC = () => {
 
 
   return (
-    <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white/95 dark:bg-[#0B0F19]/95 backdrop-blur-xl border-t border-slate-200 dark:border-[#334155]/50 z-50 px-2 pb-safe shadow-[0_-10px_40px_rgba(0,0,0,0.5)] transition-colors duration-300">
+    <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white/95 dark:bg-slate-950/95 backdrop-blur-xl border-t border-slate-200 dark:border-slate-800/50 z-50 px-2 pb-safe shadow-[0_-10px_40px_rgba(0,0,0,0.5)] transition-colors duration-300">
       <nav className="flex justify-around items-center h-16">
         {links.map((link) => {
           const Icon = link.icon;
@@ -34,7 +34,7 @@ const MobileNav: React.FC = () => {
                   'flex flex-col items-center justify-center w-full h-full space-y-1 transition-colors relative',
                   isActive 
                     ? 'text-[#C28C46]' 
-                    : 'text-[#94A3B8] hover:text-white'
+                    : 'text-slate-400 hover:text-white'
                 )
               }
             >

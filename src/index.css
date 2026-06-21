@@ -4,16 +4,21 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
-  --color-slate-850: #141E30;
-  --color-slate-900: #0F172A;
-  --color-slate-950: #020617;
+  /* Premium Obsidian/Jet Dark Mode */
+  --color-slate-950: #050505;
+  --color-slate-900: #0e0e0e;
+  --color-slate-850: #141414;
+  --color-slate-800: #1f1f1f;
+  --color-slate-700: #333333;
+
+  /* Gold Accents */
   --color-gold-400: #FDE047;
   --color-gold-500: #D4AF37;
   --color-gold-600: #B8860B;
 }
 
 body {
-  color: #f1f5f9;
+  @apply bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100;
   font-family: 'Inter', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;

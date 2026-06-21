@@ -38,6 +38,7 @@ model Shop {
   itemTypes    ItemType[]
   models       ItemModel[]
   payments     Payment[]
+  metalReceipts MetalReceipt[]
   subscription Subscription?
 }
 
@@ -95,6 +96,7 @@ model Buyer {
   shop     Shop      @relation(fields: [shopId], references: [id], onDelete: Cascade)
   sales    Sale[]
   payments Payment[]
+  metalReceipts MetalReceipt[]
 }
 
 model Payment {
@@ -144,3 +146,17 @@ model ItemModel {
 
   @@unique([name, shopId])
 }
+
+model MetalReceipt {
+  id        String   @id @default(uuid())
+  shopId    String
+  buyerId   String
+  date      DateTime @default(now())
+  weight    Float
+  purity    Float    @default(0.995)
+  notes     String?
+
+  shop  Shop  @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  buyer Buyer @relation(fields: [buyerId], references: [id], onDelete: Cascade)
+}
+
