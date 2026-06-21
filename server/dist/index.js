@@ -925,12 +925,13 @@ app.post('/api/sales/void', authenticateToken, requireActiveOrTrial, requireAcce
                     where: { id: { in: itemIds } },
                     data: { status: 'In Stock' }
                 });
-                // Create return records with negative weight instead of deleting
+                // Create return records with negative weight and negative making charge instead of deleting
                 const returnSales = salesToVoid.filter(s => s.weight > 0).map(s => ({
                     shopId: s.shopId,
                     itemId: s.itemId,
                     buyerId: s.buyerId,
                     weight: -Math.abs(s.weight),
+                    makingCharge: -Math.abs(s.makingCharge || 0),
                     date: new Date()
                 }));
                 if (returnSales.length > 0) {
@@ -983,7 +984,8 @@ app.post('/api/sales/return', authenticateToken, requireActiveOrTrial, requireAc
                         shopId: sale.shopId,
                         itemId: sale.itemId,
                         buyerId: sale.buyerId,
-                        weight: -Math.abs(sale.weight)
+                        weight: -Math.abs(sale.weight),
+                        makingCharge: -Math.abs(sale.makingCharge || 0)
                     });
                 }
             }
