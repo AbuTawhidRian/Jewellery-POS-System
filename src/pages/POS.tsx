@@ -368,7 +368,6 @@ const POS: React.FC = () => {
       const rate = makingChargesPerModel[model];
       if (typeof rate === 'number') {
         const gw = Number(item.weight) || 0;
-        const sw = Number(item.stone_weight) || 0;
         calculatedTotal += gw * rate;
         anyCalculated = true;
       }
