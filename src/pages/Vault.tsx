@@ -175,7 +175,7 @@ const Vault: React.FC = () => {
                         setTypeSearch('');
                         setIsTypeDropdownOpen(true);
                       }}
-                      className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg px-4 py-2 text-slate-900 dark:text-slate-100 focus:outline-none focus:border-gold-500 focus:ring-1 focus:ring-gold-500 transition-colors"
+                      className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg px-4 py-2 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:border-gold-500 focus:ring-1 focus:ring-gold-500 transition-colors"
                       placeholder="Search or select type..."
                     />
                     {isTypeDropdownOpen && (
@@ -229,7 +229,7 @@ const Vault: React.FC = () => {
                         setModelSearch('');
                         setIsModelDropdownOpen(true);
                       }}
-                      className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg px-4 py-2 text-slate-900 dark:text-slate-100 focus:outline-none focus:border-gold-500 focus:ring-1 focus:ring-gold-500 transition-colors"
+                      className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg px-4 py-2 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:border-gold-500 focus:ring-1 focus:ring-gold-500 transition-colors"
                       placeholder="Search or select model..."
                     />
                     {isModelDropdownOpen && (
@@ -639,7 +639,7 @@ const Vault: React.FC = () => {
                       }
                     }}
                     disabled={!newTypeName.trim()}
-                    className="bg-gold-500 hover:bg-gold-400 disabled:bg-slate-200 dark:disabled:bg-slate-800 disabled:text-slate-400 dark:disabled:text-slate-500 dark:text-slate-400 text-slate-950 font-bold px-4 rounded-xl transition-colors shrink-0"
+                    className="bg-gold-500 hover:bg-gold-400 disabled:bg-slate-200 dark:disabled:bg-slate-800 disabled:text-slate-400 dark:disabled:text-slate-500 text-slate-950 font-bold px-4 py-2 rounded-xl transition-colors shrink-0"
                   >
                     Add
                   </button>
@@ -825,7 +825,7 @@ const Vault: React.FC = () => {
                   className="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg px-4 py-2 text-slate-900 dark:text-slate-100 focus:outline-none focus:border-gold-500 focus:ring-1 focus:ring-gold-500 transition-colors"
                 >
                   {itemTypes.map(t => (
-                    <option key={t.id} value={t.name}>{t.name}</option>
+                    <option key={t.id} value={t.name} className="bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100">{t.name}</option>
                   ))}
                 </select>
               </div>
@@ -838,7 +838,7 @@ const Vault: React.FC = () => {
                   className="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg px-4 py-2 text-slate-900 dark:text-slate-100 focus:outline-none focus:border-gold-500 focus:ring-1 focus:ring-gold-500 transition-colors"
                 >
                   {models.map(d => (
-                    <option key={d.id} value={d.name}>{d.name}</option>
+                    <option key={d.id} value={d.name} className="bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100">{d.name}</option>
                   ))}
                 </select>
               </div>

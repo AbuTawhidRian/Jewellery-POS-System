@@ -631,7 +631,7 @@ app.post('/api/inventory', authenticateToken, requireActiveOrTrial, requireAcces
       let prefix = 'XX';
       const shop = await prisma.shop.findUnique({ where: { id: shopId } });
       if (shop && shop.name) {
-        const words = shop.name.trim().split(/\s+/).filter(w => w.length > 0);
+        const words = shop.name.trim().split(/\s+/).filter((w: string) => w.length > 0);
         if (words.length >= 2) {
           prefix = (words[0][0] + words[1][0]).toUpperCase();
         } else if (words.length === 1) {
@@ -818,7 +818,7 @@ app.post('/api/sales/bulk', authenticateToken, requireActiveOrTrial, requireAcce
        return res.status(400).json({ error: 'Buyer is required' });
     }
 
-    const result = await prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx: any) => {
       const itemsToSell = await tx.item.findMany({
         where: {
           shopId,
@@ -832,13 +832,13 @@ app.post('/api/sales/bulk', authenticateToken, requireActiveOrTrial, requireAcce
       }
 
       await tx.item.updateMany({
-        where: { id: { in: itemsToSell.map(i => i.id) } },
+        where: { id: { in: itemsToSell.map((i: any) => i.id) } },
         data: { status: 'Sold' }
       });
 
       const makingChargePerItem = itemsToSell.length > 0 ? (Number(totalMakingCharge) || 0) / itemsToSell.length : 0;
 
-      const saleData = itemsToSell.map(item => ({
+      const saleData = itemsToSell.map((item: any) => ({
         shopId,
         itemId: item.id,
         buyerId: actualBuyerId,

@@ -13,6 +13,8 @@ const path_1 = __importDefault(require("path"));
 const helmet_1 = __importDefault(require("helmet"));
 const express_rate_limit_1 = require("express-rate-limit");
 const zod_1 = require("zod");
+const multer_1 = __importDefault(require("multer"));
+const fs_1 = __importDefault(require("fs"));
 dotenv_1.default.config();
 const app = (0, express_1.default)();
 const prisma = new client_1.PrismaClient();
@@ -33,6 +35,30 @@ app.use((0, helmet_1.default)({
 }));
 app.use((0, cors_1.default)());
 app.use(express_1.default.json({ limit: '1mb' }));
+// Setup file uploads
+const uploadsDir = path_1.default.join(__dirname, 'uploads');
+if (!fs_1.default.existsSync(uploadsDir)) {
+    fs_1.default.mkdirSync(uploadsDir, { recursive: true });
+}
+app.use('/uploads', express_1.default.static(uploadsDir));
+const storage = multer_1.default.diskStorage({
+    destination: (req, file, cb) => cb(null, uploadsDir),
+    filename: (req, file, cb) => {
+        const ext = path_1.default.extname(file.originalname);
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+        cb(null, `logo-${uniqueSuffix}${ext}`);
+    }
+});
+const upload = (0, multer_1.default)({
+    storage,
+    limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+    fileFilter: (req, file, cb) => {
+        if (file.mimetype.startsWith('image/'))
+            cb(null, true);
+        else
+            cb(new Error('Only image files are allowed!'));
+    }
+});
 const authenticateToken = (req, res, next) => {
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1];
@@ -173,7 +199,7 @@ app.post('/api/auth/login', authLimiter, async (req, res) => {
         if (!validPassword)
             return res.status(400).json({ error: 'Invalid email or password' });
         const token = jsonwebtoken_1.default.sign({ id: user.id, shopId: user.shopId, email: user.email, role: user.role, customRole: user.customRole, permissions: user.permissions }, JWT_SECRET, { expiresIn: '7d' });
-        res.json({ token, user: { id: user.id, name: user.name, email: user.email, shopId: user.shopId, shopName: user.shop?.name, shopEmail: user.shop?.email, shopPhone: user.shop?.phone, role: user.role, customRole: user.customRole, permissions: user.permissions } });
+        res.json({ token, user: { id: user.id, name: user.name, email: user.email, shopId: user.shopId, shopName: user.shop?.name, shopEmail: user.shop?.email, shopPhone: user.shop?.phone, shopSlogan: user.shop?.slogan, shopLogo: user.shop?.logoUrl, role: user.role, customRole: user.customRole, permissions: user.permissions } });
     }
     catch (error) {
         console.error("Login error:", error);
@@ -204,7 +230,7 @@ app.get('/api/auth/me', authenticateToken, async (req, res) => {
         });
         if (!user)
             return res.status(404).json({ error: 'User not found' });
-        res.json({ id: user.id, name: user.name, email: user.email, shopId: user.shopId, shopName: user.shop?.name, shopEmail: user.shop?.email, shopPhone: user.shop?.phone, role: user.role, customRole: user.customRole, permissions: user.permissions });
+        res.json({ id: user.id, name: user.name, email: user.email, shopId: user.shopId, shopName: user.shop?.name, shopEmail: user.shop?.email, shopPhone: user.shop?.phone, shopSlogan: user.shop?.slogan, shopLogo: user.shop?.logoUrl, role: user.role, customRole: user.customRole, permissions: user.permissions });
     }
     catch (error) {
         res.status(500).json({ error: 'Internal Server Error' });
@@ -334,15 +360,30 @@ app.get('/api/shop', authenticateToken, requireRole(client_1.Role.OWNER), async 
 });
 app.put('/api/shop', authenticateToken, requireRole(client_1.Role.OWNER), async (req, res) => {
     try {
-        const { name, trn, address, email, phone } = req.body;
+        const { name, trn, address, email, phone, slogan } = req.body;
         const shop = await prisma.shop.update({
             where: { id: req.user.shopId },
-            data: { name, trn, address, email, phone }
+            data: { name, trn, address, email, phone, slogan }
         });
         res.json(shop);
     }
     catch (error) {
         res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+app.post('/api/shop/logo', authenticateToken, requireRole(client_1.Role.OWNER), upload.single('logo'), async (req, res) => {
+    try {
+        if (!req.file)
+            return res.status(400).json({ error: 'No file uploaded' });
+        const logoUrl = `/uploads/${req.file.filename}`;
+        const shop = await prisma.shop.update({
+            where: { id: req.user.shopId },
+            data: { logoUrl }
+        });
+        res.json({ logoUrl: shop.logoUrl });
+    }
+    catch (error) {
+        res.status(500).json({ error: error.message || 'Internal Server Error' });
     }
 });
 // --- Subscription Routes ---
@@ -565,7 +606,7 @@ app.post('/api/inventory', authenticateToken, requireActiveOrTrial, requireAcces
             let prefix = 'XX';
             const shop = await prisma.shop.findUnique({ where: { id: shopId } });
             if (shop && shop.name) {
-                const words = shop.name.trim().split(/\s+/).filter(w => w.length > 0);
+                const words = shop.name.trim().split(/\s+/).filter((w) => w.length > 0);
                 if (words.length >= 2) {
                     prefix = (words[0][0] + words[1][0]).toUpperCase();
                 }
@@ -756,11 +797,11 @@ app.post('/api/sales/bulk', authenticateToken, requireActiveOrTrial, requireAcce
                 throw new Error('No valid items found to sell');
             }
             await tx.item.updateMany({
-                where: { id: { in: itemsToSell.map(i => i.id) } },
+                where: { id: { in: itemsToSell.map((i) => i.id) } },
                 data: { status: 'Sold' }
             });
             const makingChargePerItem = itemsToSell.length > 0 ? (Number(totalMakingCharge) || 0) / itemsToSell.length : 0;
-            const saleData = itemsToSell.map(item => ({
+            const saleData = itemsToSell.map((item) => ({
                 shopId,
                 itemId: item.id,
                 buyerId: actualBuyerId,
