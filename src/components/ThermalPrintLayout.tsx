@@ -96,7 +96,7 @@ const ThermalPrintLayout: React.FC = () => {
         <div className="flex items-center justify-between w-full h-full px-1">
           
           {/* Left Half (Front of Tag) - Shop Name and Barcode */}
-          <div className="flex flex-col items-center justify-center w-1/2 h-full pr-[0.15in] pl-[0.05in]">
+          <div className="flex flex-col items-center justify-center w-1/2 h-full pr-[14px] pl-[2px]">
             <h1 className="text-[9px] font-extrabold leading-none mb-[2px] uppercase tracking-tight text-center">{user?.shopName || 'Jewellery'}</h1>
             {barcodeError ? (
               <div className="text-center my-[1px] border border-black p-[1px] w-full">
@@ -108,7 +108,7 @@ const ThermalPrintLayout: React.FC = () => {
           </div>
           
           {/* Right Half (Back of Tag) - Details and Weight */}
-          <div className="flex flex-col justify-center w-1/2 h-full pl-[2px] pr-[0.05in] text-[8px] font-bold leading-[1.3]">
+          <div className="flex flex-col justify-center w-1/2 h-full pl-[14px] pr-[2px] text-[8px] font-bold leading-[1.3]">
             <div className="flex justify-between w-full mb-[1px]">
               <span className="truncate pr-1">{printItem.type}</span>
               <span className="truncate">{printItem.model}</span>
