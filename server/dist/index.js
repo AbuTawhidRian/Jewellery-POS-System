@@ -10,15 +10,29 @@ const dotenv_1 = __importDefault(require("dotenv"));
 const bcrypt_1 = __importDefault(require("bcrypt"));
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const path_1 = __importDefault(require("path"));
+const helmet_1 = __importDefault(require("helmet"));
+const express_rate_limit_1 = require("express-rate-limit");
+const zod_1 = require("zod");
 dotenv_1.default.config();
 const app = (0, express_1.default)();
 const prisma = new client_1.PrismaClient();
 const port = process.env.PORT || 80;
-const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret_key_123';
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+    console.error('FATAL ERROR: JWT_SECRET is not defined in .env');
+    process.exit(1);
+}
 const SUPERADMIN_EMAIL = process.env.SUPERADMIN_EMAIL || 'abutawhidrian@gmail.com';
-const SUPERADMIN_PASSWORD = process.env.SUPERADMIN_PASSWORD || '*Rian*143#';
+const SUPERADMIN_PASSWORD = process.env.SUPERADMIN_PASSWORD;
+if (!SUPERADMIN_PASSWORD) {
+    console.error('FATAL ERROR: SUPERADMIN_PASSWORD is not defined in .env');
+    process.exit(1);
+}
+app.use((0, helmet_1.default)({
+    contentSecurityPolicy: false,
+}));
 app.use((0, cors_1.default)());
-app.use(express_1.default.json());
+app.use(express_1.default.json({ limit: '1mb' }));
 const authenticateToken = (req, res, next) => {
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1];
@@ -82,9 +96,37 @@ const requireActiveOrTrial = async (req, res, next) => {
     }
 };
 // --- Auth Routes ---
-app.post('/api/auth/register', async (req, res) => {
+const authLimiter = (0, express_rate_limit_1.rateLimit)({
+    windowMs: 15 * 60 * 1000,
+    max: 10,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'Too many login attempts, please try again after 15 minutes' }
+});
+const registerSchema = zod_1.z.object({
+    shopName: zod_1.z.string().min(2, "Shop name must be at least 2 characters").max(100),
+    userName: zod_1.z.string().min(2, "Name must be at least 2 characters").max(100),
+    email: zod_1.z.string().email("Invalid email address"),
+    password: zod_1.z.string().min(8, "Password must be at least 8 characters").max(72)
+});
+const loginSchema = zod_1.z.object({
+    email: zod_1.z.string().email("Invalid email address"),
+    password: zod_1.z.string().min(1, "Password is required").max(72)
+});
+const userSchema = zod_1.z.object({
+    name: zod_1.z.string().min(2, "Name must be at least 2 characters").max(100),
+    email: zod_1.z.string().email("Invalid email address"),
+    password: zod_1.z.string().min(8, "Password must be at least 8 characters").max(72),
+    role: zod_1.z.string(),
+    customRole: zod_1.z.string().nullable().optional(),
+    permissions: zod_1.z.array(zod_1.z.string()).optional()
+});
+app.post('/api/auth/register', authLimiter, async (req, res) => {
     try {
-        const { shopName, userName, email, password } = req.body;
+        const parsed = registerSchema.safeParse(req.body);
+        if (!parsed.success)
+            return res.status(400).json({ error: parsed.error.issues[0].message });
+        const { shopName, userName, email, password } = parsed.data;
         const existingUser = await prisma.user.findUnique({ where: { email } });
         if (existingUser)
             return res.status(400).json({ error: 'Email already exists' });
@@ -118,9 +160,12 @@ app.post('/api/auth/register', async (req, res) => {
         res.status(500).json({ error: 'Internal Server Error' });
     }
 });
-app.post('/api/auth/login', async (req, res) => {
+app.post('/api/auth/login', authLimiter, async (req, res) => {
     try {
-        const { email, password } = req.body;
+        const parsed = loginSchema.safeParse(req.body);
+        if (!parsed.success)
+            return res.status(400).json({ error: parsed.error.issues[0].message });
+        const { email, password } = parsed.data;
         const user = await prisma.user.findUnique({ where: { email }, include: { shop: true } });
         if (!user)
             return res.status(400).json({ error: 'Invalid email or password' });
@@ -135,7 +180,7 @@ app.post('/api/auth/login', async (req, res) => {
         res.status(500).json({ error: 'Internal Server Error' });
     }
 });
-app.post('/api/auth/superadmin', async (req, res) => {
+app.post('/api/auth/superadmin', authLimiter, async (req, res) => {
     try {
         const { email, password } = req.body;
         if (email === SUPERADMIN_EMAIL && password === SUPERADMIN_PASSWORD) {
@@ -204,7 +249,10 @@ app.get('/api/users', authenticateToken, requireRole(client_1.Role.OWNER), async
 });
 app.post('/api/users', authenticateToken, requireRole(client_1.Role.OWNER), async (req, res) => {
     try {
-        const { name, email, password, role, customRole, permissions } = req.body;
+        const parsed = userSchema.safeParse(req.body);
+        if (!parsed.success)
+            return res.status(400).json({ error: parsed.error.issues[0].message });
+        const { name, email, password, role, customRole, permissions } = parsed.data;
         const existingUser = await prisma.user.findUnique({ where: { email } });
         if (existingUser)
             return res.status(400).json({ error: 'Email already exists' });
@@ -726,7 +774,7 @@ app.post('/api/sales/bulk', authenticateToken, requireActiveOrTrial, requireAcce
     }
     catch (error) {
         console.error("Bulk sale error:", error);
-        res.status(500).json({ error: error.message || 'Failed to process sale' });
+        res.status(500).json({ error: 'Failed to process sale' });
     }
 });
 app.get('/api/payments', authenticateToken, requireActiveOrTrial, async (req, res) => {
@@ -944,7 +992,7 @@ app.post('/api/sales/void', authenticateToken, requireActiveOrTrial, requireAcce
     }
     catch (error) {
         console.error("Void sale error:", error);
-        res.status(500).json({ error: error.message || 'Failed to void transaction' });
+        res.status(500).json({ error: 'Failed to void transaction' });
     }
 });
 app.post('/api/sales/return', authenticateToken, requireActiveOrTrial, requireAccess([client_1.Role.OWNER, client_1.Role.MANAGER, client_1.Role.CASHIER], ['access_pos', 'delete_sale']), async (req, res) => {
@@ -1006,7 +1054,7 @@ app.post('/api/sales/return', authenticateToken, requireActiveOrTrial, requireAc
     }
     catch (error) {
         console.error("Return item error:", error);
-        res.status(500).json({ error: error.message || 'Failed to return items' });
+        res.status(500).json({ error: 'Failed to return items' });
     }
 });
 // --- Serve React Frontend ---

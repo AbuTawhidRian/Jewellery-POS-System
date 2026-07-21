@@ -136,7 +136,7 @@ const userSchema = z.object({
 app.post('/api/auth/register', authLimiter, async (req, res) => {
   try {
     const parsed = registerSchema.safeParse(req.body);
-    if (!parsed.success) return res.status(400).json({ error: parsed.error.errors[0].message });
+    if (!parsed.success) return res.status(400).json({ error: parsed.error.issues[0].message });
     const { shopName, userName, email, password } = parsed.data;
     
     const existingUser = await prisma.user.findUnique({ where: { email } });
@@ -178,7 +178,7 @@ app.post('/api/auth/register', authLimiter, async (req, res) => {
 app.post('/api/auth/login', authLimiter, async (req, res) => {
   try {
     const parsed = loginSchema.safeParse(req.body);
-    if (!parsed.success) return res.status(400).json({ error: parsed.error.errors[0].message });
+    if (!parsed.success) return res.status(400).json({ error: parsed.error.issues[0].message });
     const { email, password } = parsed.data;
     
     const user = await prisma.user.findUnique({ where: { email }, include: { shop: true } });
@@ -270,7 +270,7 @@ app.get('/api/users', authenticateToken, requireRole(Role.OWNER), async (req: Au
   app.post('/api/users', authenticateToken, requireRole(Role.OWNER), async (req: AuthRequest, res) => {
     try {
       const parsed = userSchema.safeParse(req.body);
-      if (!parsed.success) return res.status(400).json({ error: parsed.error.errors[0].message });
+      if (!parsed.success) return res.status(400).json({ error: parsed.error.issues[0].message });
       const { name, email, password, role, customRole, permissions } = parsed.data;
       const existingUser = await prisma.user.findUnique({ where: { email } });
       if (existingUser) return res.status(400).json({ error: 'Email already exists' });
