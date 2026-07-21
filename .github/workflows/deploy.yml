@@ -32,4 +32,4 @@ jobs:
           docker build --no-cache -t jewellery-pos-app .
           docker stop jewellery-pos-container || true
           docker rm jewellery-pos-container || true
-          docker run -d -p 9999:80 --name jewellery-pos-container --network rxsheba_app-network -e DATABASE_URL="postgresql://rxsheba143:*rian*iloveu*shefa%23@postgres:5432/jewellery_pos" -e JWT_SECRET="s8d9f7g6h5j4k3l2m1n0b9v8c7x6z5a4q3w2e1r0t9y8u7i6o5p4" -e SUPERADMIN_PASSWORD="*Rian*Secure*Super*Admin*143#" --restart always jewellery-pos-app
+          docker run -d -p 9999:80 -v ~/jewellery-pos-uploads:/app/server/dist/uploads --name jewellery-pos-container --network rxsheba_app-network -e DATABASE_URL="postgresql://rxsheba143:*rian*iloveu*shefa%23@postgres:5432/jewellery_pos" -e JWT_SECRET="s8d9f7g6h5j4k3l2m1n0b9v8c7x6z5a4q3w2e1r0t9y8u7i6o5p4" -e SUPERADMIN_PASSWORD="*Rian*Secure*Super*Admin*143#" --restart always jewellery-pos-app
