@@ -5,18 +5,32 @@ import dotenv from 'dotenv';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import path from 'path';
+import helmet from 'helmet';
+import { rateLimit } from 'express-rate-limit';
+import { z } from 'zod';
 
 dotenv.config();
 
 const app = express();
 const prisma = new PrismaClient();
 const port = process.env.PORT || 80;
-const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret_key_123';
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+  console.error('FATAL ERROR: JWT_SECRET is not defined in .env');
+  process.exit(1);
+}
 const SUPERADMIN_EMAIL = process.env.SUPERADMIN_EMAIL || 'abutawhidrian@gmail.com';
-const SUPERADMIN_PASSWORD = process.env.SUPERADMIN_PASSWORD || '*Rian*143#';
+const SUPERADMIN_PASSWORD = process.env.SUPERADMIN_PASSWORD;
+if (!SUPERADMIN_PASSWORD) {
+  console.error('FATAL ERROR: SUPERADMIN_PASSWORD is not defined in .env');
+  process.exit(1);
+}
 
+app.use(helmet({
+  contentSecurityPolicy: false,
+}));
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '1mb' }));
 
 // --- Authentication & Authorization Middleware ---
 export interface AuthRequest extends Request {
@@ -91,10 +105,39 @@ const requireActiveOrTrial = async (req: AuthRequest, res: Response, next: NextF
 };
 
 // --- Auth Routes ---
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many login attempts, please try again after 15 minutes' }
+});
 
-app.post('/api/auth/register', async (req, res) => {
+const registerSchema = z.object({
+  shopName: z.string().min(2).max(100),
+  userName: z.string().min(2).max(100),
+  email: z.string().email(),
+  password: z.string().min(8).max(72)
+});
+
+const loginSchema = z.object({
+  email: z.string().email(),
+  password: z.string().min(1).max(72)
+});
+
+const userSchema = z.object({
+  name: z.string().min(2).max(100),
+  email: z.string().email(),
+  password: z.string().min(8).max(72),
+  role: z.string(),
+  customRole: z.string().nullable().optional(),
+  permissions: z.array(z.string()).optional()
+});
+app.post('/api/auth/register', authLimiter, async (req, res) => {
   try {
-    const { shopName, userName, email, password } = req.body;
+    const parsed = registerSchema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ error: 'Invalid input data' });
+    const { shopName, userName, email, password } = parsed.data;
     
     const existingUser = await prisma.user.findUnique({ where: { email } });
     if (existingUser) return res.status(400).json({ error: 'Email already exists' });
@@ -132,9 +175,11 @@ app.post('/api/auth/register', async (req, res) => {
   }
 });
 
-app.post('/api/auth/login', async (req, res) => {
+app.post('/api/auth/login', authLimiter, async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const parsed = loginSchema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ error: 'Invalid email or password format' });
+    const { email, password } = parsed.data;
     
     const user = await prisma.user.findUnique({ where: { email }, include: { shop: true } });
     if (!user) return res.status(400).json({ error: 'Invalid email or password' });
@@ -151,7 +196,7 @@ app.post('/api/auth/login', async (req, res) => {
   }
 });
 
-app.post('/api/auth/superadmin', async (req, res) => {
+app.post('/api/auth/superadmin', authLimiter, async (req, res) => {
   try {
     const { email, password } = req.body;
     if (email === SUPERADMIN_EMAIL && password === SUPERADMIN_PASSWORD) {
@@ -224,7 +269,9 @@ app.get('/api/users', authenticateToken, requireRole(Role.OWNER), async (req: Au
 
   app.post('/api/users', authenticateToken, requireRole(Role.OWNER), async (req: AuthRequest, res) => {
     try {
-      const { name, email, password, role, customRole, permissions } = req.body;
+      const parsed = userSchema.safeParse(req.body);
+      if (!parsed.success) return res.status(400).json({ error: 'Invalid user data format' });
+      const { name, email, password, role, customRole, permissions } = parsed.data;
       const existingUser = await prisma.user.findUnique({ where: { email } });
       if (existingUser) return res.status(400).json({ error: 'Email already exists' });
   
@@ -765,7 +812,7 @@ app.post('/api/sales/bulk', authenticateToken, requireActiveOrTrial, requireAcce
     res.json({ success: true, count: result, message: `Successfully processed ${result} items` });
   } catch (error: any) {
     console.error("Bulk sale error:", error);
-    res.status(500).json({ error: error.message || 'Failed to process sale' });
+    res.status(500).json({ error: 'Failed to process sale' });
   }
 });
 
@@ -997,7 +1044,7 @@ app.post('/api/sales/void', authenticateToken, requireActiveOrTrial, requireAcce
     res.json({ success: true, count: result, message: `Successfully voided transaction and returned ${result} items to stock` });
   } catch (error: any) {
     console.error("Void sale error:", error);
-    res.status(500).json({ error: error.message || 'Failed to void transaction' });
+    res.status(500).json({ error: 'Failed to void transaction' });
   }
 });
 
@@ -1070,7 +1117,7 @@ app.post('/api/sales/return', authenticateToken, requireActiveOrTrial, requireAc
     res.json({ success: true, count: result, message: `Successfully returned ${result} items to stock` });
   } catch (error: any) {
     console.error("Return item error:", error);
-    res.status(500).json({ error: error.message || 'Failed to return items' });
+    res.status(500).json({ error: 'Failed to return items' });
   }
 });
 
