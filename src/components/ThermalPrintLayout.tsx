@@ -118,24 +118,24 @@ const ThermalPrintLayout: React.FC = () => {
             
             <div className="flex justify-between w-full">
               <span>GW:</span>
-              <span>{parseFloat(printItem.weight as any || '0').toFixed(3)}g</span>
+              <span>{parseFloat(printItem.weight as any || '0').toFixed(2)}g</span>
             </div>
             
             {parseFloat(printItem.stone_weight as any || '0') > 0 ? (
               <>
                 <div className="flex justify-between w-full">
                   <span>SW:</span>
-                  <span>{parseFloat(printItem.stone_weight as any || '0').toFixed(3)}g</span>
+                  <span>{parseFloat(printItem.stone_weight as any || '0').toFixed(2)}g</span>
                 </div>
                 <div className="flex justify-between w-full border-t border-black/40 mt-[1px] pt-[1px]">
                   <span>NW:</span>
-                  <span>{(parseFloat(printItem.weight as any || '0') - parseFloat(printItem.stone_weight as any || '0')).toFixed(3)}g</span>
+                  <span>{(parseFloat(printItem.weight as any || '0') - parseFloat(printItem.stone_weight as any || '0')).toFixed(2)}g</span>
                 </div>
               </>
             ) : (
               <div className="flex justify-between w-full border-t border-black/40 mt-[1px] pt-[1px]">
                 <span>NW:</span>
-                <span>{parseFloat(printItem.weight as any || '0').toFixed(3)}g</span>
+                <span>{parseFloat(printItem.weight as any || '0').toFixed(2)}g</span>
               </div>
             )}
           </div>
