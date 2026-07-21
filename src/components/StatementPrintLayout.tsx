@@ -30,7 +30,7 @@ const StatementPrintLayout: React.FC = () => {
               <Diamond className="w-10 h-10 text-slate-800" />
               <div>
                 <h1 className="text-3xl font-bold tracking-tight text-slate-900">{user?.shopName || 'Jewellery Shop'}</h1>
-                <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Wholesale & Retail Trading</p>
+                <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{user?.shopSlogan || 'Wholesale & Retail Trading'}</p>
               </div>
             </div>
             <div className="text-right">

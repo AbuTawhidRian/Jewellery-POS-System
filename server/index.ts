@@ -189,7 +189,7 @@ app.post('/api/auth/login', authLimiter, async (req, res) => {
 
     const token = jwt.sign({ id: user.id, shopId: user.shopId, email: user.email, role: user.role, customRole: user.customRole, permissions: user.permissions }, JWT_SECRET, { expiresIn: '7d' });
     
-    res.json({ token, user: { id: user.id, name: user.name, email: user.email, shopId: user.shopId, shopName: user.shop?.name, shopEmail: user.shop?.email, shopPhone: user.shop?.phone, role: user.role, customRole: user.customRole, permissions: user.permissions } });
+    res.json({ token, user: { id: user.id, name: user.name, email: user.email, shopId: user.shopId, shopName: user.shop?.name, shopEmail: user.shop?.email, shopPhone: user.shop?.phone, shopSlogan: user.shop?.slogan, role: user.role, customRole: user.customRole, permissions: user.permissions } });
   } catch (error) {
     console.error("Login error:", error);
     res.status(500).json({ error: 'Internal Server Error' });
@@ -221,7 +221,7 @@ app.get('/api/auth/me', authenticateToken, async (req: AuthRequest, res) => {
     });
     if (!user) return res.status(404).json({ error: 'User not found' });
     
-    res.json({ id: user.id, name: user.name, email: user.email, shopId: user.shopId, shopName: user.shop?.name, shopEmail: user.shop?.email, shopPhone: user.shop?.phone, role: user.role, customRole: user.customRole, permissions: user.permissions });
+    res.json({ id: user.id, name: user.name, email: user.email, shopId: user.shopId, shopName: user.shop?.name, shopEmail: user.shop?.email, shopPhone: user.shop?.phone, shopSlogan: user.shop?.slogan, role: user.role, customRole: user.customRole, permissions: user.permissions });
   } catch (error) {
     res.status(500).json({ error: 'Internal Server Error' });
   }
@@ -352,10 +352,10 @@ app.get('/api/shop', authenticateToken, requireRole(Role.OWNER), async (req: Aut
 
 app.put('/api/shop', authenticateToken, requireRole(Role.OWNER), async (req: AuthRequest, res) => {
   try {
-    const { name, trn, address, email, phone } = req.body;
+    const { name, trn, address, email, phone, slogan } = req.body;
     const shop = await prisma.shop.update({
       where: { id: req.user!.shopId! },
-      data: { name, trn, address, email, phone }
+      data: { name, trn, address, email, phone, slogan }
     });
     res.json(shop);
   } catch (error) {

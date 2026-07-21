@@ -73,7 +73,7 @@ const Settings: React.FC = () => {
   }>({ isOpen: false, type: 'alert', title: '', message: '' });
 
   // Company State
-  const [shopInfo, setShopInfo] = useState({ name: '', trn: '', address: '', email: '', phone: '' });
+  const [shopInfo, setShopInfo] = useState({ name: '', trn: '', address: '', email: '', phone: '', slogan: '' });
   const [loadingShop, setLoadingShop] = useState(true);
   const [savingShop, setSavingShop] = useState(false);
 
@@ -117,7 +117,8 @@ const Settings: React.FC = () => {
         trn: res.data.trn || '',
         address: res.data.address || '',
         email: res.data.email || '',
-        phone: res.data.phone || ''
+        phone: res.data.phone || '',
+        slogan: res.data.slogan || ''
       });
     } catch (err) {
       console.error('Failed to fetch shop info', err);
@@ -297,6 +298,10 @@ const Settings: React.FC = () => {
               <div>
                 <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">Company Name</label>
                 <input required type="text" value={shopInfo.name} onChange={(e) => setShopInfo({...shopInfo, name: e.target.value})} className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-4 py-3 text-slate-900 dark:text-white focus:outline-none focus:border-gold-500" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">Company Slogan / Subtitle</label>
+                <input type="text" value={shopInfo.slogan} onChange={(e) => setShopInfo({...shopInfo, slogan: e.target.value})} className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-4 py-3 text-slate-900 dark:text-white focus:outline-none focus:border-gold-500" placeholder="e.g. Wholesale & Retail Trading" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">TRN Number</label>

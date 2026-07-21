@@ -29,6 +29,7 @@ model Shop {
   address   String?
   email     String?
   phone     String?
+  slogan    String?
   createdAt DateTime @default(now())
 
   users        User[]
