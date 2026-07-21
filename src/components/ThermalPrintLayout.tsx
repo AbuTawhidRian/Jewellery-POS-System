@@ -14,13 +14,13 @@ const ThermalPrintLayout: React.FC = () => {
       try {
         JsBarcode(barcodeRef.current, String(printItem.barcode), {
           format: "CODE128",
-          width: 1.1,
-          height: 22,
+          width: 1,
+          height: 24,
           displayValue: true,
-          fontSize: 12,
+          fontSize: 10,
           fontOptions: "bold",
           margin: 0,
-          textMargin: 2,
+          textMargin: 0,
           background: "#ffffff",
           lineColor: "#000000"
         });
@@ -33,13 +33,13 @@ const ThermalPrintLayout: React.FC = () => {
           try {
             (JsBarcode as any).default(barcodeRef.current, String(printItem.barcode), {
               format: "CODE128",
-              width: 1.1,
-              height: 22,
+              width: 1,
+              height: 24,
               displayValue: true,
-              fontSize: 12,
+              fontSize: 10,
               fontOptions: "bold",
               margin: 0,
-              textMargin: 2,
+              textMargin: 0,
               background: "#ffffff",
               lineColor: "#000000"
             });
@@ -89,8 +89,6 @@ const ThermalPrintLayout: React.FC = () => {
           }
           #print-area svg {
             image-rendering: pixelated;
-            max-width: 100%;
-            height: auto;
           }
         `}
       </style>
@@ -105,7 +103,7 @@ const ThermalPrintLayout: React.FC = () => {
                 <div className="text-[10px] font-mono font-bold">{printItem.barcode}</div>
               </div>
             ) : (
-              <svg ref={barcodeRef} style={{ shapeRendering: 'crispEdges' }} className="w-full max-h-[0.35in]"></svg>
+              <svg ref={barcodeRef} style={{ shapeRendering: 'crispEdges' }}></svg>
             )}
           </div>
           
