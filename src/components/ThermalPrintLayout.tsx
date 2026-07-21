@@ -14,13 +14,13 @@ const ThermalPrintLayout: React.FC = () => {
       try {
         JsBarcode(barcodeRef.current, String(printItem.barcode), {
           format: "CODE128",
-          width: 1,
-          height: 24,
+          width: 1.1,
+          height: 22,
           displayValue: true,
-          fontSize: 10,
+          fontSize: 12,
           fontOptions: "bold",
           margin: 0,
-          textMargin: 0,
+          textMargin: 2,
           background: "#ffffff",
           lineColor: "#000000"
         });
@@ -33,13 +33,13 @@ const ThermalPrintLayout: React.FC = () => {
           try {
             (JsBarcode as any).default(barcodeRef.current, String(printItem.barcode), {
               format: "CODE128",
-              width: 1,
-              height: 24,
+              width: 1.1,
+              height: 22,
               displayValue: true,
-              fontSize: 10,
+              fontSize: 12,
               fontOptions: "bold",
               margin: 0,
-              textMargin: 0,
+              textMargin: 2,
               background: "#ffffff",
               lineColor: "#000000"
             });
@@ -89,6 +89,8 @@ const ThermalPrintLayout: React.FC = () => {
           }
           #print-area svg {
             image-rendering: pixelated;
+            max-width: 100%;
+            height: auto;
           }
         `}
       </style>
@@ -96,19 +98,19 @@ const ThermalPrintLayout: React.FC = () => {
         <div className="flex items-center justify-between w-full h-full px-1">
           
           {/* Left Half (Front of Tag) - Shop Name and Barcode */}
-          <div className="flex flex-col items-center justify-center w-1/2 h-full pr-1">
-            <h1 className="text-[7px] font-bold leading-none mb-[2px] uppercase tracking-tight truncate w-full text-center">{user?.shopName || 'Jewellery'}</h1>
+          <div className="flex flex-col items-center justify-center w-1/2 h-full pr-[0.15in] pl-[0.05in]">
+            <h1 className="text-[9px] font-extrabold leading-none mb-[2px] uppercase tracking-tight text-center">{user?.shopName || 'Jewellery'}</h1>
             {barcodeError ? (
               <div className="text-center my-[1px] border border-black p-[1px] w-full">
-                <div className="text-[8px] font-mono">{printItem.barcode}</div>
+                <div className="text-[10px] font-mono font-bold">{printItem.barcode}</div>
               </div>
             ) : (
-              <svg ref={barcodeRef} style={{ shapeRendering: 'crispEdges' }}></svg>
+              <svg ref={barcodeRef} style={{ shapeRendering: 'crispEdges' }} className="w-full max-h-[0.35in]"></svg>
             )}
           </div>
           
           {/* Right Half (Back of Tag) - Details and Weight */}
-          <div className="flex flex-col justify-center w-1/2 h-full pl-2 text-[7px] font-bold leading-[1.2]">
+          <div className="flex flex-col justify-center w-1/2 h-full pl-[0.22in] pr-[0.05in] text-[8px] font-bold leading-[1.3]">
             <div className="flex justify-between w-full mb-[1px]">
               <span className="truncate pr-1">{printItem.type}</span>
               <span className="truncate">{printItem.model}</span>
@@ -125,13 +127,13 @@ const ThermalPrintLayout: React.FC = () => {
                   <span>SW:</span>
                   <span>{parseFloat(printItem.stone_weight as any || '0').toFixed(3)}g</span>
                 </div>
-                <div className="flex justify-between w-full border-t border-black/30 mt-[1px] pt-[1px]">
+                <div className="flex justify-between w-full border-t border-black/40 mt-[1px] pt-[1px]">
                   <span>NW:</span>
                   <span>{(parseFloat(printItem.weight as any || '0') - parseFloat(printItem.stone_weight as any || '0')).toFixed(3)}g</span>
                 </div>
               </>
             ) : (
-              <div className="flex justify-between w-full border-t border-black/30 mt-[1px] pt-[1px]">
+              <div className="flex justify-between w-full border-t border-black/40 mt-[1px] pt-[1px]">
                 <span>NW:</span>
                 <span>{parseFloat(printItem.weight as any || '0').toFixed(3)}g</span>
               </div>
