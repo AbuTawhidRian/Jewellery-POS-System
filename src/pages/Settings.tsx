@@ -73,7 +73,8 @@ const Settings: React.FC = () => {
   }>({ isOpen: false, type: 'alert', title: '', message: '' });
 
   // Company State
-  const [shopInfo, setShopInfo] = useState({ name: '', trn: '', address: '', email: '', phone: '', slogan: '' });
+  const [shopInfo, setShopInfo] = useState({ name: '', trn: '', address: '', email: '', phone: '', slogan: '', logoUrl: '' });
+  const [logoFile, setLogoFile] = useState<File | null>(null);
   const [loadingShop, setLoadingShop] = useState(true);
   const [savingShop, setSavingShop] = useState(false);
 
@@ -118,7 +119,8 @@ const Settings: React.FC = () => {
         address: res.data.address || '',
         email: res.data.email || '',
         phone: res.data.phone || '',
-        slogan: res.data.slogan || ''
+        slogan: res.data.slogan || '',
+        logoUrl: res.data.logoUrl || ''
       });
     } catch (err) {
       console.error('Failed to fetch shop info', err);
@@ -132,6 +134,17 @@ const Settings: React.FC = () => {
     setSavingShop(true);
     try {
       await api.put('/shop', shopInfo);
+      
+      if (logoFile) {
+        const formData = new FormData();
+        formData.append('logo', logoFile);
+        await api.post('/shop/logo', formData, {
+          headers: { 'Content-Type': 'multipart/form-data' }
+        });
+        setLogoFile(null);
+        await fetchShopInfo();
+      }
+
       showNotification('success', 'Company information updated successfully!');
     } catch (err) {
       showNotification('error', 'Failed to update company information');
@@ -295,6 +308,21 @@ const Settings: React.FC = () => {
             <p className="text-slate-600 dark:text-slate-400">Loading company information...</p>
           ) : (
             <form onSubmit={handleUpdateShopInfo} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">Company Logo</label>
+                <div className="flex items-center gap-4">
+                  {shopInfo.logoUrl && !logoFile ? (
+                    <img src={shopInfo.logoUrl} alt="Shop Logo" className="w-16 h-16 object-contain border border-slate-200 dark:border-slate-800 rounded-lg p-1 bg-white" onError={(e) => e.currentTarget.style.display = 'none'} />
+                  ) : logoFile ? (
+                    <img src={URL.createObjectURL(logoFile)} alt="New Logo" className="w-16 h-16 object-contain border border-slate-200 dark:border-slate-800 rounded-lg p-1 bg-white" />
+                  ) : (
+                    <div className="w-16 h-16 flex items-center justify-center border border-slate-200 dark:border-slate-800 rounded-lg bg-slate-50 dark:bg-slate-900 text-slate-400">
+                      No Logo
+                    </div>
+                  )}
+                  <input type="file" accept="image/*" onChange={(e) => e.target.files && setLogoFile(e.target.files[0])} className="text-sm text-slate-600 dark:text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-gold-500/10 file:text-gold-500 hover:file:bg-gold-500/20" />
+                </div>
+              </div>
               <div>
                 <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">Company Name</label>
                 <input required type="text" value={shopInfo.name} onChange={(e) => setShopInfo({...shopInfo, name: e.target.value})} className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-4 py-3 text-slate-900 dark:text-white focus:outline-none focus:border-gold-500" />

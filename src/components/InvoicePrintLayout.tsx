@@ -24,9 +24,13 @@ const InvoicePrintLayout: React.FC = () => {
       <div className="max-w-[21cm] mx-auto p-12 bg-white">
         
         {/* Header */}
-        <div className="flex justify-between items-start border-b-2 border-slate-200 pb-8 mb-8">
+        <div className="flex justify-between items-start border-b-2 border-slate-200 pb-4 mb-4">
           <div className="flex items-center gap-3">
-            <Diamond className="w-10 h-10 text-slate-800" />
+            {user?.shopLogo ? (
+              <img src={user.shopLogo} alt="Shop Logo" className="w-12 h-12 object-contain" />
+            ) : (
+              <Diamond className="w-10 h-10 text-slate-800" />
+            )}
             <div>
               <h1 className="text-3xl font-bold tracking-tight text-slate-900">{user?.shopName || 'Jewellery Shop'}</h1>
               <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{user?.shopSlogan || 'Wholesale & Retail Trading'}</p>

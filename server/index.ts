@@ -8,6 +8,8 @@ import path from 'path';
 import helmet from 'helmet';
 import { rateLimit } from 'express-rate-limit';
 import { z } from 'zod';
+import multer from 'multer';
+import fs from 'fs';
 
 dotenv.config();
 
@@ -31,6 +33,30 @@ app.use(helmet({
 }));
 app.use(cors());
 app.use(express.json({ limit: '1mb' }));
+
+// Setup file uploads
+const uploadsDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
+app.use('/uploads', express.static(uploadsDir));
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, uploadsDir),
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname);
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+    cb(null, `logo-${uniqueSuffix}${ext}`);
+  }
+});
+const upload = multer({
+  storage,
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype.startsWith('image/')) cb(null, true);
+    else cb(new Error('Only image files are allowed!'));
+  }
+});
 
 // --- Authentication & Authorization Middleware ---
 export interface AuthRequest extends Request {
@@ -189,7 +215,7 @@ app.post('/api/auth/login', authLimiter, async (req, res) => {
 
     const token = jwt.sign({ id: user.id, shopId: user.shopId, email: user.email, role: user.role, customRole: user.customRole, permissions: user.permissions }, JWT_SECRET, { expiresIn: '7d' });
     
-    res.json({ token, user: { id: user.id, name: user.name, email: user.email, shopId: user.shopId, shopName: user.shop?.name, shopEmail: user.shop?.email, shopPhone: user.shop?.phone, shopSlogan: user.shop?.slogan, role: user.role, customRole: user.customRole, permissions: user.permissions } });
+    res.json({ token, user: { id: user.id, name: user.name, email: user.email, shopId: user.shopId, shopName: user.shop?.name, shopEmail: user.shop?.email, shopPhone: user.shop?.phone, shopSlogan: user.shop?.slogan, shopLogo: user.shop?.logoUrl, role: user.role, customRole: user.customRole, permissions: user.permissions } });
   } catch (error) {
     console.error("Login error:", error);
     res.status(500).json({ error: 'Internal Server Error' });
@@ -221,7 +247,7 @@ app.get('/api/auth/me', authenticateToken, async (req: AuthRequest, res) => {
     });
     if (!user) return res.status(404).json({ error: 'User not found' });
     
-    res.json({ id: user.id, name: user.name, email: user.email, shopId: user.shopId, shopName: user.shop?.name, shopEmail: user.shop?.email, shopPhone: user.shop?.phone, shopSlogan: user.shop?.slogan, role: user.role, customRole: user.customRole, permissions: user.permissions });
+    res.json({ id: user.id, name: user.name, email: user.email, shopId: user.shopId, shopName: user.shop?.name, shopEmail: user.shop?.email, shopPhone: user.shop?.phone, shopSlogan: user.shop?.slogan, shopLogo: user.shop?.logoUrl, role: user.role, customRole: user.customRole, permissions: user.permissions });
   } catch (error) {
     res.status(500).json({ error: 'Internal Server Error' });
   }
@@ -360,6 +386,22 @@ app.put('/api/shop', authenticateToken, requireRole(Role.OWNER), async (req: Aut
     res.json(shop);
   } catch (error) {
     res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+app.post('/api/shop/logo', authenticateToken, requireRole(Role.OWNER), upload.single('logo'), async (req: AuthRequest, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
+    
+    const logoUrl = `/uploads/${req.file.filename}`;
+    const shop = await prisma.shop.update({
+      where: { id: req.user!.shopId! },
+      data: { logoUrl }
+    });
+    
+    res.json({ logoUrl: shop.logoUrl });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || 'Internal Server Error' });
   }
 });
 

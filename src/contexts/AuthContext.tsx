@@ -9,6 +9,7 @@ interface User {
   shopEmail?: string;
   shopPhone?: string;
   shopSlogan?: string;
+  shopLogo?: string;
   role: string;
   customRole?: string;
   permissions?: string[];
