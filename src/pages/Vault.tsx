@@ -9,6 +9,7 @@ const Vault: React.FC = () => {
   const canEditVault = hasPermission('edit_vault');
   const { items, itemTypes, addItem, editItem, deleteItem, setPrintItem, setPrintInvoiceData, setPrintStatementData, addItemType, editItemType, deleteItemType, models, addModel, editModel, deleteModel } = useInventory();
   const [searchTerm, setSearchTerm] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
   
   // Form State
   const [type, setType] = useState('');
@@ -84,6 +85,17 @@ const Vault: React.FC = () => {
     i.barcode.toLowerCase().includes(searchTerm.toLowerCase()) || 
     i.type.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const ITEMS_PER_PAGE = 10;
+  const totalPages = Math.ceil(filteredStock.length / ITEMS_PER_PAGE);
+  const paginatedStock = filteredStock.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
 
   const handlePrint = (item: Item) => {
     setPrintInvoiceData(null); // Clear any pending invoice
@@ -341,14 +353,14 @@ const Vault: React.FC = () => {
                     </tr>
                   </thead>
                   <tbody className="text-sm">
-                    {filteredStock.length === 0 ? (
+                    {paginatedStock.length === 0 ? (
                       <tr>
                         <td colSpan={7} className="py-8 text-center text-slate-500 dark:text-slate-400">
                           No items found in active stock.
                         </td>
                       </tr>
                     ) : (
-                      filteredStock.map((item) => {
+                      paginatedStock.map((item) => {
                         const sw = Number(item.stone_weight) || 0;
                         const gw = Number(item.weight) || 0;
                         const nw = Math.max(0, gw - sw);
@@ -434,6 +446,33 @@ const Vault: React.FC = () => {
                   </tbody>
                 </table>
               </div>
+
+              {totalPages > 1 && (
+                <div className="flex items-center justify-between mt-4 px-2">
+                  <div className="text-sm text-slate-500 dark:text-slate-400 hidden sm:block">
+                    Showing {(currentPage - 1) * ITEMS_PER_PAGE + 1} to {Math.min(currentPage * ITEMS_PER_PAGE, filteredStock.length)} of {filteredStock.length} items
+                  </div>
+                  <div className="flex gap-2 w-full sm:w-auto justify-between sm:justify-end">
+                    <button
+                      onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                      disabled={currentPage === 1}
+                      className="px-3 py-1 rounded-lg border border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-400 disabled:opacity-50 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+                    >
+                      Previous
+                    </button>
+                    <div className="text-sm text-slate-500 dark:text-slate-400 sm:hidden flex items-center">
+                      {currentPage} / {totalPages}
+                    </div>
+                    <button
+                      onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                      disabled={currentPage === totalPages}
+                      className="px-3 py-1 rounded-lg border border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-400 disabled:opacity-50 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+                    >
+                      Next
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -463,12 +502,12 @@ const Vault: React.FC = () => {
                   itemTypes.map(t => (
                     <div key={t.id} className="flex justify-between items-center bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-3">
                       {editingTypeId === t.id ? (
-                        <div className="flex flex-1 gap-2 mr-2">
+                        <div className="flex flex-1 flex-col sm:flex-row gap-2 mr-2 min-w-0">
                           <input
                             type="text"
                             value={editingTypeName}
                             onChange={(e) => setEditingTypeName(e.target.value)}
-                            className="flex-1 bg-slate-50 dark:bg-slate-900 border border-gold-500 rounded px-2 py-1 text-slate-900 dark:text-slate-100 text-sm focus:outline-none"
+                            className="flex-1 bg-slate-50 dark:bg-slate-900 border border-gold-500 rounded px-2 py-1 text-slate-900 dark:text-slate-100 text-sm focus:outline-none min-w-0"
                             autoFocus
                             placeholder="Type Name"
                           />
@@ -477,18 +516,18 @@ const Vault: React.FC = () => {
                             step="0.001"
                             value={editingTypePurity}
                             onChange={(e) => setEditingTypePurity(e.target.value)}
-                            className="w-24 bg-slate-50 dark:bg-slate-900 border border-gold-500 rounded px-2 py-1 text-slate-900 dark:text-slate-100 text-sm focus:outline-none"
-                            placeholder="Purity (e.g. 0.75)"
+                            className="w-full sm:w-24 bg-slate-50 dark:bg-slate-900 border border-gold-500 rounded px-2 py-1 text-slate-900 dark:text-slate-100 text-sm focus:outline-none"
+                            placeholder="Purity"
                           />
                         </div>
                       ) : (
-                        <div className="flex flex-1 justify-between mr-4">
-                          <span className="text-slate-800 dark:text-slate-200 font-medium">{t.name}</span>
-                          <span className="text-slate-500 dark:text-slate-400 text-sm">Purity: {t.purity ?? 1.0}</span>
+                        <div className="flex flex-1 justify-between items-center mr-4 min-w-0 gap-2">
+                          <span className="text-slate-800 dark:text-slate-200 font-medium truncate">{t.name}</span>
+                          <span className="text-slate-500 dark:text-slate-400 text-sm whitespace-nowrap shrink-0">Purity: {t.purity ?? 1.0}</span>
                         </div>
                       )}
                       
-                      <div className="flex items-center">
+                      <div className="flex items-center shrink-0">
                         {editingTypeId === t.id ? (
                           <>
                             <button
