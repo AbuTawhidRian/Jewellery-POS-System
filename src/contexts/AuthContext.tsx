@@ -13,7 +13,6 @@ interface User {
   role: string;
   customRole?: string;
   permissions?: string[];
-  branchId?: string | null;
   accessibleBranches?: string[];
   mainBranches?: string[];
 }
@@ -64,9 +63,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               if (freshUser.accessibleBranches && freshUser.accessibleBranches.length > 0) {
                 localStorage.setItem('activeBranchId', freshUser.accessibleBranches[0]);
                 window.location.reload();
-              } else if (freshUser.branchId) {
-                localStorage.setItem('activeBranchId', freshUser.branchId);
-                window.location.reload();
               }
             }
           }
@@ -90,8 +86,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!localStorage.getItem('activeBranchId')) {
       if (newUser.accessibleBranches && newUser.accessibleBranches.length > 0) {
         localStorage.setItem('activeBranchId', newUser.accessibleBranches[0]);
-      } else if (newUser.branchId) {
-        localStorage.setItem('activeBranchId', newUser.branchId);
       }
     }
   };

@@ -284,9 +284,9 @@ app.post('/api/auth/login', authLimiter, async (req, res) => {
     });
     const mainBranchIds = mainBranches.map(b => b.id);
 
-    const token = jwt.sign({ id: user.id, shopId: user.shopId, branchId: user.branchId, accessibleBranches: user.accessibleBranches, email: user.email, role: user.role, customRole: user.customRole, permissions: user.permissions }, JWT_SECRET, { expiresIn: '7d' });
+    const token = jwt.sign({ id: user.id, shopId: user.shopId, accessibleBranches: user.accessibleBranches, email: user.email, role: user.role, customRole: user.customRole, permissions: user.permissions }, JWT_SECRET, { expiresIn: '7d' });
     
-    res.json({ token, user: { id: user.id, name: user.name, email: user.email, shopId: user.shopId, branchId: user.branchId, accessibleBranches: user.accessibleBranches, mainBranches: mainBranchIds, shopName: user.shop?.name, shopEmail: user.shop?.email, shopPhone: user.shop?.phone, shopSlogan: user.shop?.slogan, shopLogo: user.shop?.logoUrl, role: user.role, customRole: user.customRole, permissions: user.permissions } });
+    res.json({ token, user: { id: user.id, name: user.name, email: user.email, shopId: user.shopId, accessibleBranches: user.accessibleBranches, mainBranches: mainBranchIds, shopName: user.shop?.name, shopEmail: user.shop?.email, shopPhone: user.shop?.phone, shopSlogan: user.shop?.slogan, shopLogo: user.shop?.logoUrl, role: user.role, customRole: user.customRole, permissions: user.permissions } });
   } catch (error) {
     console.error("Login error:", error);
     res.status(500).json({ error: 'Internal Server Error' });
@@ -318,10 +318,8 @@ app.get('/api/auth/me', authenticateToken, async (req: AuthRequest, res) => {
     });
     if (!user) return res.status(404).json({ error: 'User not found' });
     
-    // Allow header override for Owners/Managers, otherwise use default branch
-    const targetBranchId = (req.user?.role === 'OWNER' || req.user?.role === 'MANAGER') && req.user?.branchId 
-      ? req.user.branchId 
-      : user.branchId;
+    // Use the active branch from the request header
+    const targetBranchId = req.user?.branchId || null;
 
     res.json({ id: user.id, name: user.name, email: user.email, shopId: user.shopId, branchId: targetBranchId, shopName: user.shop?.name, shopEmail: user.shop?.email, shopPhone: user.shop?.phone, shopSlogan: user.shop?.slogan, shopLogo: user.shop?.logoUrl, role: user.role, customRole: user.customRole, permissions: user.permissions });
   } catch (error) {

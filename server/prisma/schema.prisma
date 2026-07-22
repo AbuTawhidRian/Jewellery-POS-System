@@ -55,7 +55,6 @@ model Branch {
 
   shop      Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
   
-  users        User[]
   items        Item[]
   buyers       Buyer[]
   sales        Sale[]
@@ -75,13 +74,11 @@ model User {
   customRole   String?
   permissions  String[] @default([])
   shopId       String
-  branchId     String?
   accessibleBranches String[] @default([])
   createdAt    DateTime @default(now())
   updatedAt    DateTime @default(now()) @updatedAt
 
   shop   Shop    @relation(fields: [shopId], references: [id], onDelete: Cascade)
-  branch Branch? @relation(fields: [branchId], references: [id])
 }
 
 model Subscription {

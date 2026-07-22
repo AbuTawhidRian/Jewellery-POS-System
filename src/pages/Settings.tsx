@@ -514,20 +514,41 @@ const Settings: React.FC = () => {
                 <div>
                   <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-3">Accessible Branches</label>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {branches.map(b => (
-                      <label key={b.id} className="flex items-center gap-3 p-3 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950/50 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
-                        <input 
-                          type="checkbox" 
-                          className="w-4 h-4 rounded border-slate-300 dark:border-slate-700 text-gold-500 focus:ring-gold-500 focus:ring-offset-slate-900 bg-slate-50 dark:bg-slate-900"
-                          checked={newStaff.accessibleBranches.includes(b.id)}
-                          onChange={(e) => {
-                            if (e.target.checked) setNewStaff({...newStaff, accessibleBranches: [...newStaff.accessibleBranches, b.id]});
-                            else setNewStaff({...newStaff, accessibleBranches: newStaff.accessibleBranches.filter(id => id !== b.id)});
-                          }}
-                        />
-                        <span className="text-sm text-slate-700 dark:text-slate-300">{b.name} {b.isMain && '(Main)'}</span>
-                      </label>
-                    ))}
+                    <label className="flex items-center gap-3 p-3 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950/50 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+                      <input 
+                        type="checkbox" 
+                        className="w-4 h-4 rounded border-slate-300 dark:border-slate-700 text-gold-500 focus:ring-gold-500 focus:ring-offset-slate-900 bg-slate-50 dark:bg-slate-900"
+                        checked={branches.filter(b => b.isMain).length > 0 && branches.filter(b => b.isMain).every(b => newStaff.accessibleBranches.includes(b.id))}
+                        onChange={(e) => {
+                          const mainIds = branches.filter(b => b.isMain).map(b => b.id);
+                          if (e.target.checked) {
+                            const idsToAdd = mainIds.filter(id => !newStaff.accessibleBranches.includes(id));
+                            setNewStaff({...newStaff, accessibleBranches: [...newStaff.accessibleBranches, ...idsToAdd]});
+                          } else {
+                            setNewStaff({...newStaff, accessibleBranches: newStaff.accessibleBranches.filter(id => !mainIds.includes(id))});
+                          }
+                        }}
+                      />
+                      <span className="text-sm text-slate-700 dark:text-slate-300">Main Branch</span>
+                    </label>
+
+                    <label className="flex items-center gap-3 p-3 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950/50 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+                      <input 
+                        type="checkbox" 
+                        className="w-4 h-4 rounded border-slate-300 dark:border-slate-700 text-gold-500 focus:ring-gold-500 focus:ring-offset-slate-900 bg-slate-50 dark:bg-slate-900"
+                        checked={branches.filter(b => !b.isMain).length > 0 && branches.filter(b => !b.isMain).every(b => newStaff.accessibleBranches.includes(b.id))}
+                        onChange={(e) => {
+                          const otherIds = branches.filter(b => !b.isMain).map(b => b.id);
+                          if (e.target.checked) {
+                            const idsToAdd = otherIds.filter(id => !newStaff.accessibleBranches.includes(id));
+                            setNewStaff({...newStaff, accessibleBranches: [...newStaff.accessibleBranches, ...idsToAdd]});
+                          } else {
+                            setNewStaff({...newStaff, accessibleBranches: newStaff.accessibleBranches.filter(id => !otherIds.includes(id))});
+                          }
+                        }}
+                      />
+                      <span className="text-sm text-slate-700 dark:text-slate-300">Others Branch</span>
+                    </label>
                   </div>
                 </div>
 
@@ -591,21 +612,43 @@ const Settings: React.FC = () => {
                   <div>
                     <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-3">Accessible Branches</label>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      {branches.map(b => (
-                        <label key={b.id} className="flex items-center gap-3 p-3 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800/80 transition-colors">
-                          <input 
-                            type="checkbox" 
-                            className="w-4 h-4 rounded border-slate-300 dark:border-slate-700 text-gold-500 focus:ring-gold-500 focus:ring-offset-slate-900 bg-white dark:bg-slate-950"
-                            checked={(editingStaff.accessibleBranches || []).includes(b.id)}
-                            onChange={(e) => {
-                              const branchesList = editingStaff.accessibleBranches || [];
-                              if (e.target.checked) setEditingStaff({...editingStaff, accessibleBranches: [...branchesList, b.id]});
-                              else setEditingStaff({...editingStaff, accessibleBranches: branchesList.filter(id => id !== b.id)});
-                            }}
-                          />
-                          <span className="text-sm text-slate-700 dark:text-slate-300">{b.name} {b.isMain && '(Main)'}</span>
-                        </label>
-                      ))}
+                      <label className="flex items-center gap-3 p-3 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800/80 transition-colors">
+                        <input 
+                          type="checkbox" 
+                          className="w-4 h-4 rounded border-slate-300 dark:border-slate-700 text-gold-500 focus:ring-gold-500 focus:ring-offset-slate-900 bg-white dark:bg-slate-950"
+                          checked={branches.filter(b => b.isMain).length > 0 && branches.filter(b => b.isMain).every(b => (editingStaff.accessibleBranches || []).includes(b.id))}
+                          onChange={(e) => {
+                            const mainIds = branches.filter(b => b.isMain).map(b => b.id);
+                            const currentBranches = editingStaff.accessibleBranches || [];
+                            if (e.target.checked) {
+                              const idsToAdd = mainIds.filter(id => !currentBranches.includes(id));
+                              setEditingStaff({...editingStaff, accessibleBranches: [...currentBranches, ...idsToAdd]});
+                            } else {
+                              setEditingStaff({...editingStaff, accessibleBranches: currentBranches.filter(id => !mainIds.includes(id))});
+                            }
+                          }}
+                        />
+                        <span className="text-sm text-slate-700 dark:text-slate-300">Main Branch</span>
+                      </label>
+
+                      <label className="flex items-center gap-3 p-3 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800/80 transition-colors">
+                        <input 
+                          type="checkbox" 
+                          className="w-4 h-4 rounded border-slate-300 dark:border-slate-700 text-gold-500 focus:ring-gold-500 focus:ring-offset-slate-900 bg-white dark:bg-slate-950"
+                          checked={branches.filter(b => !b.isMain).length > 0 && branches.filter(b => !b.isMain).every(b => (editingStaff.accessibleBranches || []).includes(b.id))}
+                          onChange={(e) => {
+                            const otherIds = branches.filter(b => !b.isMain).map(b => b.id);
+                            const currentBranches = editingStaff.accessibleBranches || [];
+                            if (e.target.checked) {
+                              const idsToAdd = otherIds.filter(id => !currentBranches.includes(id));
+                              setEditingStaff({...editingStaff, accessibleBranches: [...currentBranches, ...idsToAdd]});
+                            } else {
+                              setEditingStaff({...editingStaff, accessibleBranches: currentBranches.filter(id => !otherIds.includes(id))});
+                            }
+                          }}
+                        />
+                        <span className="text-sm text-slate-700 dark:text-slate-300">Others Branch</span>
+                      </label>
                     </div>
                   </div>
 
