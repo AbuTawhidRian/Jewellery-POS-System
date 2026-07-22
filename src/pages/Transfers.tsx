@@ -218,7 +218,7 @@ const Transfers: React.FC = () => {
                       className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-[#C28C46]"
                     >
                       <option value="">Select a branch...</option>
-                      {branches.map(b => (
+                      {branches.filter(b => b.id !== activeBranchId).map(b => (
                         <option key={b.id} value={b.id}>{b.name} {b.isMain ? '(Main Shop)' : ''}</option>
                       ))}
                     </select>

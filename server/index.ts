@@ -68,6 +68,7 @@ export interface AuthRequest extends Request {
     role: Role | 'SUPERADMIN';
     customRole?: string | null;
     permissions?: string[];
+    isReadOnly?: boolean;
   };
   file?: any;
 }
@@ -85,10 +86,17 @@ const authenticateToken = (req: AuthRequest, res: Response, next: NextFunction) 
     // Allow Owner/Manager to switch branches via header
     if (requestedBranchId && typeof requestedBranchId === 'string') {
       if (user.role === 'OWNER' || user.role === 'MANAGER' || user.role === 'SUPERADMIN') {
+        if (user.branchId !== requestedBranchId) {
+          user.isReadOnly = true;
+        }
         user.branchId = requestedBranchId;
       }
     }
     
+    if (user.isReadOnly && ['POST', 'PUT', 'DELETE'].includes(req.method)) {
+      return res.status(403).json({ error: 'Read-only mode: You cannot edit data in other branches.' });
+    }
+
     req.user = user;
     next();
   });
