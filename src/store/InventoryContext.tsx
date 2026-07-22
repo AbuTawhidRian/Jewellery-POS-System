@@ -147,6 +147,11 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     if (options.body && !headers.has('Content-Type')) {
       headers.set('Content-Type', 'application/json');
     }
+    
+    const activeBranchId = localStorage.getItem('activeBranchId');
+    if (activeBranchId) {
+      headers.set('X-Branch-Id', activeBranchId);
+    }
 
     return fetch(url, { ...options, headers });
   };
