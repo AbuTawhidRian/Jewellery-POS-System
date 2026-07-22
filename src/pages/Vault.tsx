@@ -624,7 +624,7 @@ const Vault: React.FC = () => {
                     type="text"
                     value={newTypeName}
                     onChange={(e) => setNewTypeName(e.target.value)}
-                    className="flex-1 bg-white dark:bg-slate-950 border-2 border-slate-300 dark:border-slate-700 focus:border-gold-500 rounded-xl px-4 py-2 text-slate-900 dark:text-slate-100 focus:outline-none transition-colors"
+                    className="flex-1 min-w-0 bg-white dark:bg-slate-950 border-2 border-slate-300 dark:border-slate-700 focus:border-gold-500 rounded-xl px-4 py-2 text-slate-900 dark:text-slate-100 focus:outline-none transition-colors"
                     placeholder="e.g. 21k Gold Bar"
                   />
                   <input 
@@ -782,7 +782,7 @@ const Vault: React.FC = () => {
                     type="text"
                     value={newModelName}
                     onChange={(e) => setNewModelName(e.target.value)}
-                    className="flex-1 bg-white dark:bg-slate-950 border-2 border-slate-300 dark:border-slate-700 focus:border-gold-500 rounded-xl px-4 py-2 text-slate-900 dark:text-slate-100 focus:outline-none transition-colors"
+                    className="flex-1 min-w-0 bg-white dark:bg-slate-950 border-2 border-slate-300 dark:border-slate-700 focus:border-gold-500 rounded-xl px-4 py-2 text-slate-900 dark:text-slate-100 focus:outline-none transition-colors"
                     placeholder="e.g. Laser Cut Bridal Ring"
                   />
                   <button

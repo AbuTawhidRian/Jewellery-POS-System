@@ -72,7 +72,6 @@ model User {
   name         String?
   role         Role     @default(STAFF)
   customRole   String?
-  permissions  String[] @default([])
   shopId       String
   accessibleBranches String[] @default([])
   createdAt    DateTime @default(now())

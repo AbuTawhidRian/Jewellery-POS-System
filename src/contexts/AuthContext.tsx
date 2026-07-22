@@ -12,7 +12,6 @@ interface User {
   shopLogo?: string;
   role: string;
   customRole?: string;
-  permissions?: string[];
   accessibleBranches?: string[];
   mainBranches?: string[];
 }
@@ -99,17 +98,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const activeBranchId = localStorage.getItem('activeBranchId') || null;
 
-  const hasPermission = useCallback((permission: string) => {
-    if (!user) return false;
-    if (user.role === 'OWNER' || user.role === 'SUPERADMIN') return true;
-    
-    // Sub-branch logic: If operating in a non-main branch, bypass permissions and grant full access
-    if (activeBranchId && user.mainBranches && !user.mainBranches.includes(activeBranchId)) {
-      return true;
-    }
-    
-    return user.permissions?.includes(permission) || false;
-  }, [user, activeBranchId]);
+  const hasPermission = useCallback((permissionId: string) => {
+    // Permission system disabled by user request. All staff have full access to their branches.
+    return true;
+  }, []);
 
   const updateUser = useCallback((data: Partial<User>) => {
     setUser(prev => {
