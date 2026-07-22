@@ -94,7 +94,7 @@ const TopNav: React.FC = () => {
   const isRetailBranch = activeBranchId && branches.length > 0 && !branches.find(b => b.id === activeBranchId)?.isMain;
 
   return (
-    <header className="bg-white dark:bg-slate-950/80 backdrop-blur-md sticky top-0 z-50 border-b border-slate-200 dark:border-slate-800/50 shadow-sm transition-colors duration-300 h-16">
+    <header className="h-20 bg-white dark:bg-slate-950 flex items-center justify-between px-6 shrink-0 sticky top-0 z-40 transition-colors duration-300">
       <div id="google_translate_element" className="hidden"></div>
       
       <div className="flex-1 flex items-center">
