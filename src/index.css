@@ -67,10 +67,10 @@ body {
 }
 
 @keyframes page-fade-in {
-  0% { opacity: 0; transform: translateY(8px); }
-  100% { opacity: 1; transform: translateY(0); }
+  0% { opacity: 0; transform: translateY(15px) scale(0.98); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 .animate-page-in {
-  animation: page-fade-in 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: page-fade-in 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
 }

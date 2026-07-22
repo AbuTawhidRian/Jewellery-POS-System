@@ -173,6 +173,13 @@ export default function Register() {
               Sign in here
             </Link>
           </div>
+
+          <div className="text-center mt-4">
+            <Link to="/" className="text-sm font-medium text-[#94A3B8] hover:text-white transition-colors flex items-center justify-center gap-2">
+              <ArrowRight className="w-4 h-4 rotate-180" />
+              Back to Home page
+            </Link>
+          </div>
         </form>
       </div>
     </div>

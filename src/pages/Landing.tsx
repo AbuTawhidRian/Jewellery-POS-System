@@ -195,9 +195,9 @@ export default function Landing() {
                 {isAuthenticated ? "Go to Dashboard" : "Start Free Trial"} 
                 <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
               </Link>
-              <button className="inline-flex items-center justify-center gap-2 px-6 py-3.5 text-[15px] font-bold text-[#10B981] dark:text-[#10B981] bg-white dark:bg-transparent border-2 border-[#A7F3D0] dark:border-[#10B981]/30 hover:bg-[#ECFDF5] dark:hover:bg-[#10B981]/10 rounded-xl shadow-sm transition-all whitespace-nowrap">
+              <a href="https://wa.me/971567313140" target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center gap-2 px-6 py-3.5 text-[15px] font-bold text-[#10B981] dark:text-[#10B981] bg-white dark:bg-transparent border-2 border-[#A7F3D0] dark:border-[#10B981]/30 hover:bg-[#ECFDF5] dark:hover:bg-[#10B981]/10 rounded-xl shadow-sm transition-all whitespace-nowrap">
                 <MessageCircle className="w-5 h-5 fill-current" /> Chat on WhatsApp
-              </button>
+              </a>
             </div>
 
             {/* Bottom Info Cards */}

@@ -31,6 +31,7 @@ model Shop {
   phone     String?
   slogan    String?
   logoUrl   String?
+  currency  String   @default("AED")
   createdAt DateTime @default(now())
 
   users        User[]

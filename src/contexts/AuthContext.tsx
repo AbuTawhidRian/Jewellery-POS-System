@@ -10,6 +10,7 @@ interface User {
   shopPhone?: string;
   shopSlogan?: string;
   shopLogo?: string;
+  shopCurrency?: string;
   role: string;
   customRole?: string;
   accessibleBranches?: string[];

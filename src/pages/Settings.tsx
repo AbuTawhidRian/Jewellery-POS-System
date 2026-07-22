@@ -64,7 +64,7 @@ const Settings: React.FC = () => {
   }>({ isOpen: false, type: 'alert', title: '', message: '' });
 
   // Company State
-  const [shopInfo, setShopInfo] = useState({ name: '', trn: '', address: '', email: '', phone: '', slogan: '', logoUrl: '' });
+  const [shopInfo, setShopInfo] = useState({ name: '', trn: '', address: '', email: '', phone: '', slogan: '', logoUrl: '', currency: 'AED' });
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [loadingShop, setLoadingShop] = useState(true);
   const [savingShop, setSavingShop] = useState(false);
@@ -121,7 +121,8 @@ const Settings: React.FC = () => {
         email: res.data.email || '',
         phone: res.data.phone || '',
         slogan: res.data.slogan || '',
-        logoUrl: res.data.logoUrl || ''
+        logoUrl: res.data.logoUrl || '',
+        currency: res.data.currency || 'AED'
       });
     } catch (err) {
       console.error('Failed to fetch shop info', err);
@@ -140,7 +141,8 @@ const Settings: React.FC = () => {
         shopName: shopInfo.name,
         shopSlogan: shopInfo.slogan,
         shopEmail: shopInfo.email,
-        shopPhone: shopInfo.phone
+        shopPhone: shopInfo.phone,
+        shopCurrency: shopInfo.currency
       });
 
       if (logoFile) {
@@ -390,6 +392,27 @@ const Settings: React.FC = () => {
               <div>
                 <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">TRN Number</label>
                 <input type="text" value={shopInfo.trn} onChange={(e) => setShopInfo({...shopInfo, trn: e.target.value})} className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-4 py-3 text-slate-900 dark:text-white focus:outline-none focus:border-gold-500" placeholder="e.g. 100000000000003" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">Currency</label>
+                <select value={shopInfo.currency} onChange={(e) => setShopInfo({...shopInfo, currency: e.target.value})} className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-4 py-3 text-slate-900 dark:text-white focus:outline-none focus:border-gold-500">
+                  <option value="AED">AED (UAE Dirham)</option>
+                  <option value="USD">USD (US Dollar)</option>
+                  <option value="EUR">EUR (Euro)</option>
+                  <option value="GBP">GBP (British Pound)</option>
+                  <option value="INR">INR (Indian Rupee)</option>
+                  <option value="BDT">BDT (Bangladeshi Taka)</option>
+                  <option value="PKR">PKR (Pakistani Rupee)</option>
+                  <option value="SAR">SAR (Saudi Riyal)</option>
+                  <option value="QAR">QAR (Qatari Riyal)</option>
+                  <option value="OMR">OMR (Omani Rial)</option>
+                  <option value="KWD">KWD (Kuwaiti Dinar)</option>
+                  <option value="BHD">BHD (Bahraini Dinar)</option>
+                  <option value="MYR">MYR (Malaysian Ringgit)</option>
+                  <option value="SGD">SGD (Singapore Dollar)</option>
+                  <option value="AUD">AUD (Australian Dollar)</option>
+                  <option value="CAD">CAD (Canadian Dollar)</option>
+                </select>
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">Address</label>

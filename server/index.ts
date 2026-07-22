@@ -269,7 +269,7 @@ app.post('/api/auth/login', authLimiter, async (req, res) => {
 
     const token = jwt.sign({ id: user.id, shopId: user.shopId, accessibleBranches: user.accessibleBranches, email: user.email, role: user.role, customRole: user.customRole }, JWT_SECRET, { expiresIn: '7d' });
     
-    res.json({ token, user: { id: user.id, name: user.name, email: user.email, shopId: user.shopId, accessibleBranches: user.accessibleBranches, mainBranches: mainBranchIds, shopName: user.shop?.name, shopEmail: user.shop?.email, shopPhone: user.shop?.phone, shopSlogan: user.shop?.slogan, shopLogo: user.shop?.logoUrl, role: user.role, customRole: user.customRole } });
+    res.json({ token, user: { id: user.id, name: user.name, email: user.email, shopId: user.shopId, accessibleBranches: user.accessibleBranches, mainBranches: mainBranchIds, shopName: user.shop?.name, shopEmail: user.shop?.email, shopPhone: user.shop?.phone, shopSlogan: user.shop?.slogan, shopLogo: user.shop?.logoUrl, shopCurrency: user.shop?.currency, role: user.role, customRole: user.customRole } });
   } catch (error) {
     console.error("Login error:", error);
     res.status(500).json({ error: 'Internal Server Error' });
@@ -304,7 +304,7 @@ app.get('/api/auth/me', authenticateToken, async (req: AuthRequest, res) => {
     // Use the active branch from the request header
     const targetBranchId = req.user?.branchId || null;
 
-    res.json({ id: user.id, name: user.name, email: user.email, shopId: user.shopId, branchId: targetBranchId, shopName: user.shop?.name, shopEmail: user.shop?.email, shopPhone: user.shop?.phone, shopSlogan: user.shop?.slogan, shopLogo: user.shop?.logoUrl, role: user.role, customRole: user.customRole });
+    res.json({ id: user.id, name: user.name, email: user.email, shopId: user.shopId, branchId: targetBranchId, shopName: user.shop?.name, shopEmail: user.shop?.email, shopPhone: user.shop?.phone, shopSlogan: user.shop?.slogan, shopLogo: user.shop?.logoUrl, shopCurrency: user.shop?.currency, role: user.role, customRole: user.customRole });
   } catch (error) {
     res.status(500).json({ error: 'Internal Server Error' });
   }
@@ -435,10 +435,10 @@ app.get('/api/shop', authenticateToken, requireRole(Role.OWNER), async (req: Aut
 
 app.put('/api/shop', authenticateToken, requireRole(Role.OWNER), async (req: AuthRequest, res) => {
   try {
-    const { name, trn, address, email, phone, slogan } = req.body;
+    const { name, trn, address, email, phone, slogan, currency } = req.body;
     const shop = await prisma.shop.update({
       where: { id: req.user!.shopId! },
-      data: { name, trn, address, email, phone, slogan }
+      data: { name, trn, address, email, phone, slogan, currency }
     });
     res.json(shop);
   } catch (error) {
