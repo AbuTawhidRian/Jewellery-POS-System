@@ -76,6 +76,7 @@ model User {
   permissions  String[] @default([])
   shopId       String
   branchId     String?
+  accessibleBranches String[] @default([])
   createdAt    DateTime @default(now())
   updatedAt    DateTime @default(now()) @updatedAt
 

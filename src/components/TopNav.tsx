@@ -151,46 +151,54 @@ const TopNav: React.FC = () => {
 
         <div className="h-8 w-px bg-slate-200 dark:bg-[#334155]/50 hidden sm:block"></div>
 
-        {(user?.role === 'OWNER' || user?.role === 'MANAGER') && branches.length > 0 && (
-          <div className="relative" ref={branchMenuRef}>
-            <button
-              onClick={() => setIsBranchMenuOpen(!isBranchMenuOpen)}
-              className="flex items-center gap-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors px-2 py-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-900"
-            >
-              <Diamond className="w-5 h-5" />
-              <span className="text-sm font-medium hidden sm:block truncate max-w-[120px]">
-                {branches.find(b => b.id === activeBranchId)?.name || branches.find(b => b.isMain)?.name || 'Select Branch'}
-              </span>
-              <ChevronDown className="w-4 h-4 hidden sm:block" />
-            </button>
-
-            {isBranchMenuOpen && (
-              <div className="absolute right-0 mt-2 w-56 rounded-xl shadow-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800/50 py-2 backdrop-blur-xl z-50 transition-colors">
-                <div className="px-4 py-2 border-b border-slate-200 dark:border-slate-800/50 mb-2">
-                  <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Switch Branch</p>
+        {(() => {
+          const allowedBranches = user?.role === 'OWNER' || user?.role === 'SUPERADMIN' 
+            ? branches 
+            : branches.filter(b => user?.accessibleBranches?.includes(b.id));
+            
+          if (allowedBranches.length === 0) return null;
+          
+          return (
+            <div className="relative" ref={branchMenuRef}>
+              <button
+                onClick={() => setIsBranchMenuOpen(!isBranchMenuOpen)}
+                className="flex items-center gap-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors px-2 py-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-900"
+              >
+                <Diamond className="w-5 h-5" />
+                <span className="text-sm font-medium hidden sm:block truncate max-w-[120px]">
+                  {branches.find(b => b.id === activeBranchId)?.name || branches.find(b => b.isMain)?.name || 'Select Branch'}
+                </span>
+                <ChevronDown className="w-4 h-4 hidden sm:block" />
+              </button>
+  
+              {isBranchMenuOpen && (
+                <div className="absolute right-0 mt-2 w-56 rounded-xl shadow-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800/50 py-2 backdrop-blur-xl z-50 transition-colors">
+                  <div className="px-4 py-2 border-b border-slate-200 dark:border-slate-800/50 mb-2">
+                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Switch Branch</p>
+                  </div>
+                  {allowedBranches.map((branch) => (
+                    <button
+                      key={branch.id}
+                      onClick={() => {
+                        switchBranch(branch.id);
+                        setIsBranchMenuOpen(false);
+                      }}
+                      className={clsx(
+                        "w-full text-left px-4 py-2 text-sm transition-colors flex items-center justify-between",
+                        (activeBranchId === branch.id || (!activeBranchId && branch.isMain))
+                          ? "text-[#C28C46] bg-[#C28C46]/10 font-medium" 
+                          : "text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/30 hover:text-slate-900 dark:hover:text-white"
+                      )}
+                    >
+                      <span className="truncate">{branch.name}</span>
+                      {branch.isMain && <span className="text-[10px] bg-slate-200 dark:bg-slate-700 px-1.5 py-0.5 rounded ml-2">HQ</span>}
+                    </button>
+                  ))}
                 </div>
-                {branches.map((branch) => (
-                  <button
-                    key={branch.id}
-                    onClick={() => {
-                      switchBranch(branch.id);
-                      setIsBranchMenuOpen(false);
-                    }}
-                    className={clsx(
-                      "w-full text-left px-4 py-2 text-sm transition-colors flex items-center justify-between",
-                      (activeBranchId === branch.id || (!activeBranchId && branch.isMain))
-                        ? "text-[#C28C46] bg-[#C28C46]/10 font-medium" 
-                        : "text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/30 hover:text-slate-900 dark:hover:text-white"
-                    )}
-                  >
-                    <span className="truncate">{branch.name}</span>
-                    {branch.isMain && <span className="text-[10px] bg-slate-200 dark:bg-slate-700 px-1.5 py-0.5 rounded ml-2">HQ</span>}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
+              )}
+            </div>
+          );
+        })()}
 
         <div className="h-8 w-px bg-slate-200 dark:bg-[#334155]/50 hidden sm:block"></div>
 

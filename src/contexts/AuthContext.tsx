@@ -14,6 +14,7 @@ interface User {
   customRole?: string;
   permissions?: string[];
   branchId?: string | null;
+  accessibleBranches?: string[];
 }
 
 interface AuthContextType {

@@ -83,12 +83,12 @@ const authenticateToken = (req: AuthRequest, res: Response, next: NextFunction) 
   jwt.verify(token, JWT_SECRET, async (err: any, user: any) => {
     if (err) return res.status(403).json({ error: 'Invalid token' });
     
-    // Allow Owner/Manager to switch branches via header
+    // Allow switching branches via header
     if (requestedBranchId && typeof requestedBranchId === 'string') {
-      if (user.role === 'OWNER' || user.role === 'MANAGER' || user.role === 'SUPERADMIN') {
+      if (user.role === 'OWNER' || user.role === 'SUPERADMIN') {
+        // Global owner logic
         if (user.branchId !== requestedBranchId) {
           if (!user.branchId) {
-            // Global owner, check if the requested branch is the main branch
             try {
               const branch = await prisma.branch.findUnique({ where: { id: requestedBranchId }, select: { isMain: true }});
               if (!branch?.isMain) user.isReadOnly = true;
@@ -98,6 +98,13 @@ const authenticateToken = (req: AuthRequest, res: Response, next: NextFunction) 
           } else {
             user.isReadOnly = true;
           }
+        }
+        user.branchId = requestedBranchId;
+      } else {
+        // Staff logic
+        const accessible = user.accessibleBranches || [];
+        if (!accessible.includes(requestedBranchId)) {
+          return res.status(403).json({ error: 'Access denied to this branch' });
         }
         user.branchId = requestedBranchId;
       }
@@ -189,7 +196,8 @@ const userSchema = z.object({
   password: z.string().min(8, "Password must be at least 8 characters").max(72),
   role: z.string(),
   customRole: z.string().nullable().optional(),
-  permissions: z.array(z.string()).optional()
+  permissions: z.array(z.string()).optional(),
+  accessibleBranches: z.array(z.string()).optional()
 });
 app.post('/api/auth/register', authLimiter, async (req, res) => {
   try {
@@ -251,9 +259,9 @@ app.post('/api/auth/login', authLimiter, async (req, res) => {
     const validPassword = await bcrypt.compare(password, user.passwordHash);
     if (!validPassword) return res.status(400).json({ error: 'Invalid email or password' });
 
-    const token = jwt.sign({ id: user.id, shopId: user.shopId, branchId: user.branchId, email: user.email, role: user.role, customRole: user.customRole, permissions: user.permissions }, JWT_SECRET, { expiresIn: '7d' });
+    const token = jwt.sign({ id: user.id, shopId: user.shopId, branchId: user.branchId, accessibleBranches: user.accessibleBranches, email: user.email, role: user.role, customRole: user.customRole, permissions: user.permissions }, JWT_SECRET, { expiresIn: '7d' });
     
-    res.json({ token, user: { id: user.id, name: user.name, email: user.email, shopId: user.shopId, branchId: user.branchId, shopName: user.shop?.name, shopEmail: user.shop?.email, shopPhone: user.shop?.phone, shopSlogan: user.shop?.slogan, shopLogo: user.shop?.logoUrl, role: user.role, customRole: user.customRole, permissions: user.permissions } });
+    res.json({ token, user: { id: user.id, name: user.name, email: user.email, shopId: user.shopId, branchId: user.branchId, accessibleBranches: user.accessibleBranches, shopName: user.shop?.name, shopEmail: user.shop?.email, shopPhone: user.shop?.phone, shopSlogan: user.shop?.slogan, shopLogo: user.shop?.logoUrl, role: user.role, customRole: user.customRole, permissions: user.permissions } });
   } catch (error) {
     console.error("Login error:", error);
     res.status(500).json({ error: 'Internal Server Error' });
@@ -328,7 +336,7 @@ app.get('/api/users', authenticateToken, requireRole(Role.OWNER), async (req: Au
   try {
     const users = await prisma.user.findMany({
       where: { shopId: req.user!.shopId! },
-      select: { id: true, name: true, email: true, role: true, customRole: true, permissions: true, createdAt: true }
+      select: { id: true, name: true, email: true, role: true, customRole: true, permissions: true, accessibleBranches: true, createdAt: true }
     });
     res.json(users);
   } catch (error) {
@@ -340,7 +348,7 @@ app.get('/api/users', authenticateToken, requireRole(Role.OWNER), async (req: Au
     try {
       const parsed = userSchema.safeParse(req.body);
       if (!parsed.success) return res.status(400).json({ error: parsed.error.issues[0].message });
-      const { name, email, password, role, customRole, permissions } = parsed.data;
+      const { name, email, password, role, customRole, permissions, accessibleBranches } = parsed.data;
       const existingUser = await prisma.user.findUnique({ where: { email } });
       if (existingUser) return res.status(400).json({ error: 'Email already exists' });
   
@@ -353,9 +361,10 @@ app.get('/api/users', authenticateToken, requireRole(Role.OWNER), async (req: Au
           role: role as Role,
           customRole,
           permissions,
+          accessibleBranches: accessibleBranches || [],
           shopId: req.user!.shopId!
         },
-        select: { id: true, name: true, email: true, role: true, customRole: true, permissions: true, createdAt: true }
+        select: { id: true, name: true, email: true, role: true, customRole: true, permissions: true, accessibleBranches: true, createdAt: true }
       });
       res.json(newUser);
   } catch (error) {
@@ -365,7 +374,7 @@ app.get('/api/users', authenticateToken, requireRole(Role.OWNER), async (req: Au
 
   app.patch('/api/users/:id', authenticateToken, requireRole(Role.OWNER), async (req: AuthRequest, res) => {
     try {
-      const { name, role, customRole, permissions, password } = req.body;
+      const { name, role, customRole, permissions, accessibleBranches, password } = req.body;
       const userId = String(req.params.id);
       // Don't allow modifying other shop's users
       const existing = await prisma.user.findUnique({ where: { id: userId } });
@@ -376,6 +385,7 @@ app.get('/api/users', authenticateToken, requireRole(Role.OWNER), async (req: Au
       const updateData: any = { name, role: role as Role };
       if (customRole !== undefined) updateData.customRole = customRole;
       if (permissions !== undefined) updateData.permissions = permissions;
+      if (accessibleBranches !== undefined) updateData.accessibleBranches = accessibleBranches;
       if (password) {
         updateData.passwordHash = await bcrypt.hash(password, 10);
       }
@@ -383,7 +393,7 @@ app.get('/api/users', authenticateToken, requireRole(Role.OWNER), async (req: Au
       const updated = await prisma.user.update({
         where: { id: userId },
         data: updateData,
-        select: { id: true, name: true, email: true, role: true, customRole: true, permissions: true, createdAt: true }
+        select: { id: true, name: true, email: true, role: true, customRole: true, permissions: true, accessibleBranches: true, createdAt: true }
       });
       res.json(updated);
   } catch (error) {

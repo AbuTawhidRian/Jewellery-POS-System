@@ -13,6 +13,7 @@ interface ShopUser {
   role: string;
   customRole?: string;
   permissions?: string[];
+  accessibleBranches?: string[];
   createdAt: string;
 }
 
@@ -54,9 +55,10 @@ const Settings: React.FC = () => {
   
   // Staff State
   const [staff, setStaff] = useState<ShopUser[]>([]);
+  const [branches, setBranches] = useState<{id: string, name: string, isMain: boolean}[]>([]);
   const [loadingStaff, setLoadingStaff] = useState(true);
   const [showAddStaff, setShowAddStaff] = useState(false);
-  const [newStaff, setNewStaff] = useState<{name: string, email: string, password: string, role: string, customRole: string, permissions: string[]}>({ name: '', email: '', password: '', role: 'STAFF', customRole: '', permissions: [] });
+  const [newStaff, setNewStaff] = useState<{name: string, email: string, password: string, role: string, customRole: string, permissions: string[], accessibleBranches: string[]}>({ name: '', email: '', password: '', role: 'STAFF', customRole: '', permissions: [], accessibleBranches: [] });
   const [editingStaff, setEditingStaff] = useState<ShopUser | null>(null);
   const [editingStaffPassword, setEditingStaffPassword] = useState('');
   
@@ -86,6 +88,7 @@ const Settings: React.FC = () => {
   useEffect(() => {
     if (user?.role === 'OWNER') {
       fetchStaff();
+      fetchBranches();
       fetchSubscription();
       fetchShopInfo();
     }
@@ -99,6 +102,15 @@ const Settings: React.FC = () => {
       console.error(err);
     } finally {
       setLoadingStaff(false);
+    }
+  };
+
+  const fetchBranches = async () => {
+    try {
+      const res = await api.get('/branches');
+      setBranches(res.data);
+    } catch (err) {
+      console.error(err);
     }
   };
 
@@ -210,7 +222,7 @@ const Settings: React.FC = () => {
     try {
       await api.post('/users', newStaff);
       showNotification('success', 'Staff member added successfully!');
-      setNewStaff({ name: '', email: '', password: '', role: 'STAFF', customRole: '', permissions: [] });
+      setNewStaff({ name: '', email: '', password: '', role: 'STAFF', customRole: '', permissions: [], accessibleBranches: [] });
       setShowAddStaff(false);
       fetchStaff();
     } catch (err: any) {
@@ -226,7 +238,8 @@ const Settings: React.FC = () => {
         name: editingStaff.name,
         role: editingStaff.role,
         customRole: editingStaff.customRole,
-        permissions: editingStaff.permissions
+        permissions: editingStaff.permissions,
+        accessibleBranches: editingStaff.accessibleBranches || []
       };
       if (editingStaffPassword.trim()) {
         if (editingStaffPassword.length < 6) {
@@ -498,6 +511,26 @@ const Settings: React.FC = () => {
                   </div>
                 </div>
 
+                <div>
+                  <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-3">Accessible Branches</label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {branches.map(b => (
+                      <label key={b.id} className="flex items-center gap-3 p-3 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950/50 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+                        <input 
+                          type="checkbox" 
+                          className="w-4 h-4 rounded border-slate-300 dark:border-slate-700 text-gold-500 focus:ring-gold-500 focus:ring-offset-slate-900 bg-slate-50 dark:bg-slate-900"
+                          checked={newStaff.accessibleBranches.includes(b.id)}
+                          onChange={(e) => {
+                            if (e.target.checked) setNewStaff({...newStaff, accessibleBranches: [...newStaff.accessibleBranches, b.id]});
+                            else setNewStaff({...newStaff, accessibleBranches: newStaff.accessibleBranches.filter(id => id !== b.id)});
+                          }}
+                        />
+                        <span className="text-sm text-slate-700 dark:text-slate-300">{b.name} {b.isMain && '(Main)'}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
                 <div className="flex justify-end pt-4 border-t border-slate-200 dark:border-slate-800">
                   <button type="submit" className="bg-emerald-500 hover:bg-emerald-600 text-slate-900 dark:text-white px-6 py-2 rounded-lg font-semibold transition-colors">
                     Save Staff
@@ -555,6 +588,27 @@ const Settings: React.FC = () => {
                     </div>
                   </div>
 
+                  <div>
+                    <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-3">Accessible Branches</label>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {branches.map(b => (
+                        <label key={b.id} className="flex items-center gap-3 p-3 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800/80 transition-colors">
+                          <input 
+                            type="checkbox" 
+                            className="w-4 h-4 rounded border-slate-300 dark:border-slate-700 text-gold-500 focus:ring-gold-500 focus:ring-offset-slate-900 bg-white dark:bg-slate-950"
+                            checked={(editingStaff.accessibleBranches || []).includes(b.id)}
+                            onChange={(e) => {
+                              const branchesList = editingStaff.accessibleBranches || [];
+                              if (e.target.checked) setEditingStaff({...editingStaff, accessibleBranches: [...branchesList, b.id]});
+                              else setEditingStaff({...editingStaff, accessibleBranches: branchesList.filter(id => id !== b.id)});
+                            }}
+                          />
+                          <span className="text-sm text-slate-700 dark:text-slate-300">{b.name} {b.isMain && '(Main)'}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
                   <div className="flex justify-end gap-3 pt-6 border-t border-slate-200 dark:border-slate-800">
                     <button type="button" onClick={() => setEditingStaff(null)} className="px-4 py-2 rounded-lg text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
                       Cancel
@@ -575,6 +629,7 @@ const Settings: React.FC = () => {
                   <th className="p-4 text-sm font-semibold text-slate-700 dark:text-slate-300 border-b border-slate-200 dark:border-slate-800">Name</th>
                   <th className="p-4 text-sm font-semibold text-slate-700 dark:text-slate-300 border-b border-slate-200 dark:border-slate-800">Email</th>
                   <th className="p-4 text-sm font-semibold text-slate-700 dark:text-slate-300 border-b border-slate-200 dark:border-slate-800">Role</th>
+                  <th className="p-4 text-sm font-semibold text-slate-700 dark:text-slate-300 border-b border-slate-200 dark:border-slate-800">Branches</th>
                   <th className="p-4 text-sm font-semibold text-slate-700 dark:text-slate-300 border-b border-slate-200 dark:border-slate-800 text-right">Actions</th>
                 </tr>
               </thead>
@@ -590,6 +645,9 @@ const Settings: React.FC = () => {
                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${s.role === 'OWNER' ? 'bg-gold-500/10 text-gold-400 border-gold-500/20' : 'bg-blue-500/10 text-blue-400 border-blue-500/20'}`}>
                           {s.role === 'OWNER' ? 'Owner' : s.customRole || s.role}
                         </span>
+                      </td>
+                      <td className="p-4 text-slate-600 dark:text-slate-400 text-sm">
+                        {s.role === 'OWNER' ? 'All Branches' : s.accessibleBranches?.length ? `${s.accessibleBranches.length} Branch(es)` : 'None'}
                       </td>
                       <td className="p-4 text-right">
                         {s.role !== 'OWNER' && (
