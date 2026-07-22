@@ -705,7 +705,7 @@ app.post('/api/transfers/receive', authenticateToken, requireActiveOrTrial, asyn
 
 app.get('/api/transfers/pending/:barcode', authenticateToken, requireActiveOrTrial, async (req: AuthRequest, res) => {
   try {
-    const { barcode } = req.params;
+    const barcode = req.params.barcode as string;
     const branchId = req.user!.branchId;
     if (!branchId) return res.status(400).json({ error: 'Please select a branch first' });
 
