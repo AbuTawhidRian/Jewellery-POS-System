@@ -98,7 +98,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const activeBranchId = localStorage.getItem('activeBranchId') || null;
 
-  const hasPermission = useCallback((permissionId: string) => {
+  const hasPermission = useCallback((_permissionId: string) => {
     // Permission system disabled by user request. All staff have full access to their branches.
     return true;
   }, []);
