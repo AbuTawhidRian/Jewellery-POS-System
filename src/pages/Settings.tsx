@@ -336,7 +336,22 @@ const Settings: React.FC = () => {
                     </div>
                   )}
                   <div className="flex flex-col gap-2">
-                    <input type="file" accept="image/*" onChange={(e) => e.target.files && setLogoFile(e.target.files[0])} className="text-sm text-slate-600 dark:text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-gold-500/10 file:text-gold-500 hover:file:bg-gold-500/20" />
+                    <input 
+                      type="file" 
+                      accept="image/*" 
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          if (file.size > 2 * 1024 * 1024) {
+                            showNotification('error', 'Image size must be less than 2MB');
+                            e.target.value = ''; // Reset input
+                            return;
+                          }
+                          setLogoFile(file);
+                        }
+                      }} 
+                      className="text-sm text-slate-600 dark:text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-gold-500/10 file:text-gold-500 hover:file:bg-gold-500/20" 
+                    />
                     {(shopInfo.logoUrl || logoFile) && (
                       <button type="button" onClick={logoFile ? () => setLogoFile(null) : handleRemoveLogo} disabled={savingShop} className="text-sm text-red-500 hover:text-red-600 font-medium self-start">
                         {logoFile ? 'Cancel' : 'Remove Logo'}
