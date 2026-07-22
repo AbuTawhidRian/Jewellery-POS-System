@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowRightLeft, Download, Upload, ScanLine, Search, Package, CheckCircle2 } from 'lucide-react';
+import { ArrowRightLeft, Download, Upload, ScanLine, Package, CheckCircle2 } from 'lucide-react';
 import api from '../lib/api';
 import toast from 'react-hot-toast';
 import { useAuth } from '../contexts/AuthContext';
