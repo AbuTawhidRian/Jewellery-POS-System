@@ -15,6 +15,7 @@ interface User {
   permissions?: string[];
   branchId?: string | null;
   accessibleBranches?: string[];
+  mainBranches?: string[];
 }
 
 interface AuthContextType {
@@ -57,6 +58,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           if (freshUser) {
             setUser(freshUser);
             localStorage.setItem('user', JSON.stringify(freshUser));
+            
+            // Auto-select branch if not set
+            if (!localStorage.getItem('activeBranchId')) {
+              if (freshUser.accessibleBranches && freshUser.accessibleBranches.length > 0) {
+                localStorage.setItem('activeBranchId', freshUser.accessibleBranches[0]);
+                window.location.reload();
+              } else if (freshUser.branchId) {
+                localStorage.setItem('activeBranchId', freshUser.branchId);
+                window.location.reload();
+              }
+            }
           }
         })
         .catch(err => console.error("Failed to refresh user data", err));
@@ -73,6 +85,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(newUser);
     localStorage.setItem('token', newToken);
     localStorage.setItem('user', JSON.stringify(newUser));
+    
+    // Auto-select branch if not set
+    if (!localStorage.getItem('activeBranchId')) {
+      if (newUser.accessibleBranches && newUser.accessibleBranches.length > 0) {
+        localStorage.setItem('activeBranchId', newUser.accessibleBranches[0]);
+      } else if (newUser.branchId) {
+        localStorage.setItem('activeBranchId', newUser.branchId);
+      }
+    }
   };
 
   const logout = () => {
@@ -82,11 +103,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.removeItem('user');
   };
 
+  const activeBranchId = localStorage.getItem('activeBranchId') || null;
+
   const hasPermission = useCallback((permission: string) => {
     if (!user) return false;
     if (user.role === 'OWNER' || user.role === 'SUPERADMIN') return true;
+    
+    // Sub-branch logic: If operating in a non-main branch, bypass permissions and grant full access
+    if (activeBranchId && user.mainBranches && !user.mainBranches.includes(activeBranchId)) {
+      return true;
+    }
+    
     return user.permissions?.includes(permission) || false;
-  }, [user]);
+  }, [user, activeBranchId]);
 
   const updateUser = useCallback((data: Partial<User>) => {
     setUser(prev => {
@@ -110,7 +139,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return <div>Loading...</div>; // Prevent render until auth state is known
   }
 
-  const activeBranchId = localStorage.getItem('activeBranchId') || null;
 
   return (
     <AuthContext.Provider value={{ user, token, login, logout, isAuthenticated: !!token, hasPermission, updateUser, activeBranchId, switchBranch }}>

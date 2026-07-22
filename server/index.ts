@@ -133,10 +133,28 @@ const requireRole = (...allowedRoles: (Role | 'SUPERADMIN')[]) => {
 };
 
 const requireAccess = (allowedRoles: (Role | 'SUPERADMIN')[], allowedPermissions: string[] = []) => {
-  return (req: AuthRequest, res: Response, next: NextFunction) => {
+  return async (req: AuthRequest, res: Response, next: NextFunction) => {
     if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
     if (req.user.role === 'OWNER' || req.user.role === 'SUPERADMIN') return next();
     if (allowedRoles.includes(req.user.role)) return next();
+    
+    // Check if the user is operating in a Main branch
+    let isMainBranch = true; // Default to true to be safe
+    if (req.user.branchId) {
+      try {
+        const branch = await prisma.branch.findUnique({
+          where: { id: req.user.branchId },
+          select: { isMain: true }
+        });
+        isMainBranch = branch?.isMain ?? true;
+      } catch (error) {
+        console.error("Error checking branch isMain status:", error);
+      }
+    }
+    
+    // If operating in a sub-branch, staff have full access (bypass permissions)
+    if (!isMainBranch) return next();
+
     if (req.user.permissions && req.user.permissions.some(p => allowedPermissions.includes(p))) return next();
     return res.status(403).json({ error: 'Forbidden: Insufficient permissions' });
   };
@@ -259,9 +277,16 @@ app.post('/api/auth/login', authLimiter, async (req, res) => {
     const validPassword = await bcrypt.compare(password, user.passwordHash);
     if (!validPassword) return res.status(400).json({ error: 'Invalid email or password' });
 
+    // Fetch main branches for this shop to include in payload
+    const mainBranches = await prisma.branch.findMany({
+      where: { shopId: user.shopId, isMain: true },
+      select: { id: true }
+    });
+    const mainBranchIds = mainBranches.map(b => b.id);
+
     const token = jwt.sign({ id: user.id, shopId: user.shopId, branchId: user.branchId, accessibleBranches: user.accessibleBranches, email: user.email, role: user.role, customRole: user.customRole, permissions: user.permissions }, JWT_SECRET, { expiresIn: '7d' });
     
-    res.json({ token, user: { id: user.id, name: user.name, email: user.email, shopId: user.shopId, branchId: user.branchId, accessibleBranches: user.accessibleBranches, shopName: user.shop?.name, shopEmail: user.shop?.email, shopPhone: user.shop?.phone, shopSlogan: user.shop?.slogan, shopLogo: user.shop?.logoUrl, role: user.role, customRole: user.customRole, permissions: user.permissions } });
+    res.json({ token, user: { id: user.id, name: user.name, email: user.email, shopId: user.shopId, branchId: user.branchId, accessibleBranches: user.accessibleBranches, mainBranches: mainBranchIds, shopName: user.shop?.name, shopEmail: user.shop?.email, shopPhone: user.shop?.phone, shopSlogan: user.shop?.slogan, shopLogo: user.shop?.logoUrl, role: user.role, customRole: user.customRole, permissions: user.permissions } });
   } catch (error) {
     console.error("Login error:", error);
     res.status(500).json({ error: 'Internal Server Error' });
