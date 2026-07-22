@@ -63,6 +63,7 @@ export interface AuthRequest extends Request {
   user?: {
     id?: string;
     shopId?: string | null;
+    branchId?: string | null;
     email: string;
     role: Role | 'SUPERADMIN';
     customRole?: string | null;
@@ -74,11 +75,20 @@ export interface AuthRequest extends Request {
 const authenticateToken = (req: AuthRequest, res: Response, next: NextFunction) => {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
+  const requestedBranchId = req.headers['x-branch-id'];
   
   if (!token) return res.status(401).json({ error: 'Access denied, token missing' });
 
   jwt.verify(token, JWT_SECRET, (err: any, user: any) => {
     if (err) return res.status(403).json({ error: 'Invalid token' });
+    
+    // Allow Owner/Manager to switch branches via header
+    if (requestedBranchId && typeof requestedBranchId === 'string') {
+      if (user.role === 'OWNER' || user.role === 'MANAGER' || user.role === 'SUPERADMIN') {
+        user.branchId = requestedBranchId;
+      }
+    }
+    
     req.user = user;
     next();
   });
@@ -187,6 +197,12 @@ app.post('/api/auth/register', authLimiter, async (req, res) => {
             status: SubStatus.TRIAL
             // trialEndsAt defaults to 14 days from now in Prisma schema
           }
+        },
+        branches: {
+          create: {
+            name: 'Main Shop',
+            isMain: true
+          }
         }
       },
       include: { users: true }
@@ -214,9 +230,9 @@ app.post('/api/auth/login', authLimiter, async (req, res) => {
     const validPassword = await bcrypt.compare(password, user.passwordHash);
     if (!validPassword) return res.status(400).json({ error: 'Invalid email or password' });
 
-    const token = jwt.sign({ id: user.id, shopId: user.shopId, email: user.email, role: user.role, customRole: user.customRole, permissions: user.permissions }, JWT_SECRET, { expiresIn: '7d' });
+    const token = jwt.sign({ id: user.id, shopId: user.shopId, branchId: user.branchId, email: user.email, role: user.role, customRole: user.customRole, permissions: user.permissions }, JWT_SECRET, { expiresIn: '7d' });
     
-    res.json({ token, user: { id: user.id, name: user.name, email: user.email, shopId: user.shopId, shopName: user.shop?.name, shopEmail: user.shop?.email, shopPhone: user.shop?.phone, shopSlogan: user.shop?.slogan, shopLogo: user.shop?.logoUrl, role: user.role, customRole: user.customRole, permissions: user.permissions } });
+    res.json({ token, user: { id: user.id, name: user.name, email: user.email, shopId: user.shopId, branchId: user.branchId, shopName: user.shop?.name, shopEmail: user.shop?.email, shopPhone: user.shop?.phone, shopSlogan: user.shop?.slogan, shopLogo: user.shop?.logoUrl, role: user.role, customRole: user.customRole, permissions: user.permissions } });
   } catch (error) {
     console.error("Login error:", error);
     res.status(500).json({ error: 'Internal Server Error' });
@@ -248,7 +264,12 @@ app.get('/api/auth/me', authenticateToken, async (req: AuthRequest, res) => {
     });
     if (!user) return res.status(404).json({ error: 'User not found' });
     
-    res.json({ id: user.id, name: user.name, email: user.email, shopId: user.shopId, shopName: user.shop?.name, shopEmail: user.shop?.email, shopPhone: user.shop?.phone, shopSlogan: user.shop?.slogan, shopLogo: user.shop?.logoUrl, role: user.role, customRole: user.customRole, permissions: user.permissions });
+    // Allow header override for Owners/Managers, otherwise use default branch
+    const targetBranchId = (req.user?.role === 'OWNER' || req.user?.role === 'MANAGER') && req.user?.branchId 
+      ? req.user.branchId 
+      : user.branchId;
+
+    res.json({ id: user.id, name: user.name, email: user.email, shopId: user.shopId, branchId: targetBranchId, shopName: user.shop?.name, shopEmail: user.shop?.email, shopPhone: user.shop?.phone, shopSlogan: user.shop?.slogan, shopLogo: user.shop?.logoUrl, role: user.role, customRole: user.customRole, permissions: user.permissions });
   } catch (error) {
     res.status(500).json({ error: 'Internal Server Error' });
   }
@@ -425,6 +446,222 @@ app.delete('/api/shop/logo', authenticateToken, requireRole(Role.OWNER), async (
       });
     }
     res.json({ success: true });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || 'Internal Server Error' });
+  }
+});
+
+// --- Branches Routes ---
+app.get('/api/branches', authenticateToken, requireActiveOrTrial, async (req: AuthRequest, res) => {
+  try {
+    const branches = await prisma.branch.findMany({
+      where: { shopId: req.user!.shopId! },
+      orderBy: { createdAt: 'asc' }
+    });
+    
+    // Auto-create Main Shop branch if none exists
+    if (branches.length === 0) {
+      const mainBranch = await prisma.branch.create({
+        data: {
+          shopId: req.user!.shopId!,
+          name: 'Main Shop',
+          isMain: true
+        }
+      });
+      return res.json([mainBranch]);
+    }
+    
+    res.json(branches);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || 'Internal Server Error' });
+  }
+});
+
+app.post('/api/branches', authenticateToken, requireRole(Role.OWNER), async (req: AuthRequest, res) => {
+  try {
+    const { name, isMain } = req.body;
+    if (!name) return res.status(400).json({ error: 'Branch name is required' });
+
+    if (isMain) {
+      // Unset other main branches
+      await prisma.branch.updateMany({
+        where: { shopId: req.user!.shopId!, isMain: true },
+        data: { isMain: false }
+      });
+    }
+
+    const branch = await prisma.branch.create({
+      data: {
+        shopId: req.user!.shopId!,
+        name,
+        isMain: isMain || false
+      }
+    });
+    res.json(branch);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || 'Internal Server Error' });
+  }
+});
+
+app.put('/api/branches/:id', authenticateToken, requireRole(Role.OWNER), async (req: AuthRequest, res) => {
+  try {
+    const { name, isMain } = req.body;
+    const branchId = req.params.id;
+
+    if (isMain) {
+      // Unset other main branches
+      await prisma.branch.updateMany({
+        where: { shopId: req.user!.shopId!, isMain: true, id: { not: branchId } },
+        data: { isMain: false }
+      });
+    }
+
+    const branch = await prisma.branch.update({
+      where: { id: branchId, shopId: req.user!.shopId! },
+      data: { name, isMain }
+    });
+    res.json(branch);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || 'Internal Server Error' });
+  }
+});
+
+app.delete('/api/branches/:id', authenticateToken, requireRole(Role.OWNER), async (req: AuthRequest, res) => {
+  try {
+    const branchId = req.params.id;
+    
+    const branch = await prisma.branch.findUnique({ where: { id: branchId } });
+    if (branch?.isMain) {
+      return res.status(400).json({ error: 'Cannot delete the Main Shop branch' });
+    }
+
+    await prisma.branch.delete({
+      where: { id: branchId, shopId: req.user!.shopId! }
+    });
+    res.json({ success: true });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || 'Internal Server Error' });
+  }
+});
+
+// --- Transfers Routes ---
+app.get('/api/transfers', authenticateToken, requireActiveOrTrial, async (req: AuthRequest, res) => {
+  try {
+    const { status, type } = req.query; // type: 'in' | 'out'
+    const branchId = req.user!.branchId;
+    if (!branchId) return res.status(400).json({ error: 'Please select a branch first' });
+
+    let whereClause: any = { shopId: req.user!.shopId! };
+    if (status) whereClause.status = status;
+    
+    if (type === 'in') {
+      whereClause.toBranchId = branchId;
+    } else if (type === 'out') {
+      whereClause.fromBranchId = branchId;
+    } else {
+      whereClause.OR = [
+        { fromBranchId: branchId },
+        { toBranchId: branchId }
+      ];
+    }
+
+    const transfers = await prisma.itemTransfer.findMany({
+      where: whereClause,
+      include: {
+        item: true,
+        fromBranch: true,
+        toBranch: true
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+
+    res.json(transfers);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || 'Internal Server Error' });
+  }
+});
+
+app.post('/api/transfers', authenticateToken, requireActiveOrTrial, async (req: AuthRequest, res) => {
+  try {
+    const { itemIds, toBranchId } = req.body;
+    const fromBranchId = req.user!.branchId;
+
+    if (!fromBranchId) return res.status(400).json({ error: 'Please select your active branch first' });
+    if (!toBranchId) return res.status(400).json({ error: 'Target branch is required' });
+    if (fromBranchId === toBranchId) return res.status(400).json({ error: 'Cannot transfer to the same branch' });
+    if (!itemIds || !Array.isArray(itemIds) || itemIds.length === 0) return res.status(400).json({ error: 'No items selected' });
+
+    const transfers = [];
+    for (const itemId of itemIds) {
+      const item = await prisma.item.findUnique({ where: { id: itemId } });
+      if (!item) continue;
+      if (item.shopId !== req.user!.shopId) continue;
+      if (item.branchId && item.branchId !== fromBranchId) continue;
+
+      await prisma.item.update({
+        where: { id: itemId },
+        data: { status: 'In Transit' }
+      });
+
+      const transfer = await prisma.itemTransfer.create({
+        data: {
+          shopId: req.user!.shopId!,
+          itemId,
+          fromBranchId,
+          toBranchId,
+          status: 'PENDING'
+        }
+      });
+      transfers.push(transfer);
+    }
+
+    res.json(transfers);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || 'Internal Server Error' });
+  }
+});
+
+app.post('/api/transfers/receive', authenticateToken, requireActiveOrTrial, async (req: AuthRequest, res) => {
+  try {
+    const { barcode } = req.body;
+    const branchId = req.user!.branchId;
+
+    if (!branchId) return res.status(400).json({ error: 'Please select a branch first' });
+    if (!barcode) return res.status(400).json({ error: 'Barcode is required' });
+
+    const item = await prisma.item.findUnique({
+      where: { barcode_shopId: { barcode, shopId: req.user!.shopId! } }
+    });
+
+    if (!item) return res.status(404).json({ error: 'Item not found' });
+    if (item.status !== 'In Transit') return res.status(400).json({ error: 'Item is not in transit' });
+
+    const pendingTransfer = await prisma.itemTransfer.findFirst({
+      where: {
+        itemId: item.id,
+        toBranchId: branchId,
+        status: 'PENDING'
+      }
+    });
+
+    if (!pendingTransfer) {
+      return res.status(400).json({ error: 'This item was not transferred to your branch' });
+    }
+
+    await prisma.itemTransfer.update({
+      where: { id: pendingTransfer.id },
+      data: { status: 'RECEIVED' }
+    });
+
+    await prisma.item.update({
+      where: { id: item.id },
+      data: { 
+        status: 'In Stock',
+        branchId: branchId
+      }
+    });
+
+    res.json({ success: true, item });
   } catch (error: any) {
     res.status(500).json({ error: error.message || 'Internal Server Error' });
   }

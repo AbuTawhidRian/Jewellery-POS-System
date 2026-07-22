@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { Users, CreditCard, Plus, Edit2, Trash2, ShieldAlert, Building2, X, Lock } from 'lucide-react';
+import { Users, CreditCard, Plus, Edit2, Trash2, ShieldAlert, Building2, X, Lock, Building } from 'lucide-react';
 import Dialog from '../components/Dialog';
 import api from '../lib/api';
 import toast from 'react-hot-toast';
+import { BranchesTab } from '../components/settings/BranchesTab';
 
 interface ShopUser {
   id: number;
@@ -29,7 +30,7 @@ const AVAILABLE_PERMISSIONS = [
 
 const Settings: React.FC = () => {
   const { user, updateUser } = useAuth();
-  const [activeTab, setActiveTab] = useState<'company' | 'staff' | 'subscription' | 'security'>('company');
+  const [activeTab, setActiveTab] = useState<'company' | 'staff' | 'subscription' | 'security' | 'branches'>('company');
   
   const showNotification = useCallback((type: 'success' | 'error', message: string) => {
     if (type === 'success') {
@@ -310,6 +311,13 @@ const Settings: React.FC = () => {
         >
           <Users className="w-5 h-5" />
           Staff Management
+        </button>
+        <button
+          onClick={() => setActiveTab('branches')}
+          className={`flex items-center gap-2 px-4 py-2 font-medium rounded-lg transition-colors whitespace-nowrap ${activeTab === 'branches' ? 'bg-gold-500/10 text-gold-500' : 'text-slate-600 dark:text-slate-400 hover:text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 dark:bg-slate-800/50'}`}
+        >
+          <Building className="w-4 h-4" />
+          <span className="hidden sm:inline">Branches</span>
         </button>
         <button 
           onClick={() => setActiveTab('subscription')}
@@ -670,6 +678,10 @@ const Settings: React.FC = () => {
             </form>
           </div>
         </div>
+      )}
+
+      {activeTab === 'branches' && (
+        <BranchesTab />
       )}
       
       <Dialog 

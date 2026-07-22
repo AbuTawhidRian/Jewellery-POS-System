@@ -13,6 +13,7 @@ interface User {
   role: string;
   customRole?: string;
   permissions?: string[];
+  branchId?: string | null;
 }
 
 interface AuthContextType {
@@ -23,6 +24,8 @@ interface AuthContextType {
   isAuthenticated: boolean;
   hasPermission: (permission: string) => boolean;
   updateUser: (data: Partial<User>) => void;
+  activeBranchId: string | null;
+  switchBranch: (branchId: string | null) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -93,12 +96,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
+  const switchBranch = useCallback((branchId: string | null) => {
+    if (branchId) {
+      localStorage.setItem('activeBranchId', branchId);
+    } else {
+      localStorage.removeItem('activeBranchId');
+    }
+    window.location.reload();
+  }, []);
+
   if (!isInitialized) {
     return <div>Loading...</div>; // Prevent render until auth state is known
   }
 
+  const activeBranchId = localStorage.getItem('activeBranchId') || null;
+
   return (
-    <AuthContext.Provider value={{ user, token, login, logout, isAuthenticated: !!token, hasPermission, updateUser }}>
+    <AuthContext.Provider value={{ user, token, login, logout, isAuthenticated: !!token, hasPermission, updateUser, activeBranchId, switchBranch }}>
       {children}
     </AuthContext.Provider>
   );

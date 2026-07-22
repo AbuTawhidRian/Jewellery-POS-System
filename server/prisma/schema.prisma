@@ -42,6 +42,28 @@ model Shop {
   payments     Payment[]
   metalReceipts MetalReceipt[]
   subscription Subscription?
+  branches     Branch[]
+  itemTransfers ItemTransfer[]
+}
+
+model Branch {
+  id        String   @id @default(uuid())
+  shopId    String
+  name      String
+  isMain    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  shop      Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  
+  users        User[]
+  items        Item[]
+  buyers       Buyer[]
+  sales        Sale[]
+  payments     Payment[]
+  metalReceipts MetalReceipt[]
+  
+  transfersOut ItemTransfer[] @relation("TransfersOut")
+  transfersIn  ItemTransfer[] @relation("TransfersIn")
 }
 
 model User {
@@ -53,10 +75,12 @@ model User {
   customRole   String?
   permissions  String[] @default([])
   shopId       String
+  branchId     String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @default(now()) @updatedAt
 
-  shop Shop @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  shop   Shop    @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  branch Branch? @relation(fields: [branchId], references: [id])
 }
 
 model Subscription {
@@ -76,6 +100,7 @@ model Subscription {
 model Item {
   id           String   @id @default(uuid())
   shopId       String
+  branchId     String?
   barcode      String
   type         String
   model        String?
@@ -84,47 +109,71 @@ model Item {
   status       String   @default("In Stock")
   dateAdded    DateTime @default(now())
 
-  shop  Shop   @relation(fields: [shopId], references: [id], onDelete: Cascade)
-  sales Sale[]
+  shop     Shop           @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  branch   Branch?        @relation(fields: [branchId], references: [id])
+  sales    Sale[]
+  transfers ItemTransfer[]
 
   @@unique([barcode, shopId])
 }
 
-model Buyer {
-  id     String @id @default(uuid())
-  shopId String
-  name   String
+model ItemTransfer {
+  id           String   @id @default(uuid())
+  shopId       String
+  itemId       String
+  fromBranchId String
+  toBranchId   String
+  status       String   @default("PENDING") // PENDING, RECEIVED, REJECTED
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @default(now()) @updatedAt
+  
+  shop         Shop   @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  item         Item   @relation(fields: [itemId], references: [id])
+  fromBranch   Branch @relation("TransfersOut", fields: [fromBranchId], references: [id])
+  toBranch     Branch @relation("TransfersIn", fields: [toBranchId], references: [id])
+}
 
-  shop     Shop      @relation(fields: [shopId], references: [id], onDelete: Cascade)
-  sales    Sale[]
-  payments Payment[]
+model Buyer {
+  id       String  @id @default(uuid())
+  shopId   String
+  branchId String?
+  name     String
+
+  shop          Shop           @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  branch        Branch?        @relation(fields: [branchId], references: [id])
+  sales         Sale[]
+  payments      Payment[]
   metalReceipts MetalReceipt[]
 }
 
 model Payment {
-  id        String   @id @default(uuid())
-  shopId    String
-  buyerId   String
-  amount    Float
-  date      DateTime @default(now())
-  notes     String?
+  id       String   @id @default(uuid())
+  shopId   String
+  branchId String?
+  buyerId  String
+  amount   Float
+  date     DateTime @default(now())
+  notes    String?
 
-  shop  Shop  @relation(fields: [shopId], references: [id], onDelete: Cascade)
-  buyer Buyer @relation(fields: [buyerId], references: [id], onDelete: Cascade)
+  shop   Shop    @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  branch Branch? @relation(fields: [branchId], references: [id])
+  buyer  Buyer   @relation(fields: [buyerId], references: [id], onDelete: Cascade)
 }
 
 model Sale {
-  id      String   @id @default(uuid())
-  shopId  String
-  itemId          String
-  buyerId         String
-  date            DateTime @default(now())
-  weight          Float
-  makingCharge    Float    @default(0)
+  id           String   @id @default(uuid())
+  shopId       String
+  branchId     String?
+  itemId       String
+  buyerId      String
+  date         DateTime @default(now())
+  weight       Float
+  makingCharge Float    @default(0)
 
-  shop  Shop  @relation(fields: [shopId], references: [id], onDelete: Cascade)
-  item  Item  @relation(fields: [itemId], references: [id])
-  buyer Buyer @relation(fields: [buyerId], references: [id])
+  shop   Shop    @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  branch Branch? @relation(fields: [branchId], references: [id])
+  item   Item    @relation(fields: [itemId], references: [id])
+  buyer  Buyer   @relation(fields: [buyerId], references: [id])
 }
 
 model ItemType {
@@ -150,15 +199,17 @@ model ItemModel {
 }
 
 model MetalReceipt {
-  id        String   @id @default(uuid())
-  shopId    String
-  buyerId   String
-  date      DateTime @default(now())
-  weight    Float
-  purity    Float    @default(0.995)
-  notes     String?
+  id       String   @id @default(uuid())
+  shopId   String
+  branchId String?
+  buyerId  String
+  date     DateTime @default(now())
+  weight   Float
+  purity   Float    @default(0.995)
+  notes    String?
 
-  shop  Shop  @relation(fields: [shopId], references: [id], onDelete: Cascade)
-  buyer Buyer @relation(fields: [buyerId], references: [id], onDelete: Cascade)
+  shop   Shop    @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  branch Branch? @relation(fields: [branchId], references: [id])
+  buyer  Buyer   @relation(fields: [buyerId], references: [id], onDelete: Cascade)
 }
 
