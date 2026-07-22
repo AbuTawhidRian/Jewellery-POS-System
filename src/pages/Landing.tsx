@@ -2,12 +2,14 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Moon, Sun, Check, MessageCircle, Lock, ChevronDown, CheckCircle2 } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function Landing() {
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
   const [isLangMenuOpen, setIsLangMenuOpen] = useState(false);
   const [activeLang, setActiveLang] = useState('en');
   const { isDarkMode, toggleTheme } = useTheme();
+  const { isAuthenticated } = useAuth();
 
   const handleLanguageChange = (langCode: string) => {
     setIsLangMenuOpen(false);
@@ -55,7 +57,7 @@ export default function Landing() {
   };
 
   return (
-    <div className={`min-h-screen flex flex-col font-sans selection:bg-amber-100 selection:text-amber-900 transition-colors duration-300 ${isDarkMode ? 'dark bg-[#0B0F19]' : 'bg-[#F8FAFC]'} ${activeLang === 'en' ? 'lg:h-screen lg:overflow-hidden' : ''}`}>
+    <div className={`min-h-screen flex flex-col font-sans selection:bg-amber-100 selection:text-amber-900 transition-colors duration-300 ${isDarkMode ? 'dark bg-[#0B0F19]' : 'bg-[#F8FAFC]'} ${activeLang === 'en' ? 'lg:h-screen lg:overflow-hidden' : ''} animate-page-in`}>
       {/* Navigation */}
       <nav className="max-w-[1200px] w-full mx-auto px-4 sm:px-6 lg:px-8 h-20 shrink-0 flex items-center justify-between mt-4 sm:mt-6">
         <div className="flex items-center gap-3">
@@ -135,11 +137,13 @@ export default function Landing() {
           </button>
           
           <div className="flex items-center gap-3 ml-2">
-            <Link to="/login" className="hidden sm:inline-flex items-center justify-center px-5 py-2.5 text-[15px] font-bold text-[#B48346] dark:text-[#C28C46] bg-transparent border border-[#E8D4B4] dark:border-[#C28C46]/40 rounded-[12px] hover:bg-[#FFFBF0] dark:hover:bg-[#C28C46]/10 transition-colors">
-              Client Login
-            </Link>
-            <Link to="/register" className="inline-flex items-center justify-center px-6 py-2.5 text-[15px] font-bold text-white bg-gradient-to-r from-[#C28C46] via-[#334155] to-[#1E293B] dark:from-[#C28C46] dark:to-[#475569] dark:via-[#9A7135] rounded-[12px] shadow-md shadow-[#C28C46]/20 dark:shadow-[0_0_15px_rgba(194,140,70,0.4)] hover:opacity-90 transition-opacity">
-              Start Free Trial
+            {!isAuthenticated && (
+              <Link to="/login" className="hidden sm:inline-flex items-center justify-center px-5 py-2.5 text-[15px] font-bold text-[#B48346] dark:text-[#C28C46] bg-transparent border border-[#E8D4B4] dark:border-[#C28C46]/40 rounded-[12px] hover:bg-[#FFFBF0] dark:hover:bg-[#C28C46]/10 transition-colors">
+                Client Login
+              </Link>
+            )}
+            <Link to={isAuthenticated ? "/dashboard" : "/register"} className="inline-flex items-center justify-center px-6 py-2.5 text-[15px] font-bold text-white bg-gradient-to-r from-[#C28C46] via-[#334155] to-[#1E293B] dark:from-[#C28C46] dark:to-[#475569] dark:via-[#9A7135] rounded-[12px] shadow-md shadow-[#C28C46]/20 dark:shadow-[0_0_15px_rgba(194,140,70,0.4)] hover:opacity-90 transition-opacity">
+              {isAuthenticated ? "Go to Dashboard" : "Start Free Trial"}
             </Link>
           </div>
         </div>
@@ -187,8 +191,8 @@ export default function Landing() {
 
             {/* CTA Buttons */}
             <div className="flex flex-col sm:flex-row gap-3 mb-8">
-              <Link to="/register" className="inline-flex items-center justify-center gap-2 px-6 py-3.5 text-[15px] font-bold text-white bg-gradient-to-r from-[#C28C46] via-[#334155] to-[#1E293B] dark:from-[#C28C46] dark:to-[#475569] dark:via-[#9A7135] rounded-xl shadow-lg shadow-[#C28C46]/20 dark:shadow-[0_0_30px_rgba(194,140,70,0.3)] hover:opacity-90 transition-all whitespace-nowrap">
-                Start Free Trial 
+              <Link to={isAuthenticated ? "/dashboard" : "/register"} className="inline-flex items-center justify-center gap-2 px-6 py-3.5 text-[15px] font-bold text-white bg-gradient-to-r from-[#C28C46] via-[#334155] to-[#1E293B] dark:from-[#C28C46] dark:to-[#475569] dark:via-[#9A7135] rounded-xl shadow-lg shadow-[#C28C46]/20 dark:shadow-[0_0_30px_rgba(194,140,70,0.3)] hover:opacity-90 transition-all whitespace-nowrap">
+                {isAuthenticated ? "Go to Dashboard" : "Start Free Trial"} 
                 <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
               </Link>
               <button className="inline-flex items-center justify-center gap-2 px-6 py-3.5 text-[15px] font-bold text-[#10B981] dark:text-[#10B981] bg-white dark:bg-transparent border-2 border-[#A7F3D0] dark:border-[#10B981]/30 hover:bg-[#ECFDF5] dark:hover:bg-[#10B981]/10 rounded-xl shadow-sm transition-all whitespace-nowrap">
@@ -283,8 +287,8 @@ export default function Landing() {
                   ))}
                 </ul>
                 
-                <Link to="/register" className={`mt-auto flex items-center justify-center gap-1 w-full py-2.5 px-3 rounded-xl font-bold transition-all text-[13px] ${billingCycle === 'monthly' ? 'text-white bg-gradient-to-r from-[#C28C46] via-[#334155] to-[#1E293B] dark:from-[#C28C46] dark:to-[#475569] dark:via-[#9A7135] shadow-lg shadow-[#C28C46]/20 hover:opacity-90' : 'text-[#334155] dark:text-white bg-[#F1F5F9] dark:bg-[#1E293B] hover:bg-[#E2E8F0] dark:hover:bg-[#334155]'}`}>
-                  Start Free Trial 
+                <Link to={isAuthenticated ? "/dashboard" : "/register"} className={`mt-auto flex items-center justify-center gap-1 w-full py-2.5 px-3 rounded-xl font-bold transition-all text-[13px] ${billingCycle === 'monthly' ? 'text-white bg-gradient-to-r from-[#C28C46] via-[#334155] to-[#1E293B] dark:from-[#C28C46] dark:to-[#475569] dark:via-[#9A7135] shadow-lg shadow-[#C28C46]/20 hover:opacity-90' : 'text-[#334155] dark:text-white bg-[#F1F5F9] dark:bg-[#1E293B] hover:bg-[#E2E8F0] dark:hover:bg-[#334155]'}`}>
+                  {isAuthenticated ? "Go to Dashboard" : "Start Free Trial"} 
                   <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
                 </Link>
               </div>
@@ -326,8 +330,8 @@ export default function Landing() {
                   ))}
                 </ul>
                 
-                <Link to="/register" className={`mt-auto flex items-center justify-center gap-1.5 w-full py-3.5 px-3 rounded-xl font-bold transition-all text-[14px] ${billingCycle === 'yearly' ? 'text-white bg-gradient-to-r from-[#C28C46] via-[#334155] to-[#1E293B] dark:from-[#C28C46] dark:to-[#475569] dark:via-[#9A7135] shadow-lg shadow-[#C28C46]/20 hover:opacity-90' : 'text-[#334155] dark:text-white bg-[#F1F5F9] dark:bg-[#1E293B] hover:bg-[#E2E8F0] dark:hover:bg-[#334155]'}`}>
-                  Start Free Trial
+                <Link to={isAuthenticated ? "/dashboard" : "/register"} className={`mt-auto flex items-center justify-center gap-1.5 w-full py-3.5 px-3 rounded-xl font-bold transition-all text-[14px] ${billingCycle === 'yearly' ? 'text-white bg-gradient-to-r from-[#C28C46] via-[#334155] to-[#1E293B] dark:from-[#C28C46] dark:to-[#475569] dark:via-[#9A7135] shadow-lg shadow-[#C28C46]/20 hover:opacity-90' : 'text-[#334155] dark:text-white bg-[#F1F5F9] dark:bg-[#1E293B] hover:bg-[#E2E8F0] dark:hover:bg-[#334155]'}`}>
+                  {isAuthenticated ? "Go to Dashboard" : "Start Free Trial"}
                   <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
                 </Link>
               </div>

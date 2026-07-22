@@ -19,7 +19,7 @@ const Layout: React.FC = () => {
   }, [location.pathname, setPrintItem, setPrintInvoiceData, setPrintStatementData]);
 
   return (
-    <div className="flex h-screen bg-white dark:bg-slate-950 transition-colors duration-300 overflow-hidden font-sans">
+    <div className="flex h-screen bg-white dark:bg-slate-950 transition-colors duration-300 overflow-hidden font-sans animate-page-in">
       <Sidebar />
       <div className="flex-1 flex flex-col min-w-0 bg-white dark:bg-slate-950 transition-colors duration-300">
         <TopNav />
