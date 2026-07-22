@@ -89,8 +89,8 @@ const Transfers: React.FC = () => {
         setSelectedItems([...selectedItems, res.data.id]);
         setDispatchBarcode('');
       }
-    } catch (err) {
-      toast.error('Item not found or not in stock');
+    } catch (err: any) {
+      toast.error(err.response?.data?.error || 'Item not found or not in stock');
     }
   };
 
