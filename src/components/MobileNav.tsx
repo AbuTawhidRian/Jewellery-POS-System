@@ -4,8 +4,20 @@ import { LayoutDashboard, Lock, Barcode, BookOpen, Settings as SettingsIcon, Shi
 import clsx from 'clsx';
 import { useAuth } from '../contexts/AuthContext';
 
+import api from '../lib/api';
+
 const MobileNav: React.FC = () => {
-  const { user, hasPermission } = useAuth();
+  const { user, hasPermission, activeBranchId } = useAuth();
+  const [branches, setBranches] = React.useState<any[]>([]);
+
+  React.useEffect(() => {
+    if (user?.role === 'OWNER') {
+      api.get('/branches').then(res => setBranches(res.data)).catch(console.error);
+    }
+  }, [user]);
+
+  const isRetailBranch = activeBranchId && branches.length > 0 && !branches.find(b => b.id === activeBranchId)?.isMain;
+
   let links: any[] = [];
   
   if (user?.role === 'SUPERADMIN') {
@@ -16,7 +28,7 @@ const MobileNav: React.FC = () => {
     if (hasPermission('view_vault')) links.push({ to: '/dashboard/transfers', icon: ArrowRightLeft, label: 'Transfers' });
     if (hasPermission('access_pos')) links.push({ to: '/dashboard/pos', icon: Barcode, label: 'POS' });
     if (hasPermission('view_ledger')) links.push({ to: '/dashboard/ledger', icon: BookOpen, label: 'Ledger' });
-    if (user?.role === 'OWNER') links.push({ to: '/dashboard/settings', icon: SettingsIcon, label: 'Set' });
+    if (user?.role === 'OWNER' && !isRetailBranch) links.push({ to: '/dashboard/settings', icon: SettingsIcon, label: 'Set' });
   }
 
 

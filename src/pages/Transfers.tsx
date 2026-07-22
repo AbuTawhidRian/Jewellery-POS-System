@@ -175,33 +175,32 @@ const Transfers: React.FC = () => {
         <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 p-6">
           
           {activeTab === 'receive' && (
-            <div className="max-w-2xl mx-auto py-8">
-              <div className="text-center mb-8">
-                <div className="w-16 h-16 bg-[#C28C46]/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <ScanLine className="w-8 h-8 text-[#C28C46]" />
+              <form onSubmit={handleReceive} className="w-full max-w-2xl mx-auto py-8">
+                <div className="bg-white dark:bg-slate-950 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xl relative overflow-hidden flex flex-col items-center">
+                  <div className="w-full flex justify-between items-center mb-6">
+                    <label className="flex items-center gap-2 text-sm font-bold tracking-widest uppercase text-amber-500">
+                      <ScanLine className="w-5 h-5" />
+                      Receive Item By Barcode
+                    </label>
+                  </div>
+                  
+                  <div className="w-full">
+                    <input 
+                      type="text"
+                      value={barcode}
+                      onChange={(e) => setBarcode(e.target.value)}
+                      className="w-full bg-slate-50 dark:bg-slate-900 border-b-4 border-slate-300 dark:border-slate-700 focus:border-amber-500 px-6 py-6 text-4xl text-center text-slate-900 dark:text-slate-100 font-mono focus:outline-none transition-colors rounded-t-xl"
+                      placeholder="WAITING..."
+                      autoComplete="off"
+                      autoFocus
+                      disabled={receiving}
+                    />
+                    <p className="text-center text-slate-500 dark:text-slate-400 mt-4 text-sm font-medium">
+                      Type or scan with a physical scanner, then press ENTER
+                    </p>
+                  </div>
                 </div>
-                <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Receive Items</h2>
-                <p className="text-slate-500 mt-2">Scan the barcodes of items delivered from another branch to add them to your stock.</p>
-              </div>
-
-              <form onSubmit={handleReceive} className="flex gap-4">
-                <input
-                  type="text"
-                  autoFocus
-                  placeholder="Scan barcode or enter manually..."
-                  value={barcode}
-                  onChange={e => setBarcode(e.target.value)}
-                  className="flex-1 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl px-6 py-4 text-lg focus:ring-2 focus:ring-[#C28C46] focus:border-transparent transition-all outline-none"
-                />
-                <button
-                  type="submit"
-                  disabled={receiving || !barcode}
-                  className="bg-[#C28C46] text-white px-8 py-4 rounded-xl font-bold hover:bg-[#8C622C] transition-colors disabled:opacity-50"
-                >
-                  {receiving ? 'Receiving...' : 'Receive'}
-                </button>
               </form>
-            </div>
           )}
 
           {activeTab === 'dispatch' && (
@@ -236,21 +235,30 @@ const Transfers: React.FC = () => {
               </div>
 
               <div className="col-span-2">
-                <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4">Scan Items to Send</h3>
-                <form onSubmit={handleAddDispatchItem} className="flex gap-4 mb-6">
-                  <div className="relative flex-1">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-                    <input
-                      type="text"
-                      placeholder="Scan barcode..."
-                      value={dispatchBarcode}
-                      onChange={e => setDispatchBarcode(e.target.value)}
-                      className="w-full pl-12 pr-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-[#C28C46]"
-                    />
+                <form onSubmit={handleAddDispatchItem} className="mb-6">
+                  <div className="bg-white dark:bg-slate-950 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xl relative overflow-hidden flex flex-col items-center">
+                    <div className="w-full flex justify-between items-center mb-6">
+                      <label className="flex items-center gap-2 text-sm font-bold tracking-widest uppercase text-amber-500">
+                        <ScanLine className="w-5 h-5" />
+                        Scan Items to Dispatch
+                      </label>
+                    </div>
+                    
+                    <div className="w-full">
+                      <input 
+                        type="text"
+                        value={dispatchBarcode}
+                        onChange={(e) => setDispatchBarcode(e.target.value)}
+                        className="w-full bg-slate-50 dark:bg-slate-900 border-b-4 border-slate-300 dark:border-slate-700 focus:border-amber-500 px-6 py-6 text-4xl text-center text-slate-900 dark:text-slate-100 font-mono focus:outline-none transition-colors rounded-t-xl"
+                        placeholder="WAITING..."
+                        autoComplete="off"
+                        autoFocus
+                      />
+                      <p className="text-center text-slate-500 dark:text-slate-400 mt-4 text-sm font-medium">
+                        Type or scan with a physical scanner, then press ENTER
+                      </p>
+                    </div>
                   </div>
-                  <button type="submit" className="bg-slate-900 dark:bg-white text-white dark:text-slate-900 px-6 py-3 rounded-xl font-medium hover:bg-slate-800 dark:hover:bg-slate-100 transition-colors">
-                    Add
-                  </button>
                 </form>
 
                 <div className="bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden min-h-[300px]">
