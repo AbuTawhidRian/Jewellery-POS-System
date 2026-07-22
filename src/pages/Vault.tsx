@@ -607,8 +607,8 @@ const Vault: React.FC = () => {
                 )}
               </div>
 
-              <div className="border-t border-slate-200 dark:border-slate-800 pt-6">
-                <label className="block text-sm font-bold tracking-wide text-slate-600 dark:text-slate-400 uppercase mb-2">
+              <div className="bg-slate-100 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl p-4 mt-4">
+                <label className="block text-sm font-bold tracking-wide text-slate-700 dark:text-slate-300 uppercase mb-3">
                   Add New Type
                 </label>
                 <div className="flex flex-col sm:flex-row gap-2">
@@ -765,8 +765,8 @@ const Vault: React.FC = () => {
                 )}
               </div>
 
-              <div className="border-t border-slate-200 dark:border-slate-800 pt-6">
-                <label className="block text-sm font-bold tracking-wide text-slate-600 dark:text-slate-400 uppercase mb-2">
+              <div className="bg-slate-100 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl p-4 mt-4">
+                <label className="block text-sm font-bold tracking-wide text-slate-700 dark:text-slate-300 uppercase mb-3">
                   Add New Model
                 </label>
                 <div className="flex gap-2">
