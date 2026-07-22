@@ -68,6 +68,7 @@ export interface AuthRequest extends Request {
     customRole?: string | null;
     permissions?: string[];
   };
+  file?: any;
 }
 
 const authenticateToken = (req: AuthRequest, res: Response, next: NextFunction) => {
