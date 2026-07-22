@@ -398,7 +398,7 @@ const Vault: React.FC = () => {
                                   <MoreVertical className="w-4 h-4" />
                                 </button>
 
-                                {activeMenuId === item.id && canEditVault && (
+                                {activeMenuId === item.id && canEditVault && !isRetailBranch && (
                                   <>
                                     <div 
                                       className="fixed inset-0 z-40" 
