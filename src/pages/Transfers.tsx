@@ -5,7 +5,7 @@ import toast from 'react-hot-toast';
 import { useAuth } from '../contexts/AuthContext';
 
 const Transfers: React.FC = () => {
-  const { activeBranchId, user } = useAuth();
+  const { activeBranchId } = useAuth();
   const [activeTab, setActiveTab] = useState<'receive' | 'dispatch' | 'history'>('receive');
   
   // Receive State
