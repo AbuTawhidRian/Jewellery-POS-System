@@ -922,7 +922,21 @@ app.get('/api/inventory/barcode/:barcode', authenticateToken, requireActiveOrTri
     });
 
     if (!item) return res.status(404).json({ error: 'Item not found' });
-    if (item.branchId !== branchId) return res.status(400).json({ error: 'Item is not in this branch' });
+    
+    if (item.branchId !== branchId) {
+      if (!item.branchId) {
+        // Legacy item without branchId. Check if the current branch is Main.
+        const branch = await prisma.branch.findUnique({ where: { id: branchId } });
+        if (!branch?.isMain) {
+          return res.status(400).json({ error: 'Item belongs to main shop. Please switch to Main Shop.' });
+        }
+        // Auto-fix legacy item
+        await prisma.item.update({ where: { id: item.id }, data: { branchId } });
+      } else {
+        return res.status(400).json({ error: 'Item is not in this branch' });
+      }
+    }
+    
     if (item.status !== 'In Stock') return res.status(400).json({ error: `Item is ${item.status}` });
 
     res.json(item);
