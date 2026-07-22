@@ -394,6 +394,12 @@ app.post('/api/shop/logo', authenticateToken, requireRole(Role.OWNER), upload.si
   try {
     if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
     
+    const currentShop = await prisma.shop.findUnique({ where: { id: req.user!.shopId! } });
+    if (currentShop?.logoUrl) {
+      const oldFilePath = path.join(uploadsDir, path.basename(currentShop.logoUrl));
+      if (fs.existsSync(oldFilePath)) fs.unlinkSync(oldFilePath);
+    }
+
     const logoUrl = `/uploads/${req.file.filename}`;
     const shop = await prisma.shop.update({
       where: { id: req.user!.shopId! },
@@ -401,6 +407,24 @@ app.post('/api/shop/logo', authenticateToken, requireRole(Role.OWNER), upload.si
     });
     
     res.json({ logoUrl: shop.logoUrl });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || 'Internal Server Error' });
+  }
+});
+
+app.delete('/api/shop/logo', authenticateToken, requireRole(Role.OWNER), async (req: AuthRequest, res) => {
+  try {
+    const currentShop = await prisma.shop.findUnique({ where: { id: req.user!.shopId! } });
+    if (currentShop?.logoUrl) {
+      const oldFilePath = path.join(uploadsDir, path.basename(currentShop.logoUrl));
+      if (fs.existsSync(oldFilePath)) fs.unlinkSync(oldFilePath);
+      
+      await prisma.shop.update({
+        where: { id: req.user!.shopId! },
+        data: { logoUrl: null }
+      });
+    }
+    res.json({ success: true });
   } catch (error: any) {
     res.status(500).json({ error: error.message || 'Internal Server Error' });
   }
