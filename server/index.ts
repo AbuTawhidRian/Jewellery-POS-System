@@ -973,6 +973,14 @@ app.post('/api/inventory', authenticateToken, requireActiveOrTrial, requireAcces
       return res.status(400).json({ error: 'Barcode already exists in your shop' });
     }
 
+    let targetBranchId = req.user!.branchId;
+    if (!targetBranchId) {
+      const mainBranch = await prisma.branch.findFirst({ where: { shopId, isMain: true } });
+      if (mainBranch) {
+        targetBranchId = mainBranch.id;
+      }
+    }
+
     const newItem = await prisma.item.create({
       data: {
         barcode,
@@ -982,7 +990,7 @@ app.post('/api/inventory', authenticateToken, requireActiveOrTrial, requireAcces
         stone_weight: parseFloat(stone_weight) || 0,
         status: 'In Stock',
         shopId,
-        branchId: req.user!.branchId || undefined
+        branchId: targetBranchId || undefined
       }
     });
     
