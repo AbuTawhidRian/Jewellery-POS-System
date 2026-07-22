@@ -22,6 +22,7 @@ interface AuthContextType {
   logout: () => void;
   isAuthenticated: boolean;
   hasPermission: (permission: string) => boolean;
+  updateUser: (data: Partial<User>) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -83,12 +84,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return user.permissions?.includes(permission) || false;
   }, [user]);
 
+  const updateUser = useCallback((data: Partial<User>) => {
+    setUser(prev => {
+      if (!prev) return null;
+      const updated = { ...prev, ...data };
+      localStorage.setItem('user', JSON.stringify(updated));
+      return updated;
+    });
+  }, []);
+
   if (!isInitialized) {
     return <div>Loading...</div>; // Prevent render until auth state is known
   }
 
   return (
-    <AuthContext.Provider value={{ user, token, login, logout, isAuthenticated: !!token, hasPermission }}>
+    <AuthContext.Provider value={{ user, token, login, logout, isAuthenticated: !!token, hasPermission, updateUser }}>
       {children}
     </AuthContext.Provider>
   );

@@ -28,7 +28,7 @@ const AVAILABLE_PERMISSIONS = [
 ];
 
 const Settings: React.FC = () => {
-  const { user } = useAuth();
+  const { user, updateUser } = useAuth();
   const [activeTab, setActiveTab] = useState<'company' | 'staff' | 'subscription' | 'security'>('company');
   
   const showNotification = useCallback((type: 'success' | 'error', message: string) => {
@@ -135,14 +135,24 @@ const Settings: React.FC = () => {
     try {
       await api.put('/shop', shopInfo);
       
+      updateUser({
+        shopName: shopInfo.name,
+        shopSlogan: shopInfo.slogan,
+        shopEmail: shopInfo.email,
+        shopPhone: shopInfo.phone
+      });
+
       if (logoFile) {
         const formData = new FormData();
         formData.append('logo', logoFile);
-        await api.post('/shop/logo', formData, {
+        const res = await api.post('/shop/logo', formData, {
           headers: { 'Content-Type': 'multipart/form-data' }
         });
         setLogoFile(null);
         await fetchShopInfo();
+        if (res.data.logoUrl) {
+          updateUser({ shopLogo: res.data.logoUrl });
+        }
       }
 
       showNotification('success', 'Company information updated successfully!');
@@ -159,6 +169,7 @@ const Settings: React.FC = () => {
       await api.delete('/shop/logo');
       setLogoFile(null);
       setShopInfo({ ...shopInfo, logoUrl: '' });
+      updateUser({ shopLogo: undefined });
       showNotification('success', 'Logo removed successfully!');
       fetchShopInfo();
     } catch (err) {
