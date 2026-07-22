@@ -80,20 +80,33 @@ const authenticateToken = (req: AuthRequest, res: Response, next: NextFunction) 
   
   if (!token) return res.status(401).json({ error: 'Access denied, token missing' });
 
-  jwt.verify(token, JWT_SECRET, (err: any, user: any) => {
+  jwt.verify(token, JWT_SECRET, async (err: any, user: any) => {
     if (err) return res.status(403).json({ error: 'Invalid token' });
     
     // Allow Owner/Manager to switch branches via header
     if (requestedBranchId && typeof requestedBranchId === 'string') {
       if (user.role === 'OWNER' || user.role === 'MANAGER' || user.role === 'SUPERADMIN') {
         if (user.branchId !== requestedBranchId) {
-          user.isReadOnly = true;
+          if (!user.branchId) {
+            // Global owner, check if the requested branch is the main branch
+            try {
+              const branch = await prisma.branch.findUnique({ where: { id: requestedBranchId }, select: { isMain: true }});
+              if (!branch?.isMain) user.isReadOnly = true;
+            } catch (e) {
+              user.isReadOnly = true;
+            }
+          } else {
+            user.isReadOnly = true;
+          }
         }
         user.branchId = requestedBranchId;
       }
     }
     
-    if (user.isReadOnly && ['POST', 'PUT', 'DELETE'].includes(req.method)) {
+    // Global operations that should never be blocked by read-only mode
+    const isGlobalRoute = req.path === '/api/branches' || req.path.startsWith('/api/shop');
+
+    if (user.isReadOnly && !isGlobalRoute && ['POST', 'PUT', 'DELETE'].includes(req.method)) {
       return res.status(403).json({ error: 'Read-only mode: You cannot edit data in other branches.' });
     }
 
