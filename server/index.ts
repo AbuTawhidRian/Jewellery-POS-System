@@ -549,20 +549,21 @@ app.get('/api/transfers', authenticateToken, requireActiveOrTrial, async (req: A
   try {
     const { status, type } = req.query; // type: 'in' | 'out'
     const branchId = req.user!.branchId;
-    if (!branchId) return res.status(400).json({ error: 'Please select a branch first' });
 
     let whereClause: any = { shopId: req.user!.shopId! };
     if (status) whereClause.status = status;
     
-    if (type === 'in') {
-      whereClause.toBranchId = branchId;
-    } else if (type === 'out') {
-      whereClause.fromBranchId = branchId;
-    } else {
-      whereClause.OR = [
-        { fromBranchId: branchId },
-        { toBranchId: branchId }
-      ];
+    if (branchId) {
+      if (type === 'in') {
+        whereClause.toBranchId = branchId;
+      } else if (type === 'out') {
+        whereClause.fromBranchId = branchId;
+      } else {
+        whereClause.OR = [
+          { fromBranchId: branchId },
+          { toBranchId: branchId }
+        ];
+      }
     }
 
     const transfers = await prisma.itemTransfer.findMany({
@@ -883,6 +884,29 @@ app.get('/api/inventory', authenticateToken, requireActiveOrTrial, async (req: A
     res.json(items);
   } catch (error) {
     console.error("Error fetching inventory:", error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+app.get('/api/inventory/barcode/:barcode', authenticateToken, requireActiveOrTrial, async (req: AuthRequest, res) => {
+  try {
+    const barcode = req.params.barcode as string;
+    const shopId = req.user!.shopId!;
+    const branchId = req.user!.branchId;
+
+    if (!branchId) return res.status(400).json({ error: 'Please select a branch first' });
+
+    const item = await prisma.item.findUnique({
+      where: { barcode_shopId: { barcode, shopId } }
+    });
+
+    if (!item) return res.status(404).json({ error: 'Item not found' });
+    if (item.branchId !== branchId) return res.status(400).json({ error: 'Item is not in this branch' });
+    if (item.status !== 'In Stock') return res.status(400).json({ error: `Item is ${item.status}` });
+
+    res.json(item);
+  } catch (error) {
+    console.error("Error fetching item by barcode:", error);
     res.status(500).json({ error: 'Internal Server Error' });
   }
 });
