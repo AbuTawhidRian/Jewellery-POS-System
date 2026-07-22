@@ -3,13 +3,21 @@ import { useInventory, type Item } from '../store/InventoryContext';
 import { Plus, Search, XCircle, Trash2, Printer, Settings, CheckCircle, MoreVertical, Edit2, Lock } from 'lucide-react';
 import Dialog from '../components/Dialog';
 import { useAuth } from '../contexts/AuthContext';
+import api from '../lib/api';
 
 const Vault: React.FC = () => {
-  const { hasPermission } = useAuth();
+  const { hasPermission, activeBranchId } = useAuth();
   const canEditVault = hasPermission('edit_vault');
   const { items, itemTypes, addItem, editItem, deleteItem, setPrintItem, setPrintInvoiceData, setPrintStatementData, addItemType, editItemType, deleteItemType, models, addModel, editModel, deleteModel } = useInventory();
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
+  const [branches, setBranches] = useState<any[]>([]);
+
+  useEffect(() => {
+    api.get('/branches').then(res => setBranches(res.data)).catch(console.error);
+  }, []);
+
+  const isRetailBranch = activeBranchId && branches.length > 0 && !branches.find(b => b.id === activeBranchId)?.isMain;
   
   // Form State
   const [type, setType] = useState('');
@@ -149,9 +157,9 @@ const Vault: React.FC = () => {
         <p className="text-slate-600 dark:text-slate-400 mt-2 text-sm">Manage your active jewelry inventory.</p>
       </div>
 
-      <div className={`grid grid-cols-1 gap-8 ${canEditVault ? 'xl:grid-cols-3' : ''}`}>
+      <div className={`grid grid-cols-1 gap-8 ${canEditVault && !isRetailBranch ? 'xl:grid-cols-3' : ''}`}>
         {/* Entry Form */}
-        {canEditVault && (
+        {canEditVault && !isRetailBranch && (
           <div className="xl:col-span-1">
             <div className="bg-white dark:bg-slate-950 p-4 md:p-8 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xl relative overflow-hidden">
               <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 mb-6 flex items-center gap-2">
@@ -321,7 +329,7 @@ const Vault: React.FC = () => {
         )}
 
         {/* Inventory List */}
-        <div className={canEditVault ? "xl:col-span-2" : ""}>
+        <div className={canEditVault && !isRetailBranch ? "xl:col-span-2" : ""}>
           <div className="bg-white dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-lg flex-1 overflow-hidden flex flex-col">
             <div className="p-4 md:p-6 border-b border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
               <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">Active Stock ({activeStock.length})</h2>

@@ -506,7 +506,7 @@ app.post('/api/branches', authenticateToken, requireRole(Role.OWNER), async (req
 app.put('/api/branches/:id', authenticateToken, requireRole(Role.OWNER), async (req: AuthRequest, res) => {
   try {
     const { name, isMain } = req.body;
-    const branchId = req.params.id;
+    const branchId = req.params.id as string;
 
     if (isMain) {
       // Unset other main branches
@@ -528,7 +528,7 @@ app.put('/api/branches/:id', authenticateToken, requireRole(Role.OWNER), async (
 
 app.delete('/api/branches/:id', authenticateToken, requireRole(Role.OWNER), async (req: AuthRequest, res) => {
   try {
-    const branchId = req.params.id;
+    const branchId = req.params.id as string;
     
     const branch = await prisma.branch.findUnique({ where: { id: branchId } });
     if (branch?.isMain) {
@@ -873,8 +873,11 @@ app.delete('/api/models/:id', authenticateToken, requireActiveOrTrial, requireAc
 
 app.get('/api/inventory', authenticateToken, requireActiveOrTrial, async (req: AuthRequest, res) => {
   try {
+    const whereClause: any = { shopId: req.user!.shopId! };
+    if (req.user!.branchId) whereClause.branchId = req.user!.branchId;
+
     const items = await prisma.item.findMany({
-      where: { shopId: req.user!.shopId! },
+      where: whereClause,
       orderBy: { dateAdded: 'asc' }
     });
     res.json(items);
@@ -913,13 +916,14 @@ app.post('/api/inventory', authenticateToken, requireActiveOrTrial, requireAcces
 
     const newItem = await prisma.item.create({
       data: {
-        shopId,
         barcode,
         type,
-        model,
+        model: model || null,
         weight: parseFloat(weight),
-        stone_weight: stone_weight ? parseFloat(stone_weight) : null,
+        stone_weight: parseFloat(stone_weight) || 0,
         status: 'In Stock',
+        shopId,
+        branchId: req.user!.branchId || undefined
       }
     });
     
@@ -979,8 +983,11 @@ app.delete('/api/inventory/:id', authenticateToken, requireActiveOrTrial, requir
 
 app.get('/api/buyers', authenticateToken, requireActiveOrTrial, async (req: AuthRequest, res) => {
   try {
+    const whereClause: any = { shopId: req.user!.shopId! };
+    if (req.user!.branchId) whereClause.branchId = req.user!.branchId;
+
     const buyers = await prisma.buyer.findMany({
-      where: { shopId: req.user!.shopId! }
+      where: whereClause
     });
     res.json(buyers);
   } catch (error) {
@@ -993,7 +1000,11 @@ app.post('/api/buyers', authenticateToken, requireActiveOrTrial, async (req: Aut
     const { name } = req.body;
     const shopId = req.user!.shopId!;
     const newBuyer = await prisma.buyer.create({
-      data: { name, shopId }
+      data: { 
+        name, 
+        shopId,
+        branchId: req.user!.branchId || undefined
+      }
     });
     res.json(newBuyer);
   } catch (error) {
@@ -1035,8 +1046,11 @@ app.delete('/api/buyers/:id', authenticateToken, requireActiveOrTrial, async (re
 
 app.get('/api/sales', authenticateToken, requireActiveOrTrial, async (req: AuthRequest, res) => {
   try {
+    const whereClause: any = { shopId: req.user!.shopId! };
+    if (req.user!.branchId) whereClause.branchId = req.user!.branchId;
+
     const sales = await prisma.sale.findMany({
-      where: { shopId: req.user!.shopId! },
+      where: whereClause,
       orderBy: { date: 'desc' },
       include: {
         item: true,
@@ -1081,12 +1095,15 @@ app.post('/api/sales/bulk', authenticateToken, requireActiveOrTrial, requireAcce
     }
 
     const result = await prisma.$transaction(async (tx: any) => {
+      const itemsWhereClause: any = {
+        shopId,
+        barcode: { in: barcodes },
+        status: 'In Stock'
+      };
+      if (req.user!.branchId) itemsWhereClause.branchId = req.user!.branchId;
+
       const itemsToSell = await tx.item.findMany({
-        where: {
-          shopId,
-          barcode: { in: barcodes },
-          status: 'In Stock'
-        }
+        where: itemsWhereClause
       });
 
       if (itemsToSell.length === 0) {
@@ -1105,7 +1122,8 @@ app.post('/api/sales/bulk', authenticateToken, requireActiveOrTrial, requireAcce
         itemId: item.id,
         buyerId: actualBuyerId,
         weight: item.weight,
-        makingCharge: makingChargePerItem
+        makingCharge: makingChargePerItem,
+        branchId: req.user!.branchId || undefined
       }));
 
       await tx.sale.createMany({ data: saleData });
@@ -1122,8 +1140,11 @@ app.post('/api/sales/bulk', authenticateToken, requireActiveOrTrial, requireAcce
 
 app.get('/api/payments', authenticateToken, requireActiveOrTrial, async (req: AuthRequest, res) => {
   try {
+    const whereClause: any = { shopId: req.user!.shopId! };
+    if (req.user!.branchId) whereClause.branchId = req.user!.branchId;
+
     const payments = await prisma.payment.findMany({
-      where: { shopId: req.user!.shopId! },
+      where: whereClause,
       orderBy: { date: 'desc' },
       include: { buyer: true }
     });
@@ -1138,7 +1159,13 @@ app.post('/api/payments', authenticateToken, requireActiveOrTrial, requireAccess
     const { buyerId, amount, notes } = req.body;
     const shopId = req.user!.shopId!;
     const payment = await prisma.payment.create({
-      data: { shopId, buyerId, amount: Number(amount), notes }
+      data: { 
+        shopId, 
+        buyerId, 
+        amount: Number(amount), 
+        notes,
+        branchId: req.user!.branchId || undefined
+      }
     });
     const paymentWithBuyer = await prisma.payment.findUnique({
       where: { id: payment.id },
@@ -1196,8 +1223,11 @@ app.put('/api/payments/:id', authenticateToken, requireActiveOrTrial, requireAcc
 
 app.get('/api/metal_receipts', authenticateToken, requireActiveOrTrial, async (req: AuthRequest, res) => {
   try {
+    const whereClause: any = { shopId: req.user!.shopId! };
+    if (req.user!.branchId) whereClause.branchId = req.user!.branchId;
+
     const receipts = await prisma.metalReceipt.findMany({
-      where: { shopId: req.user!.shopId! },
+      where: whereClause,
       orderBy: { date: 'desc' },
       include: { buyer: true }
     });
@@ -1212,7 +1242,14 @@ app.post('/api/metal_receipts', authenticateToken, requireActiveOrTrial, require
     const { buyerId, weight, purity, notes } = req.body;
     const shopId = req.user!.shopId!;
     const receipt = await prisma.metalReceipt.create({
-      data: { shopId, buyerId, weight: Number(weight), purity: Number(purity) || 0.995, notes }
+      data: { 
+        shopId, 
+        buyerId, 
+        weight: Number(weight), 
+        purity: Number(purity) || 0.995, 
+        notes,
+        branchId: req.user!.branchId || undefined
+      }
     });
     const receiptWithBuyer = await prisma.metalReceipt.findUnique({
       where: { id: receipt.id },

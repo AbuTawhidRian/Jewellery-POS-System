@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Lock, Barcode, BookOpen, Settings as SettingsIcon, ShieldCheck } from 'lucide-react';
+import { LayoutDashboard, Lock, Barcode, BookOpen, Settings as SettingsIcon, ShieldCheck, ArrowRightLeft } from 'lucide-react';
 import clsx from 'clsx';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -13,6 +13,7 @@ const MobileNav: React.FC = () => {
   } else {
     if (hasPermission('view_dashboard')) links.push({ to: '/dashboard', icon: LayoutDashboard, label: 'Dash' });
     if (hasPermission('view_vault')) links.push({ to: '/dashboard/vault', icon: Lock, label: 'Vault' });
+    if (hasPermission('view_vault')) links.push({ to: '/dashboard/transfers', icon: ArrowRightLeft, label: 'Transfers' });
     if (hasPermission('access_pos')) links.push({ to: '/dashboard/pos', icon: Barcode, label: 'POS' });
     if (hasPermission('view_ledger')) links.push({ to: '/dashboard/ledger', icon: BookOpen, label: 'Ledger' });
     if (user?.role === 'OWNER') links.push({ to: '/dashboard/settings', icon: SettingsIcon, label: 'Set' });
