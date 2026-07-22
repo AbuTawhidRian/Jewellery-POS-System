@@ -666,6 +666,62 @@ app.post('/api/transfers/receive', authenticateToken, requireActiveOrTrial, asyn
         res.status(500).json({ error: error.message || 'Internal Server Error' });
     }
 });
+app.get('/api/transfers/pending/:barcode', authenticateToken, requireActiveOrTrial, async (req, res) => {
+    try {
+        const { barcode } = req.params;
+        const branchId = req.user.branchId;
+        if (!branchId)
+            return res.status(400).json({ error: 'Please select a branch first' });
+        const item = await prisma.item.findUnique({
+            where: { barcode_shopId: { barcode, shopId: req.user.shopId } }
+        });
+        if (!item)
+            return res.status(404).json({ error: 'Item not found' });
+        if (item.status !== 'In Transit')
+            return res.status(400).json({ error: 'Item is not in transit' });
+        const pendingTransfer = await prisma.itemTransfer.findFirst({
+            where: { itemId: item.id, toBranchId: branchId, status: 'PENDING' },
+            include: { fromBranch: true }
+        });
+        if (!pendingTransfer)
+            return res.status(400).json({ error: 'This item was not transferred to your branch' });
+        res.json({ item, transfer: pendingTransfer });
+    }
+    catch (error) {
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+app.post('/api/transfers/receive/bulk', authenticateToken, requireActiveOrTrial, async (req, res) => {
+    try {
+        const { barcodes } = req.body;
+        const branchId = req.user.branchId;
+        if (!branchId)
+            return res.status(400).json({ error: 'Please select a branch first' });
+        if (!barcodes || !Array.isArray(barcodes))
+            return res.status(400).json({ error: 'Barcodes array is required' });
+        const receivedItems = [];
+        for (const barcode of barcodes) {
+            const item = await prisma.item.findUnique({ where: { barcode_shopId: { barcode, shopId: req.user.shopId } } });
+            if (!item || item.status !== 'In Transit')
+                continue;
+            const pendingTransfer = await prisma.itemTransfer.findFirst({
+                where: { itemId: item.id, toBranchId: branchId, status: 'PENDING' }
+            });
+            if (!pendingTransfer)
+                continue;
+            await prisma.itemTransfer.update({ where: { id: pendingTransfer.id }, data: { status: 'RECEIVED' } });
+            const updatedItem = await prisma.item.update({
+                where: { id: item.id },
+                data: { status: 'In Stock', branchId: branchId }
+            });
+            receivedItems.push(updatedItem);
+        }
+        res.json({ success: true, count: receivedItems.length, items: receivedItems });
+    }
+    catch (error) {
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
 // --- Subscription Routes ---
 app.get('/api/subscription', authenticateToken, requireRole(client_1.Role.OWNER), async (req, res) => {
     try {

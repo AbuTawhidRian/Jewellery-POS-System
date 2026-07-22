@@ -9,7 +9,8 @@ const Transfers: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'receive' | 'dispatch' | 'history'>('receive');
   
   // Receive State
-  const [barcode, setBarcode] = useState('');
+  const [receiveBarcode, setReceiveBarcode] = useState('');
+  const [receiveItems, setReceiveItems] = useState<any[]>([]);
   const [receiving, setReceiving] = useState(false);
 
   // Dispatch State
@@ -47,7 +48,7 @@ const Transfers: React.FC = () => {
     setLoadingHistory(true);
     try {
       const res = await api.get('/transfers');
-      setTransfers(res.data);
+      setTransfers(res.data.filter((t: any) => t.status === 'PENDING'));
     } catch (err) {
       toast.error('Failed to load transfers');
     } finally {
@@ -55,16 +56,36 @@ const Transfers: React.FC = () => {
     }
   };
 
-  const handleReceive = async (e: React.FormEvent) => {
+  const handleAddReceiveItem = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!barcode) return;
+    if (!receiveBarcode) return;
+    
+    if (receiveItems.find(i => i.barcode === receiveBarcode)) {
+      toast.error('Item already added to receive list');
+      return;
+    }
+    
+    try {
+      const res = await api.get(`/transfers/pending/${receiveBarcode}`);
+      if (res.data && res.data.item) {
+        setReceiveItems([...receiveItems, res.data.item]);
+        setReceiveBarcode('');
+      }
+    } catch (err: any) {
+      toast.error(err.response?.data?.error || 'Item not found or not in transit to this branch');
+    }
+  };
+
+  const handleConfirmReceive = async () => {
+    if (receiveItems.length === 0) return toast.error('Add items to receive');
     setReceiving(true);
     try {
-      const res = await api.post('/transfers/receive', { barcode });
-      toast.success(`Successfully received ${res.data.item.type} (${res.data.item.weight}g)`);
-      setBarcode('');
+      const barcodes = receiveItems.map(i => i.barcode);
+      const res = await api.post('/transfers/receive/bulk', { barcodes });
+      toast.success(`Successfully received ${res.data.count} items`);
+      setReceiveItems([]);
     } catch (err: any) {
-      toast.error(err.response?.data?.error || 'Failed to receive item');
+      toast.error(err.response?.data?.error || 'Failed to receive items');
     } finally {
       setReceiving(false);
     }
@@ -175,32 +196,93 @@ const Transfers: React.FC = () => {
         <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 p-6">
           
           {activeTab === 'receive' && (
-              <form onSubmit={handleReceive} className="w-full max-w-2xl mx-auto py-8">
-                <div className="bg-white dark:bg-slate-950 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xl relative overflow-hidden flex flex-col items-center">
-                  <div className="w-full flex justify-between items-center mb-6">
-                    <label className="flex items-center gap-2 text-sm font-bold tracking-widest uppercase text-amber-500">
-                      <ScanLine className="w-5 h-5" />
-                      Receive Item By Barcode
-                    </label>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              <div className="col-span-1 border-r border-slate-200 dark:border-slate-800 pr-8">
+                <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4">Receive Details</h3>
+                
+                <div className="space-y-6">
+                  <div className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-4 border border-slate-200 dark:border-slate-800">
+                    <p className="text-sm text-slate-500 dark:text-slate-400 mb-1">Items Staged</p>
+                    <p className="text-2xl font-bold text-slate-900 dark:text-white">{receiveItems.length}</p>
                   </div>
-                  
-                  <div className="w-full">
-                    <input 
-                      type="text"
-                      value={barcode}
-                      onChange={(e) => setBarcode(e.target.value)}
-                      className="w-full bg-slate-50 dark:bg-slate-900 border-b-4 border-slate-300 dark:border-slate-700 focus:border-amber-500 px-6 py-6 text-4xl text-center text-slate-900 dark:text-slate-100 font-mono focus:outline-none transition-colors rounded-t-xl"
-                      placeholder="WAITING..."
-                      autoComplete="off"
-                      autoFocus
-                      disabled={receiving}
-                    />
-                    <p className="text-center text-slate-500 dark:text-slate-400 mt-4 text-sm font-medium">
-                      Type or scan with a physical scanner, then press ENTER
-                    </p>
-                  </div>
+
+                  <button
+                    onClick={handleConfirmReceive}
+                    disabled={receiving || receiveItems.length === 0}
+                    className="w-full bg-[#C28C46] text-white px-6 py-4 rounded-xl font-bold hover:bg-[#8C622C] transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                  >
+                    <Download className="w-5 h-5" />
+                    {receiving ? 'Receiving...' : 'Confirm Receive'}
+                  </button>
                 </div>
-              </form>
+              </div>
+
+              <div className="col-span-2">
+                <form onSubmit={handleAddReceiveItem} className="mb-6">
+                  <div className="bg-white dark:bg-slate-950 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xl relative overflow-hidden flex flex-col items-center">
+                    <div className="w-full flex justify-between items-center mb-6">
+                      <label className="flex items-center gap-2 text-sm font-bold tracking-widest uppercase text-amber-500">
+                        <ScanLine className="w-5 h-5" />
+                        Scan Items to Receive
+                      </label>
+                    </div>
+                    
+                    <div className="w-full">
+                      <input 
+                        type="text"
+                        value={receiveBarcode}
+                        onChange={(e) => setReceiveBarcode(e.target.value)}
+                        className="w-full bg-slate-50 dark:bg-slate-900 border-b-4 border-slate-300 dark:border-slate-700 focus:border-amber-500 px-6 py-6 text-4xl text-center text-slate-900 dark:text-slate-100 font-mono focus:outline-none transition-colors rounded-t-xl"
+                        placeholder="WAITING..."
+                        autoComplete="off"
+                        autoFocus
+                      />
+                      <p className="text-center text-slate-500 dark:text-slate-400 mt-4 text-sm font-medium">
+                        Type or scan with a physical scanner, then press ENTER
+                      </p>
+                    </div>
+                  </div>
+                </form>
+
+                <div className="bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden min-h-[300px]">
+                  {receiveItems.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center h-[300px] text-slate-500">
+                      <Package className="w-12 h-12 mb-4 opacity-20" />
+                      <p>No items added yet</p>
+                      <p className="text-sm">Scan items to add them to this receive batch</p>
+                    </div>
+                  ) : (
+                    <table className="w-full text-left text-sm">
+                      <thead>
+                        <tr className="border-b border-slate-200 dark:border-slate-800">
+                          <th className="p-4 text-slate-500 font-medium">Barcode</th>
+                          <th className="p-4 text-slate-500 font-medium">Type</th>
+                          <th className="p-4 text-slate-500 font-medium text-right">Weight (g)</th>
+                          <th className="p-4 text-slate-500 font-medium text-right">Action</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {receiveItems.map((item, index) => (
+                          <tr key={index} className="border-b border-slate-200 dark:border-slate-800 last:border-0">
+                            <td className="p-4 font-mono font-medium">{item.barcode}</td>
+                            <td className="p-4">{item.type}</td>
+                            <td className="p-4 text-right">{item.weight}</td>
+                            <td className="p-4 text-right">
+                              <button 
+                                onClick={() => setReceiveItems(receiveItems.filter(i => i.barcode !== item.barcode))}
+                                className="text-red-500 hover:text-red-600 font-medium"
+                              >
+                                Remove
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  )}
+                </div>
+              </div>
+            </div>
           )}
 
           {activeTab === 'dispatch' && (
