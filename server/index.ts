@@ -495,6 +495,7 @@ app.get('/api/branches', authenticateToken, requireActiveOrTrial, async (req: Au
     });
     
     // Auto-create Main Shop branch if none exists
+    let mainBranchId: string;
     if (branches.length === 0) {
       const mainBranch = await prisma.branch.create({
         data: {
@@ -503,10 +504,24 @@ app.get('/api/branches', authenticateToken, requireActiveOrTrial, async (req: Au
           isMain: true
         }
       });
-      return res.json([mainBranch]);
+      mainBranchId = mainBranch.id;
+      branches.push(mainBranch);
+    } else {
+      const mainBranch = branches.find(b => b.isMain);
+      if (mainBranch) mainBranchId = mainBranch.id;
+      else mainBranchId = branches[0].id;
     }
-    
-    res.json(branches);
+
+    // Auto-migrate any legacy data without a branchId to the main branch
+    // We execute these asynchronously without blocking the response
+    Promise.all([
+      prisma.item.updateMany({ where: { shopId: req.user!.shopId!, branchId: null }, data: { branchId: mainBranchId } }),
+      prisma.sale.updateMany({ where: { shopId: req.user!.shopId!, branchId: null }, data: { branchId: mainBranchId } }),
+      prisma.payment.updateMany({ where: { shopId: req.user!.shopId!, branchId: null }, data: { branchId: mainBranchId } }),
+      prisma.metalReceipt.updateMany({ where: { shopId: req.user!.shopId!, branchId: null }, data: { branchId: mainBranchId } })
+    ]).catch(console.error);
+
+    return res.json(branches);
   } catch (error: any) {
     res.status(500).json({ error: error.message || 'Internal Server Error' });
   }
