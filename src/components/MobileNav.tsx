@@ -16,7 +16,7 @@ const MobileNav: React.FC = () => {
     }
   }, [user]);
 
-  const isRetailBranch = activeBranchId && branches.length > 0 && !branches.find(b => b.id === activeBranchId)?.isMain;
+  const isRetailBranch = Boolean(activeBranchId && branches.length > 0 && branches.find(b => b.id === activeBranchId)?.isMain === false);
 
   let links: any[] = [];
   

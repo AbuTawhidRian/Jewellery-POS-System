@@ -91,7 +91,7 @@ const TopNav: React.FC = () => {
     window.location.reload();
   };
 
-  const isRetailBranch = activeBranchId && branches.length > 0 && !branches.find(b => b.id === activeBranchId)?.isMain;
+  const isRetailBranch = Boolean(activeBranchId && branches.length > 0 && branches.find(b => b.id === activeBranchId)?.isMain === false);
 
   return (
     <header className="h-20 bg-white dark:bg-slate-950 flex items-center justify-between px-6 shrink-0 sticky top-0 z-40 transition-colors duration-300">

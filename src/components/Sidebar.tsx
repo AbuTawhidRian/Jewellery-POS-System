@@ -17,7 +17,7 @@ const Sidebar: React.FC = () => {
   }, [user]);
 
   const activeBranchName = activeBranchId && branches.length > 0 ? branches.find(b => b.id === activeBranchId)?.name : null;
-  const isRetailBranch = activeBranchId && branches.length > 0 && !branches.find(b => b.id === activeBranchId)?.isMain;
+  const isRetailBranch = Boolean(activeBranchId && branches.length > 0 && branches.find(b => b.id === activeBranchId)?.isMain === false);
   const displayName = activeBranchName || user?.shopName;
 
   let links: any[] = [];

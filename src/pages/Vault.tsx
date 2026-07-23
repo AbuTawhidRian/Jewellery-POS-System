@@ -41,7 +41,7 @@ const Vault: React.FC = () => {
       .finally(() => setLoadingBranches(false));
   }, []);
 
-  const isRetailBranch = activeBranchId && branches.length > 0 && !branches.find(b => b.id === activeBranchId)?.isMain;
+  const isRetailBranch = Boolean(activeBranchId && branches.length > 0 && branches.find(b => b.id === activeBranchId)?.isMain === false);
   const canEditVault = hasPermission('edit_vault');
   
   // Form State
