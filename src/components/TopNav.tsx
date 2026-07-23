@@ -28,7 +28,7 @@ const TopNav: React.FC = () => {
   const branchMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (user?.role === 'OWNER' || user?.role === 'MANAGER') {
+    if (user) {
       api.get('/branches').then(res => setBranches(res.data)).catch(console.error);
     }
   }, [user]);

@@ -12,9 +12,13 @@ const Vault: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [branches, setBranches] = useState<any[]>([]);
+  const [loadingBranches, setLoadingBranches] = useState(true);
 
   useEffect(() => {
-    api.get('/branches').then(res => setBranches(res.data)).catch(console.error);
+    api.get('/branches')
+      .then(res => setBranches(res.data))
+      .catch(console.error)
+      .finally(() => setLoadingBranches(false));
   }, []);
 
   const isRetailBranch = activeBranchId && branches.length > 0 && !branches.find(b => b.id === activeBranchId)?.isMain;
@@ -157,9 +161,9 @@ const Vault: React.FC = () => {
         <p className="text-slate-600 dark:text-slate-400 mt-2 text-sm">Manage your active jewelry inventory.</p>
       </div>
 
-      <div className={`grid grid-cols-1 gap-8 ${canEditVault && !isRetailBranch ? 'xl:grid-cols-3' : ''}`}>
+      <div className={`grid grid-cols-1 gap-8 ${canEditVault && !loadingBranches && !isRetailBranch ? 'xl:grid-cols-3' : ''}`}>
         {/* Entry Form */}
-        {canEditVault && !isRetailBranch && (
+        {canEditVault && !loadingBranches && !isRetailBranch && (
           <div className="xl:col-span-1">
             <div className="bg-white dark:bg-slate-950 p-4 md:p-8 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xl relative overflow-hidden">
               <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 mb-6 flex items-center gap-2">

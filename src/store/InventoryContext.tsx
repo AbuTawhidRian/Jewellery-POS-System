@@ -153,7 +153,7 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       headers.set('X-Branch-Id', activeBranchId);
     }
 
-    return fetch(url, { ...options, headers });
+    return fetch(url, { cache: 'no-store', ...options, headers });
   };
 
   useEffect(() => {
@@ -474,7 +474,14 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       const result = await res.json();
       
       if (res.ok && result.success) {
-        setSales(prev => prev.filter(s => !(s.buyer_id === buyerId && s.date === date)));
+        setSales(prev => {
+          const voidedSales = prev.filter(s => s.buyer_id === buyerId && s.date === date);
+          const barcodesToReturn = voidedSales.map(s => s.barcode);
+          setItems(prevItems => prevItems.map(item => 
+            barcodesToReturn.includes(item.barcode) ? { ...item, status: 'In Stock' } : item
+          ));
+          return prev.filter(s => !(s.buyer_id === buyerId && s.date === date));
+        });
         authFetch(`${API_URL}/inventory`).then(res => res.json()).then(data => {
           if (Array.isArray(data)) setItems(data);
         });

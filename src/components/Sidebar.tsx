@@ -11,7 +11,7 @@ const Sidebar: React.FC = () => {
   const [branches, setBranches] = React.useState<any[]>([]);
 
   React.useEffect(() => {
-    if (user?.role === 'OWNER') {
+    if (user) {
       api.get('/branches').then(res => setBranches(res.data)).catch(console.error);
     }
   }, [user]);
