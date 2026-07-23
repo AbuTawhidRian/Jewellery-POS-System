@@ -402,6 +402,9 @@ app.get('/api/users', authenticateToken, requireRole(Role.OWNER), async (req: Au
       if (customRole !== undefined) updateData.customRole = customRole;
       if (accessibleBranches) updateData.accessibleBranches = accessibleBranches;
       if (password) {
+        if (password.length < 8) {
+          return res.status(400).json({ error: 'Password must be at least 8 characters' });
+        }
         updateData.passwordHash = await bcrypt.hash(password, 10);
       }
       

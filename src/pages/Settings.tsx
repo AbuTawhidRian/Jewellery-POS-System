@@ -311,8 +311,8 @@ const Settings: React.FC = () => {
         accessibleBranches: editingStaff.accessibleBranches || []
       };
       if (editingStaffPassword.trim()) {
-        if (editingStaffPassword.length < 6) {
-          showNotification('error', 'Password must be at least 6 characters');
+        if (editingStaffPassword.length < 8) {
+          showNotification('error', 'Password must be at least 8 characters');
           return;
         }
         payload.password = editingStaffPassword;
@@ -603,7 +603,7 @@ const Settings: React.FC = () => {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">Password</label>
-                    <input required type="password" value={newStaff.password} onChange={(e) => setNewStaff({...newStaff, password: e.target.value})} className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-4 py-2 text-slate-900 dark:text-white focus:outline-none focus:border-gold-500" />
+                    <input required minLength={8} type="password" value={newStaff.password} onChange={(e) => setNewStaff({...newStaff, password: e.target.value})} className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-4 py-2 text-slate-900 dark:text-white focus:outline-none focus:border-gold-500" />
                   </div>
                 </div>
                 
@@ -666,7 +666,7 @@ const Settings: React.FC = () => {
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">New Password (Optional)</label>
-                      <input type="password" placeholder="Leave blank to keep current" value={editingStaffPassword} onChange={(e) => setEditingStaffPassword(e.target.value)} className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg px-4 py-2 text-slate-900 dark:text-white focus:outline-none focus:border-gold-500 placeholder:text-xs" />
+                      <input type="password" minLength={8} placeholder="Leave blank to keep current" value={editingStaffPassword} onChange={(e) => setEditingStaffPassword(e.target.value)} className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg px-4 py-2 text-slate-900 dark:text-white focus:outline-none focus:border-gold-500 placeholder:text-xs" />
                     </div>
                   </div>
 
