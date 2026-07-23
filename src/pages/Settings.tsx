@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { Users, CreditCard, Plus, Edit2, Trash2, ShieldAlert, Building2, X, Lock, Building, Search, ChevronDown } from 'lucide-react';
+import { Users, CreditCard, Plus, Edit2, Trash2, ShieldAlert, Building2, X, Lock, Building, Search, ChevronDown, Loader2 } from 'lucide-react';
 import Dialog from '../components/Dialog';
 import api from '../lib/api';
 import toast from 'react-hot-toast';
@@ -121,6 +121,7 @@ const Settings: React.FC = () => {
   const [branches, setBranches] = useState<{id: string, name: string, isMain: boolean}[]>([]);
   const [loadingStaff, setLoadingStaff] = useState(true);
   const [showAddStaff, setShowAddStaff] = useState(false);
+  const [savingStaff, setSavingStaff] = useState(false);
   const [newStaff, setNewStaff] = useState<{name: string, email: string, password: string, role: string, customRole: string, accessibleBranches: string[]}>({ name: '', email: '', password: '', role: 'STAFF', customRole: '', accessibleBranches: [] });
   const [editingStaff, setEditingStaff] = useState<ShopUser | null>(null);
   const [editingStaffPassword, setEditingStaffPassword] = useState('');
@@ -285,6 +286,7 @@ const Settings: React.FC = () => {
       return;
     }
     try {
+      setSavingStaff(true);
       await api.post('/users', newStaff);
       showNotification('success', 'Staff member added successfully!');
       setNewStaff({ name: '', email: '', password: '', role: 'STAFF', customRole: '', accessibleBranches: [] });
@@ -292,6 +294,8 @@ const Settings: React.FC = () => {
       fetchStaff();
     } catch (err: any) {
       showNotification('error', err.response?.data?.error || 'Failed to add staff');
+    } finally {
+      setSavingStaff(false);
     }
   };
 
@@ -299,6 +303,7 @@ const Settings: React.FC = () => {
     e.preventDefault();
     if (!editingStaff) return;
     try {
+      setSavingStaff(true);
       const payload: any = {
         name: editingStaff.name,
         role: editingStaff.role,
@@ -319,7 +324,9 @@ const Settings: React.FC = () => {
       setEditingStaffPassword('');
       fetchStaff();
     } catch (err: any) {
-      showNotification('error', 'Failed to update staff member');
+      showNotification('error', err.response?.data?.error || 'Failed to update staff');
+    } finally {
+      setSavingStaff(false);
     }
   };
 
@@ -416,7 +423,7 @@ const Settings: React.FC = () => {
         <div className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 rounded-2xl shadow-xl max-w-3xl">
           <h3 className="text-xl font-semibold text-slate-900 dark:text-white mb-6">Company Profile</h3>
           {loadingShop ? (
-            <p className="text-slate-600 dark:text-slate-400">Loading company information...</p>
+            <div className="flex justify-center p-8"><Spinner /></div>
           ) : (
             <form onSubmit={handleUpdateShopInfo} className="space-y-6">
               
@@ -533,8 +540,8 @@ const Settings: React.FC = () => {
               </div>
 
               <div className="flex justify-end pt-2">
-                <button type="submit" disabled={savingShop} className="bg-gradient-to-r from-gold-500 to-gold-600 hover:from-gold-600 hover:to-gold-700 disabled:opacity-70 text-slate-950 px-8 py-3 rounded-xl font-bold transition-all shadow-lg shadow-gold-500/20 w-full sm:w-auto">
-                  {savingShop ? 'Saving Changes...' : 'Save Company Profile'}
+                <button type="submit" disabled={savingShop} className="bg-gradient-to-r from-gold-500 to-gold-600 hover:from-gold-600 hover:to-gold-700 disabled:opacity-70 text-slate-950 px-8 py-3 rounded-xl font-bold transition-all shadow-lg shadow-gold-500/20 w-full sm:w-auto flex items-center justify-center min-w-[200px]">
+                  {savingShop ? <><Loader2 className="w-5 h-5 animate-spin mr-2" /> Saving...</> : 'Save Company Profile'}
                 </button>
               </div>
             </form>
@@ -559,8 +566,8 @@ const Settings: React.FC = () => {
               <input required minLength={6} type="password" value={passwordData.confirmPassword} onChange={(e) => setPasswordData({...passwordData, confirmPassword: e.target.value})} className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-4 py-3 text-slate-900 dark:text-white focus:outline-none focus:border-gold-500" />
             </div>
             <div className="pt-4 mt-6 border-t border-slate-200 dark:border-slate-800">
-              <button type="submit" disabled={savingPassword} className="bg-gold-500 hover:bg-gold-600 disabled:opacity-50 text-slate-950 px-6 py-3 rounded-lg font-bold transition-colors w-full sm:w-auto">
-                {savingPassword ? 'Updating...' : 'Update Password'}
+              <button type="submit" disabled={savingPassword} className="bg-gold-500 hover:bg-gold-600 disabled:opacity-50 text-slate-950 px-6 py-3 rounded-lg font-bold transition-colors w-full sm:w-auto flex items-center justify-center min-w-[180px]">
+                {savingPassword ? <><Loader2 className="w-5 h-5 animate-spin mr-2" /> Updating...</> : 'Update Password'}
               </button>
             </div>
           </form>
@@ -628,8 +635,8 @@ const Settings: React.FC = () => {
                 </div>
 
                 <div className="flex justify-end pt-4 border-t border-slate-200 dark:border-slate-800">
-                  <button type="submit" className="bg-emerald-500 hover:bg-emerald-600 text-slate-900 dark:text-white px-6 py-2 rounded-lg font-semibold transition-colors">
-                    Save Staff
+                  <button type="submit" disabled={savingStaff} className="bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 text-slate-900 dark:text-white px-6 py-2 rounded-lg font-semibold transition-colors flex items-center justify-center min-w-[140px]">
+                    {savingStaff ? <><Loader2 className="w-5 h-5 animate-spin mr-2" /> Saving...</> : 'Save Staff'}
                   </button>
                 </div>
               </form>
@@ -690,8 +697,8 @@ const Settings: React.FC = () => {
                     <button type="button" onClick={() => setEditingStaff(null)} className="px-4 py-2 rounded-lg text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
                       Cancel
                     </button>
-                    <button type="submit" className="px-6 py-2 rounded-lg bg-gold-500 hover:bg-gold-600 text-slate-950 font-bold transition-colors">
-                      Save Changes
+                    <button type="submit" disabled={savingStaff} className="px-6 py-2 rounded-lg bg-gold-500 hover:bg-gold-600 disabled:opacity-50 text-slate-950 font-bold transition-colors flex items-center justify-center min-w-[160px]">
+                      {savingStaff ? <><Loader2 className="w-5 h-5 animate-spin mr-2" /> Saving...</> : 'Save Changes'}
                     </button>
                   </div>
                 </form>
@@ -807,9 +814,9 @@ const Settings: React.FC = () => {
               <button 
                 type="submit" 
                 disabled={submittingVoucher}
-                className="w-full bg-gold-500 hover:bg-gold-600 disabled:opacity-50 text-slate-950 py-3 rounded-lg font-bold transition-colors"
+                className="w-full bg-gold-500 hover:bg-gold-600 disabled:opacity-50 text-slate-950 py-3 rounded-lg font-bold transition-colors flex items-center justify-center min-w-[200px]"
               >
-                {submittingVoucher ? 'Submitting...' : 'Submit Voucher for Approval'}
+                {submittingVoucher ? <><Loader2 className="w-5 h-5 animate-spin mr-2" /> Submitting...</> : 'Submit Voucher for Approval'}
               </button>
             </form>
           </div>

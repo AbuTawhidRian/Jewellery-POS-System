@@ -35,7 +35,7 @@ app.use(cors());
 app.use(express.json({ limit: '1mb' }));
 
 // Setup file uploads
-const uploadsDir = path.join(__dirname, 'uploads');
+const uploadsDir = path.resolve(__dirname, '../../public/uploads');
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }
@@ -241,7 +241,7 @@ app.post('/api/auth/register', authLimiter, async (req, res) => {
         },
         branches: {
           create: {
-            name: 'Main Shop',
+            name: shopName,
             isMain: true
           }
         }

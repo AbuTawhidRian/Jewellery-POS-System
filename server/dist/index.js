@@ -36,7 +36,7 @@ app.use((0, helmet_1.default)({
 app.use((0, cors_1.default)());
 app.use(express_1.default.json({ limit: '1mb' }));
 // Setup file uploads
-const uploadsDir = path_1.default.join(__dirname, 'uploads');
+const uploadsDir = path_1.default.resolve(__dirname, '../../public/uploads');
 if (!fs_1.default.existsSync(uploadsDir)) {
     fs_1.default.mkdirSync(uploadsDir, { recursive: true });
 }
@@ -68,6 +68,16 @@ const authenticateToken = (req, res, next) => {
     jsonwebtoken_1.default.verify(token, JWT_SECRET, async (err, user) => {
         if (err)
             return res.status(403).json({ error: 'Invalid token' });
+        // Ensure the user actually still exists in the database
+        try {
+            const dbUser = await prisma.user.findUnique({ where: { id: user.id }, select: { id: true, role: true } });
+            if (!dbUser) {
+                return res.status(401).json({ error: 'User no longer exists' });
+            }
+        }
+        catch (dbErr) {
+            return res.status(500).json({ error: 'Database error while verifying user' });
+        }
         // Allow switching branches via header
         if (requestedBranchId && typeof requestedBranchId === 'string') {
             if (user.role === 'OWNER' || user.role === 'SUPERADMIN') {
@@ -211,7 +221,7 @@ app.post('/api/auth/register', authLimiter, async (req, res) => {
                 },
                 branches: {
                     create: {
-                        name: 'Main Shop',
+                        name: shopName,
                         isMain: true
                     }
                 }
@@ -279,7 +289,7 @@ app.get('/api/auth/me', authenticateToken, async (req, res) => {
             return res.status(404).json({ error: 'User not found' });
         // Use the active branch from the request header
         const targetBranchId = req.user?.branchId || null;
-        res.json({ id: user.id, name: user.name, email: user.email, shopId: user.shopId, branchId: targetBranchId, shopName: user.shop?.name, shopEmail: user.shop?.email, shopPhone: user.shop?.phone, shopSlogan: user.shop?.slogan, shopLogo: user.shop?.logoUrl, shopCurrency: user.shop?.currency, role: user.role, customRole: user.customRole });
+        res.json({ id: user.id, name: user.name, email: user.email, shopId: user.shopId, branchId: targetBranchId, shopName: user.shop?.name, shopEmail: user.shop?.email, shopPhone: user.shop?.phone, shopSlogan: user.shop?.slogan, shopLogo: user.shop?.logoUrl, shopCurrency: user.shop?.currency, role: user.role, customRole: user.customRole, isReadOnly: req.user?.isReadOnly });
     }
     catch (error) {
         res.status(500).json({ error: 'Internal Server Error' });
@@ -467,6 +477,7 @@ app.get('/api/branches', authenticateToken, requireActiveOrTrial, async (req, re
             orderBy: { createdAt: 'asc' }
         });
         // Auto-create Main Shop branch if none exists
+        let mainBranchId;
         if (branches.length === 0) {
             const mainBranch = await prisma.branch.create({
                 data: {
@@ -475,9 +486,25 @@ app.get('/api/branches', authenticateToken, requireActiveOrTrial, async (req, re
                     isMain: true
                 }
             });
-            return res.json([mainBranch]);
+            mainBranchId = mainBranch.id;
+            branches.push(mainBranch);
         }
-        res.json(branches);
+        else {
+            const mainBranch = branches.find(b => b.isMain);
+            if (mainBranch)
+                mainBranchId = mainBranch.id;
+            else
+                mainBranchId = branches[0].id;
+        }
+        // Auto-migrate any legacy data without a branchId to the main branch
+        // We execute these asynchronously without blocking the response
+        Promise.all([
+            prisma.item.updateMany({ where: { shopId: req.user.shopId, branchId: null }, data: { branchId: mainBranchId } }),
+            prisma.sale.updateMany({ where: { shopId: req.user.shopId, branchId: null }, data: { branchId: mainBranchId } }),
+            prisma.payment.updateMany({ where: { shopId: req.user.shopId, branchId: null }, data: { branchId: mainBranchId } }),
+            prisma.metalReceipt.updateMany({ where: { shopId: req.user.shopId, branchId: null }, data: { branchId: mainBranchId } })
+        ]).catch(console.error);
+        return res.json(branches);
     }
     catch (error) {
         res.status(500).json({ error: error.message || 'Internal Server Error' });
@@ -594,30 +621,33 @@ app.post('/api/transfers', authenticateToken, requireActiveOrTrial, async (req, 
             return res.status(400).json({ error: 'Cannot transfer to the same branch' });
         if (!itemIds || !Array.isArray(itemIds) || itemIds.length === 0)
             return res.status(400).json({ error: 'No items selected' });
-        const transfers = [];
-        for (const itemId of itemIds) {
-            const item = await prisma.item.findUnique({ where: { id: itemId } });
-            if (!item)
-                continue;
-            if (item.shopId !== req.user.shopId)
-                continue;
-            if (item.branchId && item.branchId !== fromBranchId)
-                continue;
-            await prisma.item.update({
-                where: { id: itemId },
-                data: { status: 'In Transit' }
-            });
-            const transfer = await prisma.itemTransfer.create({
-                data: {
-                    shopId: req.user.shopId,
-                    itemId,
-                    fromBranchId,
-                    toBranchId,
-                    status: 'PENDING'
-                }
-            });
-            transfers.push(transfer);
-        }
+        const transfers = await prisma.$transaction(async (tx) => {
+            const result = [];
+            for (const itemId of itemIds) {
+                const item = await tx.item.findUnique({ where: { id: itemId } });
+                if (!item)
+                    continue;
+                if (item.shopId !== req.user.shopId)
+                    continue;
+                if (item.branchId && item.branchId !== fromBranchId)
+                    continue;
+                await tx.item.update({
+                    where: { id: itemId },
+                    data: { status: 'In Transit' }
+                });
+                const transfer = await tx.itemTransfer.create({
+                    data: {
+                        shopId: req.user.shopId,
+                        itemId,
+                        fromBranchId,
+                        toBranchId,
+                        status: 'PENDING'
+                    }
+                });
+                result.push(transfer);
+            }
+            return result;
+        });
         res.json(transfers);
     }
     catch (error) {
@@ -649,16 +679,18 @@ app.post('/api/transfers/receive', authenticateToken, requireActiveOrTrial, asyn
         if (!pendingTransfer) {
             return res.status(400).json({ error: 'This item was not transferred to your branch' });
         }
-        await prisma.itemTransfer.update({
-            where: { id: pendingTransfer.id },
-            data: { status: 'RECEIVED' }
-        });
-        await prisma.item.update({
-            where: { id: item.id },
-            data: {
-                status: 'In Stock',
-                branchId: branchId
-            }
+        await prisma.$transaction(async (tx) => {
+            await tx.itemTransfer.update({
+                where: { id: pendingTransfer.id },
+                data: { status: 'RECEIVED' }
+            });
+            await tx.item.update({
+                where: { id: item.id },
+                data: {
+                    status: 'In Stock',
+                    branchId: branchId
+                }
+            });
         });
         res.json({ success: true, item });
     }
@@ -788,7 +820,115 @@ app.patch('/api/admin/subscriptions/:shopId', authenticateToken, requireSuperAdm
         res.status(500).json({ error: 'Internal Server Error' });
     }
 });
-// --- Protected API Routes (Requires Active/Trial) ---
+// --- Dashboard Routes ---
+app.get('/api/dashboard/stats', authenticateToken, requireActiveOrTrial, async (req, res) => {
+    try {
+        const shopId = req.user.shopId;
+        const branchId = req.user.branchId;
+        let whereClause = { shopId };
+        if (branchId)
+            whereClause.branchId = branchId;
+        const [items, sales, itemTypes] = await Promise.all([
+            prisma.item.findMany({ where: whereClause }),
+            prisma.sale.findMany({ where: whereClause, include: { item: true, buyer: true } }),
+            prisma.itemType.findMany({ where: { shopId } })
+        ]);
+        const activeStock = items.filter(i => i.status === 'In Stock');
+        const totalItemsInStock = activeStock.length;
+        const totalWeightInStock = activeStock.reduce((acc, item) => acc + Math.max(0, (Number(item.weight) || 0) - (Number(item.stone_weight) || 0)), 0);
+        const totalGrossWeightInStock = activeStock.reduce((acc, item) => acc + (Number(item.weight) || 0), 0);
+        const totalPureWeightInStock = activeStock.reduce((acc, item) => {
+            const gw = Number(item.weight) || 0;
+            const sw = Number(item.stone_weight) || 0;
+            const nw = Math.max(0, gw - sw);
+            const purity = itemTypes.find(t => t.name === item.type)?.purity ?? 1.0;
+            return acc + (nw * purity);
+        }, 0);
+        const now = new Date();
+        const todayStr = now.toISOString().split('T')[0];
+        const todaySales = sales.filter(s => {
+            const saleDateStr = new Date(s.date).toISOString().split('T')[0];
+            return saleDateStr === todayStr;
+        });
+        const totalSalesTodayItems = todaySales.length;
+        const totalItemsSold = sales.length;
+        const typeWiseStock = activeStock.reduce((acc, item) => {
+            if (!acc[item.type])
+                acc[item.type] = { count: 0, weight: 0 };
+            acc[item.type].count += 1;
+            acc[item.type].weight += Math.max(0, (Number(item.weight) || 0) - (Number(item.stone_weight) || 0));
+            return acc;
+        }, {});
+        const modelWiseStock = activeStock.reduce((acc, item) => {
+            if (!item.model)
+                return acc;
+            const model = item.model.trim();
+            if (!model)
+                return acc;
+            if (!acc[model])
+                acc[model] = { count: 0, weight: 0 };
+            acc[model].count += 1;
+            acc[model].weight += Math.max(0, (Number(item.weight) || 0) - (Number(item.stone_weight) || 0));
+            return acc;
+        }, {});
+        const topStockModels = Object.entries(modelWiseStock)
+            .sort((a, b) => b[1].count - a[1].count)
+            .slice(0, 5);
+        const typeWiseSales = sales.reduce((acc, sale) => {
+            const type = sale.item?.type || 'Unknown';
+            if (!acc[type])
+                acc[type] = { count: 0, weight: 0 };
+            acc[type].count += 1;
+            acc[type].weight += Math.max(0, (Number(sale.weight) || 0) - (Number(sale.item?.stone_weight) || 0));
+            return acc;
+        }, {});
+        const modelWiseSales = sales.reduce((acc, sale) => {
+            if (!sale.item?.model)
+                return acc;
+            const model = sale.item.model.trim();
+            if (!model)
+                return acc;
+            if (!acc[model])
+                acc[model] = { count: 0, weight: 0 };
+            acc[model].count += 1;
+            acc[model].weight += Math.max(0, (Number(sale.weight) || 0) - (Number(sale.item?.stone_weight) || 0));
+            return acc;
+        }, {});
+        const topModels = Object.entries(modelWiseSales)
+            .sort((a, b) => b[1].count - a[1].count)
+            .slice(0, 5);
+        const totalSalesNetWeight = sales.reduce((acc, sale) => acc + Math.max(0, (Number(sale.weight) || 0) - (Number(sale.item?.stone_weight) || 0)), 0);
+        const todaySalesNetWeight = todaySales.reduce((acc, sale) => acc + Math.max(0, (Number(sale.weight) || 0) - (Number(sale.item?.stone_weight) || 0)), 0);
+        const recentSales = sales.slice(-5).reverse().map(s => ({
+            id: s.id,
+            type: s.item?.type || 'Unknown',
+            model: s.item?.model || '',
+            barcode: s.item?.barcode || '',
+            weight: s.weight,
+            stone_weight: s.item?.stone_weight,
+            buyer_name: s.buyer?.name
+        }));
+        res.json({
+            totalItemsInStock,
+            totalWeightInStock,
+            totalGrossWeightInStock,
+            totalPureWeightInStock,
+            totalSalesTodayItems,
+            totalItemsSold,
+            topStockModels,
+            typeWiseStock,
+            typeWiseSales,
+            topModels,
+            totalSalesNetWeight,
+            todaySalesNetWeight,
+            recentSales
+        });
+    }
+    catch (error) {
+        console.error("Error calculating dashboard stats:", error);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
 // --- Item Types Routes ---
 app.get('/api/item_types', authenticateToken, requireActiveOrTrial, async (req, res) => {
     try {
@@ -923,9 +1063,48 @@ app.delete('/api/models/:id', authenticateToken, requireActiveOrTrial, requireAc
 });
 app.get('/api/inventory', authenticateToken, requireActiveOrTrial, async (req, res) => {
     try {
+        const { page, limit, search, status, startDate, endDate } = req.query;
         const whereClause = { shopId: req.user.shopId };
         if (req.user.branchId)
             whereClause.branchId = req.user.branchId;
+        if (status)
+            whereClause.status = status;
+        if (search) {
+            whereClause.OR = [
+                { barcode: { contains: search, mode: 'insensitive' } },
+                { type: { contains: search, mode: 'insensitive' } }
+            ];
+        }
+        if (startDate || endDate) {
+            whereClause.dateAdded = {};
+            if (startDate)
+                whereClause.dateAdded.gte = new Date(startDate);
+            if (endDate) {
+                const end = new Date(endDate);
+                end.setHours(23, 59, 59, 999);
+                whereClause.dateAdded.lte = end;
+            }
+        }
+        if (page && limit) {
+            const pageNum = parseInt(page);
+            const limitNum = parseInt(limit);
+            const skip = (pageNum - 1) * limitNum;
+            const [items, total] = await Promise.all([
+                prisma.item.findMany({
+                    where: whereClause,
+                    orderBy: { dateAdded: 'asc' },
+                    skip,
+                    take: limitNum
+                }),
+                prisma.item.count({ where: whereClause })
+            ]);
+            return res.json({
+                data: items,
+                total,
+                page: pageNum,
+                totalPages: Math.ceil(total / limitNum)
+            });
+        }
         const items = await prisma.item.findMany({
             where: whereClause,
             orderBy: { dateAdded: 'asc' }
@@ -976,6 +1155,10 @@ app.post('/api/inventory', authenticateToken, requireActiveOrTrial, requireAcces
     try {
         let { barcode, type, model, weight, stone_weight } = req.body;
         const shopId = req.user.shopId;
+        if (parseFloat(weight) < 0)
+            return res.status(400).json({ error: 'Weight cannot be negative' });
+        if (stone_weight && parseFloat(stone_weight) < 0)
+            return res.status(400).json({ error: 'Stone weight cannot be negative' });
         if (!barcode) {
             let prefix = 'XX';
             const shop = await prisma.shop.findUnique({ where: { id: shopId } });
@@ -1033,9 +1216,15 @@ app.put('/api/inventory/:id', authenticateToken, requireActiveOrTrial, requireAc
         const id = String(req.params.id);
         const shopId = req.user.shopId;
         const { barcode, type, model, weight, stone_weight } = req.body;
+        if (weight !== undefined && parseFloat(weight) < 0)
+            return res.status(400).json({ error: 'Weight cannot be negative' });
+        if (stone_weight !== undefined && stone_weight && parseFloat(stone_weight) < 0)
+            return res.status(400).json({ error: 'Stone weight cannot be negative' });
         const existing = await prisma.item.findUnique({ where: { id } });
         if (!existing || existing.shopId !== shopId)
             return res.status(404).json({ error: 'Not found' });
+        if (req.user.branchId && existing.branchId !== req.user.branchId)
+            return res.status(403).json({ error: 'Item does not belong to your active branch' });
         if (barcode && barcode !== existing.barcode) {
             const barcodeExists = await prisma.item.findUnique({
                 where: { barcode_shopId: { barcode, shopId } }
@@ -1066,6 +1255,8 @@ app.delete('/api/inventory/:id', authenticateToken, requireActiveOrTrial, requir
         const existing = await prisma.item.findUnique({ where: { id } });
         if (!existing || existing.shopId !== shopId)
             return res.status(404).json({ error: 'Not found' });
+        if (req.user.branchId && existing.branchId !== req.user.branchId)
+            return res.status(403).json({ error: 'Item does not belong to your active branch' });
         await prisma.item.delete({ where: { id } });
         res.json({ success: true });
     }
@@ -1173,6 +1364,8 @@ app.post('/api/sales/bulk', authenticateToken, requireActiveOrTrial, requireAcce
     try {
         const { barcodes, buyerId, totalMakingCharge = 0 } = req.body;
         const shopId = req.user.shopId;
+        if (Number(totalMakingCharge) < 0)
+            return res.status(400).json({ error: 'Making charge cannot be negative' });
         let actualBuyerId = buyerId;
         // Validate buyer or create if they sent a name but no ID
         if (buyerId) {
@@ -1240,6 +1433,8 @@ app.post('/api/payments', authenticateToken, requireActiveOrTrial, requireAccess
     try {
         const { buyerId, amount, notes } = req.body;
         const shopId = req.user.shopId;
+        if (Number(amount) < 0)
+            return res.status(400).json({ error: 'Payment amount cannot be negative' });
         const payment = await prisma.payment.create({
             data: {
                 shopId,

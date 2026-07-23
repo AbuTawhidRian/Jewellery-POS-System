@@ -30,7 +30,7 @@ const StatementPrintLayout: React.FC = () => {
               {user?.shopLogo ? (
                 <img src={user.shopLogo} alt="Shop Logo" className="w-12 h-12 object-contain" />
               ) : (
-                <Diamond className="w-10 h-10 text-slate-800" />
+                <img src="/logo.jpg" alt="Logo" className="w-16 h-16 object-contain rounded-[22%] scale-[1.02]" />
               )}
               <div>
                 <h1 className="text-3xl font-bold tracking-tight text-slate-900">{user?.shopName || 'Jewellery Shop'}</h1>

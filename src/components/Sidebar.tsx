@@ -38,8 +38,8 @@ const Sidebar: React.FC = () => {
   return (
     <div className="w-64 bg-white dark:bg-slate-950 transition-colors duration-300 h-screen flex flex-col hidden md:flex shrink-0">
       <div className="h-20 px-6 flex items-center gap-3 shrink-0 overflow-hidden">
-        <div className="h-10 w-10 bg-gradient-to-br from-[#C28C46] to-[#8C622C] rounded-xl flex items-center justify-center shadow-lg shadow-[#C28C46]/20 shrink-0">
-          <Diamond className="text-white w-6 h-6" />
+        <div className="h-10 w-10 bg-gradient-to-br from-[#C28C46] to-[#8C622C] rounded-xl flex items-center justify-center shadow-lg shadow-[#C28C46]/20 shrink-0 overflow-hidden">
+          <img src="/logo.jpg" alt="Logo" className="w-full h-full object-cover rounded-[22%] scale-[1.02]" />
         </div>
         <h1 className="text-lg font-extrabold text-slate-900 dark:text-white tracking-wider truncate" title={displayName || 'RIANJEWEL'}>
           {displayName ? displayName.toUpperCase() : (

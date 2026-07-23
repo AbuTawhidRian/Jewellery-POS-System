@@ -23,7 +23,7 @@ const Dashboard: React.FC = () => {
 
   if (isLoading || !stats) {
     return (
-      <div className="flex items-center justify-center h-full">
+      <div className="flex-1 flex items-center justify-center min-h-[60vh]">
         <div className="relative w-16 h-16">
           <svg viewBox="0 0 64 64" className="w-16 h-16">
             <circle cx="32" cy="32" r="24" fill="none" className="stroke-slate-100 dark:stroke-slate-800" strokeWidth="5" />

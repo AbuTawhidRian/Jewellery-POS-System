@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Store, Plus, Edit2, Trash2, CheckCircle2 } from 'lucide-react';
+import { Store, Plus, Edit2, Trash2, CheckCircle2, Loader2 } from 'lucide-react';
 import api from '../../lib/api';
 import toast from 'react-hot-toast';
+import Spinner from '../Spinner';
 
 export const BranchesTab: React.FC = () => {
   const [branches, setBranches] = useState<any[]>([]);
@@ -65,7 +66,7 @@ export const BranchesTab: React.FC = () => {
     }
   };
 
-  if (loading) return <div className="p-8 text-center text-slate-500">Loading branches...</div>;
+  if (loading) return <div className="flex justify-center p-8"><Spinner /></div>;
 
   return (
     <div className="space-y-6">
@@ -126,9 +127,9 @@ export const BranchesTab: React.FC = () => {
             <button
               onClick={handleSave}
               disabled={saving}
-              className="px-4 py-2 bg-[#C28C46] text-white rounded-lg hover:bg-[#8C622C] transition-colors disabled:opacity-50"
+              className="px-4 py-2 bg-[#C28C46] text-white rounded-lg hover:bg-[#8C622C] transition-colors disabled:opacity-50 flex items-center justify-center min-w-[140px]"
             >
-              {saving ? 'Saving...' : 'Save Branch'}
+              {saving ? <><Loader2 className="w-4 h-4 animate-spin mr-2" /> Saving...</> : 'Save Branch'}
             </button>
           </div>
         </div>

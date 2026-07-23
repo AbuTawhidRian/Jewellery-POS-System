@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Globe, ChevronDown, User, LogOut, Diamond, Sun, Moon } from 'lucide-react';
+import { Globe, ChevronDown, User, LogOut, Diamond, Sun, Moon, Store } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { Link } from 'react-router-dom';
@@ -99,8 +99,8 @@ const TopNav: React.FC = () => {
       
       <div className="flex-1 flex items-center">
         <div className="flex items-center gap-2 md:hidden">
-          <div className="h-8 w-8 bg-gradient-to-br from-[#C28C46] to-[#8C622C] rounded-lg flex items-center justify-center">
-            <Diamond className="text-white w-5 h-5" />
+          <div className="h-10 w-10 bg-gradient-to-br from-[#C28C46] to-[#8C622C] rounded-xl flex items-center justify-center shadow-lg shadow-[#C28C46]/20 shrink-0 overflow-hidden">
+            <img src="/logo.jpg" alt="Logo" className="w-full h-full object-cover rounded-[22%] scale-[1.02]" />
           </div>
           <h1 className="text-lg font-extrabold text-slate-900 dark:text-white tracking-wider truncate max-w-[150px]">
             {activeBranchId && branches.length > 0 ? branches.find(b => b.id === activeBranchId)?.name?.toUpperCase() : (
@@ -168,7 +168,7 @@ const TopNav: React.FC = () => {
                 onClick={() => setIsBranchMenuOpen(!isBranchMenuOpen)}
                 className="flex items-center gap-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors px-2 py-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-900"
               >
-                <Diamond className="w-5 h-5" />
+                <Store className="w-5 h-5" />
                 <span className="text-sm font-medium hidden sm:block truncate max-w-[120px]">
                   {branches.find(b => b.id === activeBranchId)?.name || branches.find(b => b.isMain)?.name || 'Select Branch'}
                 </span>

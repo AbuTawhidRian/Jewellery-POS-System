@@ -61,13 +61,8 @@ export default function Landing() {
       {/* Navigation */}
       <nav className="max-w-[1200px] w-full mx-auto px-4 sm:px-6 lg:px-8 h-20 shrink-0 flex items-center justify-between mt-4 sm:mt-6">
         <div className="flex items-center gap-3">
-          <div className="w-12 h-12 bg-gradient-to-br from-[#B48346] to-[#8C622C] rounded-xl flex items-center justify-center shadow-lg shadow-[#B48346]/20">
-            {/* Abstract X Logo */}
-            <svg className="w-6 h-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <rect x="3" y="3" width="18" height="18" rx="4" />
-              <path d="M9 9l6 6" />
-              <path d="M15 9l-6 6" />
-            </svg>
+          <div className="w-12 h-12 rounded-xl flex items-center justify-center shadow-lg shadow-[#B48346]/20 shrink-0">
+            <img src="/logo.jpg" alt="Logo" className="w-full h-full object-cover rounded-[22%] scale-[1.02]" />
           </div>
           <div className="flex flex-col justify-center notranslate">
             <span className="text-[22px] font-extrabold text-[#1E293B] dark:text-white tracking-tight leading-none mb-1">GoldVault</span>

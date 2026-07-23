@@ -56,11 +56,7 @@ export default function Register() {
         <div className="text-center">
           <div className="flex justify-center">
             <div className="h-16 w-16 bg-gradient-to-br from-[#B48346] to-[#8C622C] rounded-2xl flex items-center justify-center shadow-lg shadow-[#B48346]/20 mb-4 transform transition hover:scale-105">
-              <svg className="w-8 h-8 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="3" y="3" width="18" height="18" rx="4" />
-                <path d="M9 9l6 6" />
-                <path d="M15 9l-6 6" />
-              </svg>
+              <img src="/logo.jpg" alt="Logo" className="w-full h-full object-cover rounded-[22%] scale-[1.02]" />
             </div>
           </div>
           <h2 className="mt-2 text-3xl font-extrabold text-white tracking-tight">Create your shop</h2>
