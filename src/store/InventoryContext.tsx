@@ -84,7 +84,6 @@ export interface StatementData {
 }
 
 interface InventoryContextType {
-  items: Item[];
   buyers: Buyer[];
   sales: Sale[];
   payments: Payment[];
@@ -127,7 +126,6 @@ const API_URL = '/api';
 
 export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { token, isAuthenticated } = useAuth();
-  const [items, setItems] = useState<Item[]>([]);
   const [buyers, setBuyers] = useState<Buyer[]>([]);
   const [sales, setSales] = useState<Sale[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
@@ -162,8 +160,7 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     const fetchData = async () => {
       setIsLoading(true);
       try {
-        const [itemsRes, buyersRes, salesRes, typesRes, descRes, paymentsRes, metalRes] = await Promise.all([
-          authFetch(`${API_URL}/inventory`).then(res => res.json()),
+        const [buyersRes, salesRes, typesRes, descRes, paymentsRes, metalRes] = await Promise.all([
           authFetch(`${API_URL}/buyers`).then(res => res.json()),
           authFetch(`${API_URL}/sales`).then(res => res.json()),
           authFetch(`${API_URL}/item_types`).then(res => res.ok ? res.json() : []),
@@ -172,7 +169,6 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           authFetch(`${API_URL}/metal_receipts`).then(res => res.ok ? res.json() : [])
         ]);
 
-        if (Array.isArray(itemsRes)) setItems(itemsRes);
         if (Array.isArray(buyersRes)) setBuyers(buyersRes);
         if (Array.isArray(salesRes)) setSales(salesRes);
         if (Array.isArray(typesRes)) setItemTypes(typesRes);
@@ -197,7 +193,6 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       const result = await res.json();
       
       if (res.ok) {
-        setItems(prev => [...prev, result]);
         toast.success('Item added successfully');
         return { success: true, data: result };
       }
@@ -218,7 +213,6 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       const result = await res.json();
       
       if (res.ok) {
-        setItems(prev => prev.map(item => item.id === id ? result : item));
         toast.success('Item updated successfully');
         return { success: true, data: result };
       }
@@ -234,7 +228,6 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     try {
       const res = await authFetch(`${API_URL}/inventory/${id}`, { method: 'DELETE' });
       if (res.ok) {
-        setItems(prev => prev.filter(i => i.id !== id));
         toast.success('Item deleted successfully');
         return true;
       }
@@ -341,7 +334,6 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       if (res.ok) {
         setItemTypes(prev => prev.map(t => t.id === id ? result : t).sort((a, b) => a.name.localeCompare(b.name)));
         if (oldTypeObj) {
-          setItems(prev => prev.map(i => i.type === oldTypeObj.name ? { ...i, type: name } : i));
           setSales(prev => prev.map(s => s.type === oldTypeObj.name ? { ...s, type: name } : s));
         }
         toast.success('Item type updated');
@@ -397,7 +389,7 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
   const editModel = async (id: string, name: string) => {
     try {
-      const oldDescObj = models.find(d => d.id === id);
+
       const res = await authFetch(`${API_URL}/models/${id}`, {
         method: 'PUT',
         body: JSON.stringify({ name })
@@ -405,9 +397,7 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       const result = await res.json();
       if (res.ok) {
         setModels(prev => prev.map(d => d.id === id ? result : d).sort((a, b) => a.name.localeCompare(b.name)));
-        if (oldDescObj) {
-          setItems(prev => prev.map(i => i.model === oldDescObj.name ? { ...i, model: name } : i));
-        }
+
         return true;
       }
       return false;
@@ -444,9 +434,6 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       const result = await res.json();
       
       if (res.ok && result.success) {
-        setItems(prevItems => prevItems.map(item => 
-          barcodes.includes(item.barcode) ? { ...item, status: 'Sold' } : item
-        ));
         
         // Refetch sales since bulk endpoint doesn't return full objects in our backend right now
         authFetch(`${API_URL}/sales`).then(res => res.json()).then(data => {
@@ -474,17 +461,7 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       const result = await res.json();
       
       if (res.ok && result.success) {
-        setSales(prev => {
-          const voidedSales = prev.filter(s => s.buyer_id === buyerId && s.date === date);
-          const barcodesToReturn = voidedSales.map(s => s.barcode);
-          setItems(prevItems => prevItems.map(item => 
-            barcodesToReturn.includes(item.barcode) ? { ...item, status: 'In Stock' } : item
-          ));
-          return prev.filter(s => !(s.buyer_id === buyerId && s.date === date));
-        });
-        authFetch(`${API_URL}/inventory`).then(res => res.json()).then(data => {
-          if (Array.isArray(data)) setItems(data);
-        });
+        setSales(prev => prev.filter(s => !(s.buyer_id === buyerId && s.date === date)));
         toast.success(result.message || 'Transaction voided');
         return { success: true, message: result.message };
       }
@@ -506,9 +483,6 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       const result = await res.json();
       
       if (res.ok && result.success) {
-        setItems(prevItems => prevItems.map(item => 
-          barcodes.includes(item.barcode) ? { ...item, status: 'In Stock' } : item
-        ));
         
         authFetch(`${API_URL}/sales`).then(res => res.json()).then(data => {
             if(Array.isArray(data)) setSales(data);
@@ -626,7 +600,7 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   };
 
   return (
-    <InventoryContext.Provider value={{ items, buyers, sales, payments, metalReceipts, itemTypes, models, isLoading, addItem, editItem, deleteItem, addBuyer, editBuyer, deleteBuyer, addItemType, editItemType, deleteItemType, addModel, editModel, deleteModel, processBulkSale, voidTransaction, returnItems, addPayment, editPayment, deletePayment, addMetalReceipt, editMetalReceipt, deleteMetalReceipt, printItem, setPrintItem, printInvoiceData, setPrintInvoiceData, printStatementData, setPrintStatementData }}>
+    <InventoryContext.Provider value={{ buyers, sales, payments, metalReceipts, itemTypes, models, isLoading, addItem, editItem, deleteItem, addBuyer, editBuyer, deleteBuyer, addItemType, editItemType, deleteItemType, addModel, editModel, deleteModel, processBulkSale, voidTransaction, returnItems, addPayment, editPayment, deletePayment, addMetalReceipt, editMetalReceipt, deleteMetalReceipt, printItem, setPrintItem, printInvoiceData, setPrintInvoiceData, printStatementData, setPrintStatementData }}>
       {children}
     </InventoryContext.Provider>
   );

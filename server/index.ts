@@ -858,7 +858,119 @@ app.patch('/api/admin/subscriptions/:shopId', authenticateToken, requireSuperAdm
   }
 });
 
-// --- Protected API Routes (Requires Active/Trial) ---
+// --- Dashboard Routes ---
+app.get('/api/dashboard/stats', authenticateToken, requireActiveOrTrial, async (req: AuthRequest, res) => {
+  try {
+    const shopId = req.user!.shopId!;
+    const branchId = req.user!.branchId;
+    
+    let whereClause: any = { shopId };
+    if (branchId) whereClause.branchId = branchId;
+
+    const [items, sales, itemTypes] = await Promise.all([
+      prisma.item.findMany({ where: whereClause }),
+      prisma.sale.findMany({ where: whereClause, include: { item: true, buyer: true } }),
+      prisma.itemType.findMany({ where: { shopId } })
+    ]);
+
+    const activeStock = items.filter(i => i.status === 'In Stock');
+    const totalItemsInStock = activeStock.length;
+    const totalWeightInStock = activeStock.reduce((acc, item) => acc + Math.max(0, (Number(item.weight) || 0) - (Number(item.stone_weight) || 0)), 0);
+    const totalGrossWeightInStock = activeStock.reduce((acc, item) => acc + (Number(item.weight) || 0), 0);
+    const totalPureWeightInStock = activeStock.reduce((acc, item) => {
+      const gw = Number(item.weight) || 0;
+      const sw = Number(item.stone_weight) || 0;
+      const nw = Math.max(0, gw - sw);
+      const purity = itemTypes.find(t => t.name === item.type)?.purity ?? 1.0;
+      return acc + (nw * purity);
+    }, 0);
+
+    const now = new Date();
+    const todayStr = now.toISOString().split('T')[0];
+    const todaySales = sales.filter(s => {
+      const saleDateStr = new Date(s.date).toISOString().split('T')[0];
+      return saleDateStr === todayStr;
+    });
+
+    const totalSalesTodayItems = todaySales.length;
+    const totalItemsSold = sales.length;
+
+    const typeWiseStock = activeStock.reduce((acc, item) => {
+      if (!acc[item.type]) acc[item.type] = { count: 0, weight: 0 };
+      acc[item.type].count += 1;
+      acc[item.type].weight += Math.max(0, (Number(item.weight) || 0) - (Number(item.stone_weight) || 0));
+      return acc;
+    }, {} as Record<string, { count: number, weight: number }>);
+
+    const modelWiseStock = activeStock.reduce((acc, item) => {
+      if (!item.model) return acc;
+      const model = item.model.trim();
+      if (!model) return acc;
+      if (!acc[model]) acc[model] = { count: 0, weight: 0 };
+      acc[model].count += 1;
+      acc[model].weight += Math.max(0, (Number(item.weight) || 0) - (Number(item.stone_weight) || 0));
+      return acc;
+    }, {} as Record<string, { count: number, weight: number }>);
+
+    const topStockModels = Object.entries(modelWiseStock)
+      .sort((a, b) => b[1].count - a[1].count)
+      .slice(0, 5);
+
+    const typeWiseSales = sales.reduce((acc, sale) => {
+      const type = sale.item?.type || 'Unknown';
+      if (!acc[type]) acc[type] = { count: 0, weight: 0 };
+      acc[type].count += 1;
+      acc[type].weight += Math.max(0, (Number(sale.weight) || 0) - (Number(sale.item?.stone_weight) || 0));
+      return acc;
+    }, {} as Record<string, { count: number, weight: number }>);
+
+    const modelWiseSales = sales.reduce((acc, sale) => {
+      if (!sale.item?.model) return acc;
+      const model = sale.item.model.trim();
+      if (!model) return acc;
+      if (!acc[model]) acc[model] = { count: 0, weight: 0 };
+      acc[model].count += 1;
+      acc[model].weight += Math.max(0, (Number(sale.weight) || 0) - (Number(sale.item?.stone_weight) || 0));
+      return acc;
+    }, {} as Record<string, { count: number, weight: number }>);
+
+    const topModels = Object.entries(modelWiseSales)
+      .sort((a, b) => b[1].count - a[1].count)
+      .slice(0, 5);
+
+    const totalSalesNetWeight = sales.reduce((acc, sale) => acc + Math.max(0, (Number(sale.weight) || 0) - (Number(sale.item?.stone_weight) || 0)), 0);
+    const todaySalesNetWeight = todaySales.reduce((acc, sale) => acc + Math.max(0, (Number(sale.weight) || 0) - (Number(sale.item?.stone_weight) || 0)), 0);
+
+    const recentSales = sales.slice(-5).reverse().map(s => ({
+      id: s.id,
+      type: s.item?.type || 'Unknown',
+      model: s.item?.model || '',
+      barcode: s.item?.barcode || '',
+      weight: s.weight,
+      stone_weight: s.item?.stone_weight,
+      buyer_name: s.buyer?.name
+    }));
+
+    res.json({
+      totalItemsInStock,
+      totalWeightInStock,
+      totalGrossWeightInStock,
+      totalPureWeightInStock,
+      totalSalesTodayItems,
+      totalItemsSold,
+      topStockModels,
+      typeWiseStock,
+      typeWiseSales,
+      topModels,
+      totalSalesNetWeight,
+      todaySalesNetWeight,
+      recentSales
+    });
+  } catch (error) {
+    console.error("Error calculating dashboard stats:", error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
 
 // --- Item Types Routes ---
 app.get('/api/item_types', authenticateToken, requireActiveOrTrial, async (req: AuthRequest, res) => {
@@ -996,8 +1108,50 @@ app.delete('/api/models/:id', authenticateToken, requireActiveOrTrial, requireAc
 
 app.get('/api/inventory', authenticateToken, requireActiveOrTrial, async (req: AuthRequest, res) => {
   try {
+    const { page, limit, search, status, startDate, endDate } = req.query;
     const whereClause: any = { shopId: req.user!.shopId! };
     if (req.user!.branchId) whereClause.branchId = req.user!.branchId;
+    if (status) whereClause.status = status as string;
+
+    if (search) {
+      whereClause.OR = [
+        { barcode: { contains: search as string, mode: 'insensitive' } },
+        { type: { contains: search as string, mode: 'insensitive' } }
+      ];
+    }
+
+    if (startDate || endDate) {
+      whereClause.dateAdded = {};
+      if (startDate) whereClause.dateAdded.gte = new Date(startDate as string);
+      if (endDate) {
+        const end = new Date(endDate as string);
+        end.setHours(23, 59, 59, 999);
+        whereClause.dateAdded.lte = end;
+      }
+    }
+
+    if (page && limit) {
+      const pageNum = parseInt(page as string);
+      const limitNum = parseInt(limit as string);
+      const skip = (pageNum - 1) * limitNum;
+
+      const [items, total] = await Promise.all([
+        prisma.item.findMany({
+          where: whereClause,
+          orderBy: { dateAdded: 'asc' },
+          skip,
+          take: limitNum
+        }),
+        prisma.item.count({ where: whereClause })
+      ]);
+
+      return res.json({
+        data: items,
+        total,
+        page: pageNum,
+        totalPages: Math.ceil(total / limitNum)
+      });
+    }
 
     const items = await prisma.item.findMany({
       where: whereClause,

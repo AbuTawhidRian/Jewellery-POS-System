@@ -1,88 +1,62 @@
-import React from 'react';
-import { useInventory } from '../store/InventoryContext';
+import React, { useState, useEffect } from 'react';
 import { Package, Scale, TrendingUp, ShoppingBag, LayoutDashboard, Diamond, Star, Clock } from 'lucide-react';
-import { isToday, parseISO } from 'date-fns';
+import api from '../lib/api';
+import toast from 'react-hot-toast';
 
 const Dashboard: React.FC = () => {
-  const { items, sales, itemTypes } = useInventory();
+  const [stats, setStats] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const activeStock = items.filter(i => i.status === 'In Stock');
-  const totalItemsInStock = activeStock.length;
-  const totalWeightInStock = activeStock.reduce((acc, item) => acc + Math.max(0, (Number(item.weight) || 0) - (Number(item.stone_weight) || 0)), 0);
-  const totalGrossWeightInStock = activeStock.reduce((acc, item) => acc + (Number(item.weight) || 0), 0);
-  const totalPureWeightInStock = activeStock.reduce((acc, item) => {
-    const gw = Number(item.weight) || 0;
-    const sw = Number(item.stone_weight) || 0;
-    const nw = Math.max(0, gw - sw);
-    const purity = itemTypes.find(t => t.name === item.type)?.purity ?? 1.0;
-    return acc + (nw * purity);
-  }, 0);
-  
-  const todaySales = sales.filter(s => isToday(parseISO(s.date)));
-  const totalSalesTodayItems = todaySales.length;
-  
-  // Note: Since price is not tracked per item, we show the total weight sold today as a proxy, 
-  // or just count of items sold. The requirements asked for "Total Sales Today (AED)". 
-  // We'll show N/A or calculate based on a mock gold rate if needed, but let's show items count for now.
-  const totalItemsSold = sales.length;
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const res = await api.get('/dashboard/stats');
+        setStats(res.data);
+      } catch (error: any) {
+        toast.error(error.response?.data?.error || 'Failed to load dashboard stats');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchStats();
+  }, []);
 
-  const typeWiseStock = activeStock.reduce((acc, item) => {
-    if (!acc[item.type]) acc[item.type] = { count: 0, weight: 0 };
-    acc[item.type].count += 1;
-    acc[item.type].weight += Math.max(0, (Number(item.weight) || 0) - (Number(item.stone_weight) || 0));
-    return acc;
-  }, {} as Record<string, { count: number, weight: number }>);
-
-  const modelWiseStock = activeStock.reduce((acc, item) => {
-    if (!item.model) return acc;
-    const model = item.model.trim();
-    if (!model) return acc;
-    if (!acc[model]) acc[model] = { count: 0, weight: 0 };
-    acc[model].count += 1;
-    acc[model].weight += Math.max(0, (Number(item.weight) || 0) - (Number(item.stone_weight) || 0));
-    return acc;
-  }, {} as Record<string, { count: number, weight: number }>);
-
-  const topStockModels = Object.entries(modelWiseStock)
-    .sort((a, b) => b[1].count - a[1].count)
-    .slice(0, 5);
-
-  const typeWiseSales = sales.reduce((acc, sale) => {
-    if (!acc[sale.type]) acc[sale.type] = { count: 0, weight: 0 };
-    acc[sale.type].count += 1;
-    acc[sale.type].weight += Math.max(0, (Number(sale.weight) || 0) - (Number(sale.stone_weight) || 0));
-    return acc;
-  }, {} as Record<string, { count: number, weight: number }>);
-
-  const modelWiseSales = sales.reduce((acc, sale) => {
-    if (!sale.model) return acc;
-    const model = sale.model.trim();
-    if (!model) return acc;
-    if (!acc[model]) acc[model] = { count: 0, weight: 0 };
-    acc[model].count += 1;
-    acc[model].weight += Math.max(0, (Number(sale.weight) || 0) - (Number(sale.stone_weight) || 0));
-    return acc;
-  }, {} as Record<string, { count: number, weight: number }>);
-
-  const topModels = Object.entries(modelWiseSales)
-    .sort((a, b) => b[1].count - a[1].count)
-    .slice(0, 5);
-
-  const totalSalesNetWeight = sales.reduce((acc, sale) => acc + Math.max(0, (Number(sale.weight) || 0) - (Number(sale.stone_weight) || 0)), 0);
-  const todaySalesNetWeight = todaySales.reduce((acc, sale) => acc + Math.max(0, (Number(sale.weight) || 0) - (Number(sale.stone_weight) || 0)), 0);
+  if (isLoading || !stats) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <div className="relative w-16 h-16">
+          <svg viewBox="0 0 64 64" className="w-16 h-16">
+            <circle cx="32" cy="32" r="24" fill="none" className="stroke-slate-100 dark:stroke-slate-800" strokeWidth="5" />
+            <g className="animate-spin" style={{ transformOrigin: '32px 32px', animationDuration: '1.1s' }}>
+              <circle
+                cx="32" cy="32" r="24" fill="none"
+                stroke="#C28C46" strokeWidth="5" strokeLinecap="round"
+                strokeDasharray="56 150"
+              />
+              <g transform="translate(32,8)">
+                <polygon points="-6,-2 6,-2 3,-6 -3,-6" fill="#E0B276" />
+                <polygon points="-6,-2 6,-2 0,9" fill="#C28C46" />
+                <line x1="-6" y1="-2" x2="6" y2="-2" stroke="#8A6530" strokeWidth="0.6" />
+              </g>
+            </g>
+          </svg>
+        </div>
+      </div>
+    );
+  }
 
   const inventoryStats = [
-    { label: 'Items In Stock', value: totalItemsInStock, icon: Package, color: 'text-blue-500', bg: 'bg-blue-500/10' },
-    { label: 'Gross Weight (g)', value: totalGrossWeightInStock.toFixed(2), icon: Scale, color: 'text-orange-500', bg: 'bg-orange-500/10' },
-    { label: 'Net Weight (g)', value: totalWeightInStock.toFixed(2), icon: Scale, color: 'text-gold-500', bg: 'bg-gold-500/10' },
-    { label: 'Pure Weight (g)', value: totalPureWeightInStock.toFixed(2), icon: Diamond, color: 'text-emerald-500', bg: 'bg-emerald-500/10' },
+    { label: 'Items In Stock', value: stats.totalItemsInStock, icon: Package, color: 'text-blue-500', bg: 'bg-blue-500/10' },
+    { label: 'Gross Weight (g)', value: stats.totalGrossWeightInStock.toFixed(2), icon: Scale, color: 'text-orange-500', bg: 'bg-orange-500/10' },
+    { label: 'Net Weight (g)', value: stats.totalWeightInStock.toFixed(2), icon: Scale, color: 'text-gold-500', bg: 'bg-gold-500/10' },
+    { label: 'Pure Weight (g)', value: stats.totalPureWeightInStock.toFixed(2), icon: Diamond, color: 'text-emerald-500', bg: 'bg-emerald-500/10' },
   ];
 
   const salesStats = [
-    { label: 'Sales Today (Items)', value: totalSalesTodayItems, icon: TrendingUp, color: 'text-cyan-500', bg: 'bg-cyan-500/10' },
-    { label: 'Today Sales Weight (g)', value: todaySalesNetWeight.toFixed(2), icon: Scale, color: 'text-teal-500', bg: 'bg-teal-500/10' },
-    { label: 'Total Items Sold', value: totalItemsSold, icon: ShoppingBag, color: 'text-purple-500', bg: 'bg-purple-500/10' },
-    { label: 'Total Sales Weight (g)', value: totalSalesNetWeight.toFixed(2), icon: Scale, color: 'text-indigo-500', bg: 'bg-indigo-500/10' },
+    { label: 'Sales Today (Items)', value: stats.totalSalesTodayItems, icon: TrendingUp, color: 'text-cyan-500', bg: 'bg-cyan-500/10' },
+    { label: 'Today Sales Weight (g)', value: stats.todaySalesNetWeight.toFixed(2), icon: Scale, color: 'text-teal-500', bg: 'bg-teal-500/10' },
+    { label: 'Total Items Sold', value: stats.totalItemsSold, icon: ShoppingBag, color: 'text-purple-500', bg: 'bg-purple-500/10' },
+    { label: 'Total Sales Weight (g)', value: stats.totalSalesNetWeight.toFixed(2), icon: Scale, color: 'text-indigo-500', bg: 'bg-indigo-500/10' },
   ];
 
   const StatCard = ({ stat }: { stat: any }) => {
@@ -133,14 +107,14 @@ const Dashboard: React.FC = () => {
               <Diamond className="w-4 h-4 text-gold-500" />
               Stock by Type
             </h3>
-            {Object.keys(typeWiseStock).length === 0 ? (
-              <p className="text-slate-500 dark:text-slate-400 text-sm py-4">No items in stock.</p>
+            {stats.topStockModels.length === 0 ? (
+              <p className="text-slate-500 dark:text-slate-400 text-sm py-4">No models data.</p>
             ) : (
               <div className="space-y-3">
-                {Object.entries(typeWiseStock).map(([type, data]) => (
-                  <div key={type} className="flex justify-between items-center p-3 rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800/50">
-                    <span className="text-slate-700 dark:text-slate-300 font-medium">{type}</span>
-                    <div className="text-right flex flex-col items-end">
+                {stats.topStockModels.map(([model, data]: any) => (
+                  <div key={model} className="flex justify-between items-center p-3 rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800/50">
+                    <span className="text-slate-700 dark:text-slate-300 font-medium truncate pr-4">{model}</span>
+                    <div className="text-right flex flex-col items-end shrink-0">
                       <span className="bg-slate-200 dark:bg-slate-800 text-slate-800 dark:text-slate-200 font-bold px-2 py-0.5 rounded text-xs mb-1">{data.count} items</span>
                       <span className="text-gold-600 dark:text-gold-500 font-bold text-sm">{data.weight.toFixed(2)}g</span>
                     </div>
@@ -156,11 +130,11 @@ const Dashboard: React.FC = () => {
               <Star className="w-4 h-4 text-indigo-500" />
               Stock by Model
             </h3>
-            {topStockModels.length === 0 ? (
+            {stats.topStockModels.length === 0 ? (
               <p className="text-slate-500 dark:text-slate-400 text-sm py-4">No model stock recorded.</p>
             ) : (
               <div className="space-y-3">
-                {topStockModels.map(([model, data], index) => (
+                {stats.topStockModels.map(([model, data]: any, index: number) => (
                   <div key={model} className="flex justify-between items-center p-3 rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800/50">
                     <div className="flex items-center gap-3">
                       <div className="w-6 h-6 rounded-full bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-xs font-bold">
@@ -202,16 +176,16 @@ const Dashboard: React.FC = () => {
               <Diamond className="w-4 h-4 text-emerald-500" />
               Sales by Type
             </h3>
-            {Object.keys(typeWiseSales).length === 0 ? (
-              <p className="text-slate-500 dark:text-slate-400 text-sm py-4">No sales recorded.</p>
+            {Object.keys(stats.typeWiseSales || {}).length === 0 ? (
+              <p className="text-slate-500 dark:text-slate-400 text-sm py-4">No sales data.</p>
             ) : (
               <div className="space-y-3">
-                {Object.entries(typeWiseSales).map(([type, data]) => (
+                {Object.entries(stats.typeWiseSales).map(([type, data]: any) => (
                   <div key={type} className="flex justify-between items-center p-3 rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800/50">
                     <span className="text-slate-700 dark:text-slate-300 font-medium">{type}</span>
                     <div className="text-right flex flex-col items-end">
                       <span className="bg-slate-200 dark:bg-slate-800 text-slate-800 dark:text-slate-200 font-bold px-2 py-0.5 rounded text-xs mb-1">{data.count} sold</span>
-                      <span className="text-emerald-600 dark:text-emerald-500 font-bold text-sm">{data.weight.toFixed(2)}g</span>
+                      <span className="text-indigo-600 dark:text-indigo-400 font-bold text-sm">{data.weight.toFixed(2)}g</span>
                     </div>
                   </div>
                 ))}
@@ -225,11 +199,11 @@ const Dashboard: React.FC = () => {
               <Star className="w-4 h-4 text-amber-500" />
               Top Selling Models
             </h3>
-            {topModels.length === 0 ? (
+            {(stats.topModels || []).length === 0 ? (
               <p className="text-slate-500 dark:text-slate-400 text-sm py-4">No model sales recorded.</p>
             ) : (
               <div className="space-y-3">
-                {topModels.map(([model, data], index) => (
+                {(stats.topModels || []).map(([model, data]: any, index: number) => (
                   <div key={model} className="flex justify-between items-center p-3 rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800/50">
                     <div className="flex items-center gap-3">
                       <div className="w-6 h-6 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 flex items-center justify-center text-xs font-bold">
@@ -254,7 +228,7 @@ const Dashboard: React.FC = () => {
             <Clock className="w-4 h-4 text-blue-500" />
             Recent Sales Activity
           </h3>
-          {sales.length === 0 ? (
+          {(stats.recentSales || []).length === 0 ? (
             <p className="text-slate-500 dark:text-slate-400 text-center py-8">No sales recorded yet.</p>
           ) : (
             <div className="overflow-x-auto">
@@ -269,7 +243,7 @@ const Dashboard: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody className="text-sm">
-                  {sales.slice(-5).reverse().map((sale) => (
+                  {(stats.recentSales || []).map((sale: any) => (
                     <tr key={sale.id} className="border-b border-slate-100 dark:border-slate-800/50 last:border-0 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
                       <td className="py-3 text-slate-800 dark:text-slate-200 font-medium">{sale.type}</td>
                       <td className="py-3 text-slate-600 dark:text-slate-400">{sale.model || '-'}</td>

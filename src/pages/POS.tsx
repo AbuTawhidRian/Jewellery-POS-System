@@ -5,14 +5,16 @@ import clsx from 'clsx';
 import { Html5QrcodeScanner } from 'html5-qrcode';
 import Dialog from '../components/Dialog';
 import { useAuth } from '../contexts/AuthContext';
+import api from '../lib/api';
 
 const POS: React.FC = () => {
   const { hasPermission, user } = useAuth();
-  const { items, buyers, sales, payments, metalReceipts, processBulkSale, returnItems, addBuyer, editBuyer, deleteBuyer, addPayment, editPayment, deletePayment, addMetalReceipt, editMetalReceipt, deleteMetalReceipt, setPrintInvoiceData, setPrintItem, setPrintStatementData } = useInventory();
+  const { buyers, sales, payments, metalReceipts, processBulkSale, returnItems, addBuyer, editBuyer, deleteBuyer, addPayment, editPayment, deletePayment, addMetalReceipt, editMetalReceipt, deleteMetalReceipt, setPrintInvoiceData, setPrintItem, setPrintStatementData } = useInventory();
   const [selectedBuyer, setSelectedBuyer] = useState('');
   const [barcode, setBarcode] = useState('');
   const [notification, setNotification] = useState<{ type: 'success' | 'error', message: string } | null>(null);
   const [cart, setCart] = useState<Item[]>([]);
+  const cartRef = useRef<Item[]>([]);
   const [isScanning, setIsScanning] = useState(false);
   const [isReturnMode, setIsReturnMode] = useState(false);
   const [isCashMode, setIsCashMode] = useState(false);
@@ -75,6 +77,10 @@ const POS: React.FC = () => {
   const inputRef = useRef<HTMLInputElement>(null);
   const newBuyerInputRef = useRef<HTMLInputElement>(null);
   const scannerRef = useRef<Html5QrcodeScanner | null>(null);
+
+  useEffect(() => {
+    cartRef.current = cart;
+  }, [cart]);
 
   // Keep input focused automatically
   useEffect(() => {
@@ -158,30 +164,39 @@ const POS: React.FC = () => {
     }
   }, [playBeep]);
 
-  const processScannedCode = useCallback((code: string) => {
+  const processScannedCode = useCallback(async (code: string) => {
     if (!code) return;
 
-    setCart(prev => {
-      const item = items.find(i => i.barcode === code);
+    if (cartRef.current.some(c => c.barcode === code)) {
+      showNotification('error', `WARNING: Item ${code} is already in the cart!`);
+      return;
+    }
+
+    try {
+      const res = await api.get(`/inventory/barcode/${code}`);
+      const item = res.data;
       
-      if (!item) {
-        showNotification('error', `Barcode ${code} not found in inventory.`);
-        return prev;
-      } else if (!isReturnMode && item.status === 'Sold') {
+      if (!isReturnMode && item.status === 'Sold') {
         showNotification('error', `Item ${code} is already sold!`);
-        return prev;
+        return;
       } else if (isReturnMode && item.status === 'In Stock') {
         showNotification('error', `Item ${code} is not sold, cannot return.`);
-        return prev;
-      } else if (prev.some(c => c.barcode === code)) {
-        showNotification('error', `WARNING: Item ${code} is already in the cart!`);
-        return prev;
-      } else {
-        showNotification('success', `Added ${item.type} (${item.weight}g) to cart.`);
-        return [...prev, item];
+        return;
       }
-    });
-  }, [items, isReturnMode, showNotification]);
+      
+      setCart(prev => {
+        if (prev.some(c => c.barcode === code)) return prev;
+        return [...prev, item];
+      });
+      showNotification('success', `Added ${item.type} (${item.weight}g) to cart.`);
+    } catch (error: any) {
+      if (error.response?.status === 404) {
+        showNotification('error', `Barcode ${code} not found in inventory.`);
+      } else {
+        showNotification('error', error.response?.data?.error || `Error scanning barcode ${code}`);
+      }
+    }
+  }, [isReturnMode, showNotification]);
 
   const handleScan = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {

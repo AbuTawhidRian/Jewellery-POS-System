@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useInventory, type Sale } from '../store/InventoryContext';
-import { Download, FileText, Filter, Printer, ChevronDown, ChevronRight, Calendar, Trash2 } from 'lucide-react';
+import { Download, FileText, Filter, Printer, ChevronDown, ChevronRight, Calendar, Trash2, Wallet, Scale, ArrowDownLeft, ArrowUpRight } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import Dialog from '../components/Dialog';
 import { useAuth } from '../contexts/AuthContext';
@@ -146,6 +146,110 @@ const Ledger: React.FC = () => {
     
     return Array.from(txMap.values()).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   }, [filteredSales, itemTypes]);
+
+  const buyerSummary = useMemo(() => {
+    if (filterBuyerId === 'all') return null;
+
+    let totalPurePurchased = 0;
+    let totalPurePaid = 0;
+    let totalCashCharged = 0;
+    let totalCashPaid = 0;
+
+    transactions.forEach(tx => {
+      totalPurePurchased += tx.totalPure;
+      totalCashCharged += tx.totalMakingCharge;
+    });
+
+    const buyerMetal = metalReceipts.filter(m => m.buyerId === filterBuyerId);
+    buyerMetal.forEach(m => {
+      totalPurePaid += (Number(m.weight) * Number(m.purity));
+    });
+
+    const buyerPayments = payments.filter(p => p.buyerId === filterBuyerId);
+    buyerPayments.forEach(p => {
+      totalCashPaid += Number(p.amount);
+    });
+
+    return {
+      totalPurePurchased,
+      totalPurePaid,
+      outstandingPure: totalPurePurchased - totalPurePaid,
+      totalCashCharged,
+      totalCashPaid,
+      outstandingCash: totalCashCharged - totalCashPaid
+    };
+  }, [filterBuyerId, transactions, metalReceipts, payments]);
+
+  const unifiedTimeline = useMemo(() => {
+    if (filterBuyerId === 'all') return [];
+
+    type TimelineEntry = {
+      id: string;
+      date: string;
+      type: 'Sale' | 'Return' | 'Payment' | 'MetalReceipt';
+      description: string;
+      pureWeightChange: number;
+      cashChange: number;
+      ref?: any;
+    };
+
+    const entries: TimelineEntry[] = [];
+
+    transactions.forEach(tx => {
+      entries.push({
+        id: tx.date,
+        date: tx.date,
+        type: tx.totalNet < 0 ? 'Return' : 'Sale',
+        description: `${tx.totalItems} Items`,
+        pureWeightChange: tx.totalPure, 
+        cashChange: tx.totalMakingCharge,
+        ref: tx
+      });
+    });
+
+    const buyerMetal = metalReceipts.filter(m => m.buyerId === filterBuyerId);
+    buyerMetal.forEach(m => {
+      entries.push({
+        id: `metal-${m.id}`,
+        date: m.date,
+        type: 'MetalReceipt',
+        description: `Metal Receipt - ${m.notes || ''}`,
+        pureWeightChange: -(Number(m.weight) * Number(m.purity)), 
+        cashChange: 0,
+        ref: m
+      });
+    });
+
+    const buyerPayments = payments.filter(p => p.buyerId === filterBuyerId);
+    buyerPayments.forEach(p => {
+      entries.push({
+        id: `payment-${p.id}`,
+        date: p.date,
+        type: 'Payment',
+        description: `Payment - ${p.notes || ''}`,
+        pureWeightChange: 0,
+        cashChange: -Number(p.amount), 
+        ref: p
+      });
+    });
+
+    entries.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+    let runPure = 0;
+    let runCash = 0;
+    
+    const enriched = entries.map(entry => {
+      runPure += entry.pureWeightChange;
+      runCash += entry.cashChange;
+      return {
+        ...entry,
+        runningPure: runPure,
+        runningCash: runCash
+      };
+    });
+
+    return enriched.reverse();
+  }, [filterBuyerId, transactions, metalReceipts, payments]);
 
   const printTransactionInvoice = (tx: any, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -358,10 +462,56 @@ const Ledger: React.FC = () => {
         </div>
       </header>
 
+      {buyerSummary && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6 animate-in slide-in-from-bottom-2 duration-300">
+          <div className="bg-gradient-to-br from-gold-500/10 to-gold-600/5 border border-gold-500/20 rounded-2xl p-6 shadow-sm flex flex-col relative overflow-hidden">
+            <div className="absolute top-0 right-0 p-4 opacity-10">
+              <Scale className="w-16 h-16 text-gold-600" />
+            </div>
+            <h3 className="text-sm font-bold text-gold-600 uppercase tracking-wider mb-4 flex items-center gap-2">
+              <Scale className="w-4 h-4" /> Pure Weight Account
+            </h3>
+            <div className="flex items-end justify-between">
+              <div>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">Outstanding Balance</p>
+                <p className="text-3xl font-black text-slate-900 dark:text-white">
+                  {buyerSummary.outstandingPure.toFixed(2)}<span className="text-lg text-gold-500 ml-1">g</span>
+                </p>
+              </div>
+              <div className="text-right flex flex-col gap-1">
+                <p className="text-xs text-slate-500 dark:text-slate-400">Total Purchased: <span className="font-semibold text-slate-700 dark:text-slate-200">{buyerSummary.totalPurePurchased.toFixed(2)}g</span></p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">Total Paid: <span className="font-semibold text-emerald-600 dark:text-emerald-400">{buyerSummary.totalPurePaid.toFixed(2)}g</span></p>
+              </div>
+            </div>
+          </div>
+          <div className="bg-gradient-to-br from-emerald-500/10 to-emerald-600/5 border border-emerald-500/20 rounded-2xl p-6 shadow-sm flex flex-col relative overflow-hidden">
+            <div className="absolute top-0 right-0 p-4 opacity-10">
+              <Wallet className="w-16 h-16 text-emerald-600" />
+            </div>
+            <h3 className="text-sm font-bold text-emerald-600 uppercase tracking-wider mb-4 flex items-center gap-2">
+              <Wallet className="w-4 h-4" /> Cash Account
+            </h3>
+            <div className="flex items-end justify-between">
+              <div>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">Outstanding Balance</p>
+                <p className="text-3xl font-black text-slate-900 dark:text-white flex items-baseline">
+                  <span className="text-lg text-emerald-500 mr-1">AED</span>{buyerSummary.outstandingCash.toFixed(2)}
+                </p>
+              </div>
+              <div className="text-right flex flex-col gap-1">
+                <p className="text-xs text-slate-500 dark:text-slate-400">Total Charged: <span className="font-semibold text-slate-700 dark:text-slate-200">AED {buyerSummary.totalCashCharged.toFixed(2)}</span></p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">Total Paid: <span className="font-semibold text-emerald-600 dark:text-emerald-400">AED {buyerSummary.totalCashPaid.toFixed(2)}</span></p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="bg-white dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-lg flex-1 flex flex-col overflow-hidden">
         <div className="flex-1 overflow-auto p-0 md:p-6">
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse min-w-[800px]">
+            {filterBuyerId === 'all' ? (
+              <table className="w-full text-left border-collapse min-w-[800px]">
             <thead className="sticky top-0 bg-white dark:bg-slate-950 z-10">
               <tr className="border-b border-slate-200 dark:border-slate-800 text-sm text-slate-600 dark:text-slate-400">
                 <th className="pb-3 px-4 font-medium w-10"></th>
@@ -496,7 +646,149 @@ const Ledger: React.FC = () => {
                 })
               )}
             </tbody>
-          </table>
+            </table>
+            ) : (
+              <table className="w-full text-left border-collapse min-w-[900px]">
+                <thead className="sticky top-0 bg-white dark:bg-slate-950 z-10">
+                  <tr className="border-b border-slate-200 dark:border-slate-800 text-sm text-slate-600 dark:text-slate-400">
+                    <th className="pb-3 px-4 font-medium w-10"></th>
+                    <th className="pb-3 px-4 font-medium">Date/Time</th>
+                    <th className="pb-3 px-4 font-medium">Activity</th>
+                    <th className="pb-3 px-4 font-medium text-right">Pure Wt Change</th>
+                    <th className="pb-3 px-4 font-medium text-right">Cash Change</th>
+                    <th className="pb-3 px-4 font-medium text-right bg-slate-50/50 dark:bg-slate-900/50">Run. Pure Wt</th>
+                    <th className="pb-3 px-4 font-medium text-right bg-slate-50/50 dark:bg-slate-900/50">Run. Cash</th>
+                  </tr>
+                </thead>
+                <tbody className="text-sm">
+                  {unifiedTimeline.length === 0 ? (
+                    <tr>
+                      <td colSpan={7} className="py-12 text-center text-slate-500 dark:text-slate-400">
+                        No activity recorded for this customer.
+                      </td>
+                    </tr>
+                  ) : (
+                    unifiedTimeline.map((entry) => {
+                      const isExpanded = expandedTx === entry.id;
+                      const isSale = entry.type === 'Sale';
+                      const isReturn = entry.type === 'Return';
+                      
+                      let Icon = FileText;
+                      if (isSale) Icon = ArrowUpRight;
+                      if (isReturn) Icon = ArrowDownLeft;
+                      if (entry.type === 'Payment') Icon = Wallet;
+                      if (entry.type === 'MetalReceipt') Icon = Scale;
+                      
+                      const iconColor = isSale ? 'text-blue-500' : isReturn ? 'text-red-500' : 'text-emerald-500';
+                      const iconBg = isSale ? 'bg-blue-500/10' : isReturn ? 'bg-red-500/10' : 'bg-emerald-500/10';
+
+                      return (
+                        <React.Fragment key={entry.id}>
+                          <tr 
+                            onClick={() => (isSale || isReturn) ? setExpandedTx(isExpanded ? null : entry.id) : null}
+                            className={`border-b border-slate-200 dark:border-slate-800/50 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors ${(isSale || isReturn) ? 'cursor-pointer' : ''}`}
+                          >
+                            <td className="py-3 px-4 text-slate-500 dark:text-slate-400">
+                              {(isSale || isReturn) ? (isExpanded ? <ChevronDown className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />) : null}
+                            </td>
+                            <td className="py-3 px-4 text-slate-700 dark:text-slate-300">
+                              {format(parseISO(entry.date), 'MMM dd, yyyy')} <br/>
+                              <span className="text-xs text-slate-500 dark:text-slate-400">{format(parseISO(entry.date), 'hh:mm:ss a')}</span>
+                            </td>
+                            <td className="py-3 px-4">
+                              <div className="flex items-center gap-3">
+                                <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${iconBg}`}>
+                                  <Icon className={`w-4 h-4 ${iconColor}`} />
+                                </div>
+                                <div>
+                                  <p className="font-bold text-slate-800 dark:text-slate-200">{entry.type}</p>
+                                  <p className="text-xs text-slate-500 dark:text-slate-400">{entry.description}</p>
+                                </div>
+                              </div>
+                            </td>
+                            <td className={`py-3 px-4 font-bold text-right ${entry.pureWeightChange > 0 ? 'text-blue-600 dark:text-blue-400' : entry.pureWeightChange < 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400 dark:text-slate-600'}`}>
+                              {entry.pureWeightChange > 0 ? '+' : ''}{entry.pureWeightChange !== 0 ? entry.pureWeightChange.toFixed(2) + 'g' : '-'}
+                            </td>
+                            <td className={`py-3 px-4 font-bold text-right ${entry.cashChange > 0 ? 'text-blue-600 dark:text-blue-400' : entry.cashChange < 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400 dark:text-slate-600'}`}>
+                              {entry.cashChange > 0 ? '+' : ''}{entry.cashChange !== 0 ? entry.cashChange.toFixed(2) : '-'}
+                            </td>
+                            <td className="py-3 px-4 font-black text-right text-gold-600 bg-slate-50/50 dark:bg-slate-900/50">
+                              {entry.runningPure.toFixed(2)}g
+                            </td>
+                            <td className="py-3 px-4 font-black text-right text-emerald-600 bg-slate-50/50 dark:bg-slate-900/50">
+                              {entry.runningCash.toFixed(2)}
+                            </td>
+                          </tr>
+                          {isExpanded && (isSale || isReturn) && (
+                            <tr className="bg-slate-50 dark:bg-slate-900/30">
+                              <td colSpan={7} className="p-0 border-b-4 border-slate-100 dark:border-slate-900">
+                                <div className="bg-slate-50 dark:bg-slate-900/50 p-6 animate-in slide-in-from-top-2 duration-200">
+                                  <h4 className={`text-xs font-bold uppercase tracking-wider mb-2 ${isReturn ? 'text-red-500' : 'text-slate-500 dark:text-slate-400'}`}>
+                                    {isReturn ? 'Returned Items' : 'Transaction Details'}
+                                  </h4>
+                                  <table className="w-full text-left border-collapse text-xs">
+                                    <thead>
+                                      <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400">
+                                        <th className="pb-2 px-2 font-medium text-center w-12">Qty</th>
+                                        <th className="pb-2 px-2 font-medium">Model</th>
+                                        <th className="pb-2 px-2 font-medium">Type</th>
+                                        <th className="pb-2 px-2 font-medium text-right">Gr. Wt</th>
+                                        <th className="pb-2 px-2 font-medium text-right">St. Wt</th>
+                                        <th className="pb-2 px-2 font-medium text-right">Net Wt</th>
+                                        <th className="pb-2 px-2 font-medium text-right">Pure Wt</th>
+                                      </tr>
+                                    </thead>
+                                    <tbody>
+                                      {Object.values(entry.ref.items.reduce((acc: any, item: any) => {
+                                        const key = `${item.model || 'Unknown'}-${item.type}`;
+                                        if (!acc[key]) {
+                                          acc[key] = {
+                                            model: item.model || 'Unknown',
+                                            type: item.type,
+                                            qty: 0,
+                                            weight: 0,
+                                            stone_weight: 0,
+                                            pure_weight: 0,
+                                          };
+                                        }
+                                        acc[key].qty += 1;
+                                        const itemGw = Number(item.weight) || 0;
+                                        const itemSw = Number(item.stone_weight) || 0;
+                                        acc[key].weight += itemGw;
+                                        acc[key].stone_weight += itemSw;
+                                        const purity = itemTypes.find(t => t.name === item.type)?.purity ?? 1.0;
+                                        const itemNw = itemGw > 0 ? Math.max(0, itemGw - itemSw) : Math.min(0, itemGw + itemSw);
+                                        acc[key].pure_weight += itemNw * purity;
+                                        return acc;
+                                      }, {})).map((group: any) => {
+                                        const sw = Math.abs(group.stone_weight);
+                                        const gw = Math.abs(group.weight);
+                                        const nw = Math.max(0, gw - sw);
+                                        return (
+                                          <tr key={`${group.model}-${group.type}`} className="border-b border-slate-200 dark:border-slate-800/30">
+                                            <td className="py-2 px-2 font-medium text-slate-700 dark:text-slate-300 text-center">{group.qty}</td>
+                                            <td className="py-2 px-2 text-slate-700 dark:text-slate-300">{group.model}</td>
+                                            <td className="py-2 px-2 text-slate-600 dark:text-slate-400">{group.type}</td>
+                                            <td className="py-2 px-2 text-right text-slate-600 dark:text-slate-400">{gw.toFixed(2)}g</td>
+                                            <td className="py-2 px-2 text-right text-slate-500 dark:text-slate-400">{sw > 0 ? sw.toFixed(2) + 'g' : '-'}</td>
+                                            <td className="py-2 px-2 text-right font-medium text-slate-700 dark:text-slate-300">{nw.toFixed(2)}g</td>
+                                            <td className="py-2 px-2 text-right font-medium text-gold-500">{group.pure_weight.toFixed(2)}g</td>
+                                          </tr>
+                                        );
+                                      })}
+                                    </tbody>
+                                  </table>
+                                </div>
+                              </td>
+                            </tr>
+                          )}
+                        </React.Fragment>
+                      )
+                    })
+                  )}
+                </tbody>
+              </table>
+            )}
           </div>
         </div>
         

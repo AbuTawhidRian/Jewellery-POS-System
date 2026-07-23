@@ -1,16 +1,36 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useInventory, type Item } from '../store/InventoryContext';
-import { Plus, Search, XCircle, Trash2, Printer, Settings, CheckCircle, MoreVertical, Edit2, Lock } from 'lucide-react';
+import { Plus, Search, XCircle, Trash2, Printer, Settings, CheckCircle, MoreVertical, Edit2, Lock, Download, Calendar, ChevronDown, ChevronRight } from 'lucide-react';
 import Dialog from '../components/Dialog';
 import { useAuth } from '../contexts/AuthContext';
 import api from '../lib/api';
 
 const Vault: React.FC = () => {
   const { hasPermission, activeBranchId } = useAuth();
-  const canEditVault = hasPermission('edit_vault');
-  const { items, itemTypes, addItem, editItem, deleteItem, setPrintItem, setPrintInvoiceData, setPrintStatementData, addItemType, editItemType, deleteItemType, models, addModel, editModel, deleteModel } = useInventory();
+  const { itemTypes, models, addItem, editItem, deleteItem, addItemType, editItemType, deleteItemType, addModel, editModel, deleteModel, setPrintInvoiceData, setPrintStatementData, setPrintItem } = useInventory();
+  
+  const [vaultItems, setVaultItems] = useState<Item[]>([]);
+  const [totalItems, setTotalItems] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+  const [isFetching, setIsFetching] = useState(false);
+  const ITEMS_PER_PAGE = 50;
+
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
+  const [filterDateRange, setFilterDateRange] = useState<string>('all');
+  const [customStartDate, setCustomStartDate] = useState<string>('');
+  const [customEndDate, setCustomEndDate] = useState<string>('');
+  const [dateDropdownOpen, setDateDropdownOpen] = useState(false);
+  const dateRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (dateRef.current && !dateRef.current.contains(e.target as Node)) setDateDropdownOpen(false);
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   const [branches, setBranches] = useState<any[]>([]);
   const [loadingBranches, setLoadingBranches] = useState(true);
 
@@ -22,6 +42,7 @@ const Vault: React.FC = () => {
   }, []);
 
   const isRetailBranch = activeBranchId && branches.length > 0 && !branches.find(b => b.id === activeBranchId)?.isMain;
+  const canEditVault = hasPermission('edit_vault');
   
   // Form State
   const [type, setType] = useState('');
@@ -92,18 +113,52 @@ const Vault: React.FC = () => {
   }, [itemTypes, models, type, model]);
   const [printImmediately, setPrintImmediately] = useState(false);
 
-  const activeStock = items.filter(i => i.status === 'In Stock');
-  const filteredStock = activeStock.filter(i => 
-    i.barcode.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    i.type.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const fetchVaultData = useCallback(async () => {
+    setIsFetching(true);
+    try {
+      let dateQuery = '';
+      if (filterDateRange !== 'all') {
+        const now = new Date();
+        let start = new Date(0);
+        let end = new Date();
+        end.setHours(23, 59, 59, 999);
+        if (filterDateRange === 'today') {
+          start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        } else if (filterDateRange === 'week') {
+          start = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        } else if (filterDateRange === 'month') {
+          start = new Date(now.getFullYear(), now.getMonth(), 1);
+        } else if (filterDateRange === 'custom') {
+          start = customStartDate ? new Date(customStartDate) : new Date(0);
+          end = customEndDate ? new Date(customEndDate) : end;
+          if (customEndDate) {
+            end.setHours(23, 59, 59, 999);
+          }
+        }
+        dateQuery = `&startDate=${start.toISOString()}&endDate=${end.toISOString()}`;
+      }
 
-  const ITEMS_PER_PAGE = 10;
-  const totalPages = Math.ceil(filteredStock.length / ITEMS_PER_PAGE);
-  const paginatedStock = filteredStock.slice(
-    (currentPage - 1) * ITEMS_PER_PAGE,
-    currentPage * ITEMS_PER_PAGE
-  );
+      const res = await api.get(`/inventory?page=${currentPage}&limit=${ITEMS_PER_PAGE}&search=${searchTerm}&status=In Stock${dateQuery}`);
+      if (res.data.data) {
+        setVaultItems(res.data.data);
+        setTotalItems(res.data.total);
+        setTotalPages(res.data.totalPages);
+      } else {
+        const filtered = res.data.filter((i: any) => i.status === 'In Stock');
+        setVaultItems(filtered);
+        setTotalItems(filtered.length);
+        setTotalPages(1);
+      }
+    } catch (error) {
+      console.error("Error fetching vault items:", error);
+    } finally {
+      setIsFetching(false);
+    }
+  }, [currentPage, searchTerm, filterDateRange, customStartDate, customEndDate]);
+
+  useEffect(() => {
+    fetchVaultData();
+  }, [fetchVaultData]);
 
   useEffect(() => {
     setCurrentPage(1);
@@ -116,6 +171,76 @@ const Vault: React.FC = () => {
     setTimeout(() => {
       window.print();
     }, 500);
+  };
+
+  const [isExporting, setIsExporting] = useState(false);
+
+  const exportVaultToCSV = async () => {
+    setIsExporting(true);
+    try {
+      let dateQuery = '';
+      if (filterDateRange !== 'all') {
+        const now = new Date();
+        let start = new Date(0);
+        let end = new Date();
+        end.setHours(23, 59, 59, 999);
+        if (filterDateRange === 'today') {
+          start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        } else if (filterDateRange === 'week') {
+          start = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        } else if (filterDateRange === 'month') {
+          start = new Date(now.getFullYear(), now.getMonth(), 1);
+        } else if (filterDateRange === 'custom') {
+          start = customStartDate ? new Date(customStartDate) : new Date(0);
+          end = customEndDate ? new Date(customEndDate) : end;
+          if (customEndDate) end.setHours(23, 59, 59, 999);
+        }
+        dateQuery = `&startDate=${start.toISOString()}&endDate=${end.toISOString()}`;
+      }
+
+      // Fetch all items from the server
+      const res = await api.get(`/inventory?page=1&limit=999999&status=In Stock${dateQuery}`);
+      const itemsToExport = res.data.data || res.data;
+      
+      if (!itemsToExport || itemsToExport.length === 0) {
+        setDialogConfig({ isOpen: true, type: 'alert', title: 'Export Failed', message: "No active stock available to export." });
+        return;
+      }
+
+      const headers = ['Barcode', 'Item Type', 'Model', 'Gross Wt (g)', 'Stone Wt (g)', 'Net Wt (g)'];
+      const rows = itemsToExport.map((item: any) => {
+        const sw = Number(item.stone_weight) || 0;
+        const gw = Number(item.weight) || 0;
+        const nw = Math.max(0, gw - sw);
+        return [
+          item.barcode,
+          item.type,
+          `"${item.model || ''}"`,
+          gw.toFixed(2),
+          sw.toFixed(2),
+          nw.toFixed(2)
+        ];
+      });
+
+      const csvContent = [
+        headers.join(','),
+        ...rows.map((row: any) => row.join(','))
+      ].join('\n');
+
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.setAttribute('href', url);
+      link.setAttribute('download', `Total_Stock_${new Date().toISOString().split('T')[0]}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (error) {
+      console.error("Error exporting to CSV:", error);
+      setDialogConfig({ isOpen: true, type: 'alert', title: 'Export Error', message: "Failed to export stock list." });
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -141,6 +266,8 @@ const Vault: React.FC = () => {
       setDialogConfig({ isOpen: true, type: 'alert', title: 'Error', message: "Error adding item: " + result.error });
       return;
     }
+
+    fetchVaultData(); // Refresh list after adding
 
     if (printImmediately && result.data) {
       handlePrint(result.data);
@@ -336,17 +463,100 @@ const Vault: React.FC = () => {
         <div className={canEditVault && !isRetailBranch ? "xl:col-span-2" : ""}>
           <div className="bg-white dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-lg flex-1 overflow-hidden flex flex-col">
             <div className="p-4 md:p-6 border-b border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-              <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">Active Stock ({activeStock.length})</h2>
+              <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                Active Stock 
+                {isFetching ? (
+                  <div className="w-4 h-4 border-2 border-gold-500 border-t-transparent rounded-full animate-spin"></div>
+                ) : (
+                  <span>({totalItems})</span>
+                )}
+              </h2>
               
-              <div className="relative w-full sm:w-64">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 dark:text-slate-400" />
-                <input 
-                  type="text" 
-                  placeholder="Search barcode or type..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg pl-9 pr-4 py-2 text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:border-gold-500 transition-colors"
-                />
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                
+                <div className="relative" ref={dateRef}>
+                  <button
+                    onClick={() => setDateDropdownOpen(!dateDropdownOpen)}
+                    className="flex items-center gap-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg px-4 py-2 text-sm text-slate-800 dark:text-slate-200 hover:border-gold-500 transition-colors focus:outline-none focus:border-gold-500 min-w-[180px] w-full sm:w-auto"
+                  >
+                    <Calendar className="w-4 h-4 text-gold-500" />
+                    <span className="flex-1 text-left truncate">
+                      {filterDateRange === 'all' ? 'All Dates' :
+                       filterDateRange === 'today' ? 'Today' :
+                       filterDateRange === 'week' ? 'Last 7 Days' :
+                       filterDateRange === 'month' ? 'This Month' :
+                       filterDateRange === 'custom' && customStartDate && customEndDate ? `${customStartDate} to ${customEndDate}` :
+                       'Custom Range'}
+                    </span>
+                    {dateDropdownOpen ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                  </button>
+                  {dateDropdownOpen && (
+                    <div className="absolute z-50 w-full sm:w-64 mt-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg shadow-xl right-0 overflow-hidden">
+                      <div className="p-2 border-b border-slate-100 dark:border-slate-800/50 space-y-1">
+                        {[
+                          { id: 'all', label: 'All Dates' },
+                          { id: 'today', label: 'Today' },
+                          { id: 'week', label: 'Last 7 Days' },
+                          { id: 'month', label: 'This Month' },
+                          { id: 'custom', label: 'Custom Range...' }
+                        ].map(opt => (
+                          <button
+                            key={opt.id}
+                            onClick={() => {
+                              setFilterDateRange(opt.id);
+                              if (opt.id !== 'custom') setDateDropdownOpen(false);
+                            }}
+                            className={`w-full text-left px-3 py-2 text-sm rounded-md transition-colors ${filterDateRange === opt.id ? 'bg-gold-50 dark:bg-gold-500/10 text-gold-600 dark:text-gold-400 font-medium' : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'}`}
+                          >
+                            {opt.label}
+                          </button>
+                        ))}
+                      </div>
+                      {filterDateRange === 'custom' && (
+                        <div className="p-3 bg-slate-50 dark:bg-slate-800/50 space-y-3">
+                          <div>
+                            <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Start Date</label>
+                            <input 
+                              type="date" 
+                              value={customStartDate} 
+                              onChange={e => setCustomStartDate(e.target.value)} 
+                              className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-md px-2 py-1 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:border-gold-500" 
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">End Date</label>
+                            <input 
+                              type="date" 
+                              value={customEndDate} 
+                              onChange={e => setCustomEndDate(e.target.value)} 
+                              className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-md px-2 py-1 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:border-gold-500" 
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                <div className="relative w-full sm:w-64">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 dark:text-slate-400" />
+                  <input 
+                    type="text" 
+                    placeholder="Search barcode or type..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg pl-9 pr-4 py-2 text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:border-gold-500 transition-colors"
+                  />
+                </div>
+                <button 
+                  onClick={exportVaultToCSV}
+                  disabled={isExporting}
+                  className="inline-flex items-center justify-center gap-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-900 dark:text-slate-100 font-semibold py-2 px-4 rounded-lg border border-slate-300 dark:border-slate-700 transition-colors shadow-sm disabled:opacity-50"
+                  title="Export total stock to CSV"
+                >
+                  <Download className="w-4 h-4 text-gold-500" />
+                  <span className="hidden sm:inline">{isExporting ? 'Exporting...' : 'CSV'}</span>
+                </button>
               </div>
             </div>
 
@@ -365,14 +575,14 @@ const Vault: React.FC = () => {
                     </tr>
                   </thead>
                   <tbody className="text-sm">
-                    {paginatedStock.length === 0 ? (
+                    {vaultItems.length === 0 ? (
                       <tr>
                         <td colSpan={7} className="py-8 text-center text-slate-500 dark:text-slate-400">
-                          No items found in active stock.
+                          {isFetching ? 'Loading items...' : 'No items found in active stock.'}
                         </td>
                       </tr>
                     ) : (
-                      paginatedStock.map((item) => {
+                      vaultItems.map((item) => {
                         const sw = Number(item.stone_weight) || 0;
                         const gw = Number(item.weight) || 0;
                         const nw = Math.max(0, gw - sw);
@@ -436,6 +646,7 @@ const Vault: React.FC = () => {
                                             message: `Are you sure you want to delete barcode ${item.barcode}?`,
                                             onConfirm: async () => {
                                               await deleteItem(item.id);
+                                              fetchVaultData(); // Refresh list after deleting
                                               setDialogConfig(prev => ({ ...prev, isOpen: false }));
                                             }
                                           });
@@ -462,12 +673,12 @@ const Vault: React.FC = () => {
               {totalPages > 1 && (
                 <div className="flex items-center justify-between mt-4 px-2">
                   <div className="text-sm text-slate-500 dark:text-slate-400 hidden sm:block">
-                    Showing {(currentPage - 1) * ITEMS_PER_PAGE + 1} to {Math.min(currentPage * ITEMS_PER_PAGE, filteredStock.length)} of {filteredStock.length} items
+                    Showing {(currentPage - 1) * ITEMS_PER_PAGE + 1} to {Math.min(currentPage * ITEMS_PER_PAGE, totalItems)} of {totalItems} items
                   </div>
                   <div className="flex gap-2 w-full sm:w-auto justify-between sm:justify-end">
                     <button
                       onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                      disabled={currentPage === 1}
+                      disabled={currentPage === 1 || isFetching}
                       className="px-3 py-1 rounded-lg border border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-400 disabled:opacity-50 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
                     >
                       Previous
@@ -477,7 +688,7 @@ const Vault: React.FC = () => {
                     </div>
                     <button
                       onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                      disabled={currentPage === totalPages}
+                      disabled={currentPage === totalPages || isFetching}
                       className="px-3 py-1 rounded-lg border border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-400 disabled:opacity-50 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
                     >
                       Next
@@ -581,12 +792,12 @@ const Vault: React.FC = () => {
                             </button>
                             <button
                               onClick={() => {
-                                if (items.some(i => i.type === t.name)) {
+                                if (vaultItems.some(i => i.type === t.name)) {
                                   setDialogConfig({
                                     isOpen: true,
                                     type: 'alert',
                                     title: 'Cannot Delete',
-                                    message: `Cannot delete '${t.name}' because it is currently used by items in stock or sales.`
+                                    message: `Cannot delete '${t.name}' because it is currently used by items in active stock.`
                                   });
                                   return;
                                 }
@@ -739,12 +950,12 @@ const Vault: React.FC = () => {
                             </button>
                             <button
                               onClick={() => {
-                                if (items.some(i => i.model === d.name)) {
+                                if (vaultItems.some(i => i.model === d.name)) {
                                   setDialogConfig({
                                     isOpen: true,
                                     type: 'alert',
                                     title: 'Cannot Delete',
-                                    message: `Cannot delete '${d.name}' because it is currently used by items in stock or sales.`
+                                    message: `Cannot delete '${d.name}' because it is currently used by items in active stock.`
                                   });
                                   return;
                                 }
@@ -889,6 +1100,7 @@ const Vault: React.FC = () => {
                     });
                     if (res.success) {
                       setIsEditItemModalOpen(false);
+                      fetchVaultData(); // Refresh list after edit
                     }
                   }}
                   className="w-full bg-gold-500 hover:bg-gold-400 text-slate-950 font-bold py-3 px-4 rounded-xl transition-all shadow-[0_0_15px_rgba(212,175,55,0.3)] text-sm flex justify-center items-center gap-2"
