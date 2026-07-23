@@ -7,7 +7,7 @@ import Dialog from '../components/Dialog';
 import { useAuth } from '../contexts/AuthContext';
 
 const POS: React.FC = () => {
-  const { hasPermission } = useAuth();
+  const { hasPermission, user } = useAuth();
   const { items, buyers, sales, payments, metalReceipts, processBulkSale, returnItems, addBuyer, editBuyer, deleteBuyer, addPayment, editPayment, deletePayment, addMetalReceipt, editMetalReceipt, deleteMetalReceipt, setPrintInvoiceData, setPrintItem, setPrintStatementData } = useInventory();
   const [selectedBuyer, setSelectedBuyer] = useState('');
   const [barcode, setBarcode] = useState('');
@@ -697,7 +697,7 @@ const POS: React.FC = () => {
                   </div>
                 ))}
                 <div className="flex justify-between items-center pt-2 border-t border-slate-200 dark:border-slate-800">
-                  <span className="text-slate-600 dark:text-slate-400 font-bold text-xl">Total Making Charge (AED)</span>
+                  <span className="text-slate-600 dark:text-slate-400 font-bold text-xl">Total Making Charge ({user?.shopCurrency || 'AED'})</span>
                 <input
                   type="number"
                   value={totalMakingCharge}
@@ -797,7 +797,7 @@ const POS: React.FC = () => {
                     <th className="py-4 px-4 font-bold">Account (Buyer)</th>
                     <th className="py-4 px-4 font-bold">Type</th>
                     <th className="py-4 px-4 font-bold">Description / Notes</th>
-                    <th className="py-4 px-4 font-bold text-right">Amount (AED)</th>
+                    <th className="py-4 px-4 font-bold text-right">Amount ({user?.shopCurrency || 'AED'})</th>
                     <th className="py-4 px-4 font-bold text-center">Actions</th>
                   </tr>
                 </thead>
@@ -1284,7 +1284,7 @@ const POS: React.FC = () => {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Amount (AED)</label>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Amount ({user?.shopCurrency || 'AED'})</label>
                   <input
                     type="number"
                     required

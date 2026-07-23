@@ -16,7 +16,9 @@ const Sidebar: React.FC = () => {
     }
   }, [user]);
 
+  const activeBranchName = activeBranchId && branches.length > 0 ? branches.find(b => b.id === activeBranchId)?.name : null;
   const isRetailBranch = activeBranchId && branches.length > 0 && !branches.find(b => b.id === activeBranchId)?.isMain;
+  const displayName = activeBranchName || user?.shopName;
 
   let links: any[] = [];
   
@@ -39,8 +41,8 @@ const Sidebar: React.FC = () => {
         <div className="h-10 w-10 bg-gradient-to-br from-[#C28C46] to-[#8C622C] rounded-xl flex items-center justify-center shadow-lg shadow-[#C28C46]/20 shrink-0">
           <Diamond className="text-white w-6 h-6" />
         </div>
-        <h1 className="text-lg font-extrabold text-slate-900 dark:text-white tracking-wider truncate" title={user?.shopName || 'RIANJEWEL'}>
-          {user?.shopName ? user.shopName.toUpperCase() : (
+        <h1 className="text-lg font-extrabold text-slate-900 dark:text-white tracking-wider truncate" title={displayName || 'RIANJEWEL'}>
+          {displayName ? displayName.toUpperCase() : (
             <>RIAN<span className="text-[#C28C46]">JEWEL</span></>
           )}
         </h1>

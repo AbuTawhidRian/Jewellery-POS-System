@@ -1,11 +1,85 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { Users, CreditCard, Plus, Edit2, Trash2, ShieldAlert, Building2, X, Lock, Building } from 'lucide-react';
+import { Users, CreditCard, Plus, Edit2, Trash2, ShieldAlert, Building2, X, Lock, Building, Search, ChevronDown } from 'lucide-react';
 import Dialog from '../components/Dialog';
 import api from '../lib/api';
 import toast from 'react-hot-toast';
 import { BranchesTab } from '../components/settings/BranchesTab';
+
+const CURRENCIES = [
+  { value: "AED", label: "AED (UAE Dirham)" },
+  { value: "USD", label: "USD (US Dollar)" },
+  { value: "EUR", label: "EUR (Euro)" },
+  { value: "GBP", label: "GBP (British Pound)" },
+  { value: "INR", label: "INR (Indian Rupee)" },
+  { value: "BDT", label: "BDT (Bangladeshi Taka)" },
+  { value: "AMD", label: "AMD (Armenian Dram)" },
+];
+
+const CurrencySelect = ({ value, onChange }: { value: string, onChange: (val: string) => void }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const filtered = CURRENCIES.filter(c => c.label.toLowerCase().includes(searchTerm.toLowerCase()));
+  const selectedLabel = CURRENCIES.find(c => c.value === value)?.label || value;
+
+  return (
+    <div className="relative" ref={dropdownRef}>
+      <div 
+        className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-4 py-3 text-slate-900 dark:text-white cursor-pointer flex justify-between items-center focus:outline-none focus:border-gold-500"
+        onClick={() => { setIsOpen(!isOpen); setSearchTerm(''); }}
+      >
+        <span>{selectedLabel || 'Select Currency'}</span>
+        <ChevronDown className="w-5 h-5 text-slate-400" />
+      </div>
+      
+      {isOpen && (
+        <div className="absolute z-10 w-full mt-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg shadow-xl overflow-hidden">
+          <div className="p-2 border-b border-slate-200 dark:border-slate-800 flex items-center gap-2">
+            <Search className="w-4 h-4 text-slate-400 ml-2" />
+            <input 
+              type="text" 
+              autoFocus
+              className="w-full p-2 bg-transparent outline-none dark:text-white text-sm"
+              placeholder="Search currency..." 
+              value={searchTerm} 
+              onChange={e => setSearchTerm(e.target.value)} 
+            />
+          </div>
+          <div className="max-h-48 overflow-y-auto">
+            {filtered.map(c => (
+              <div 
+                key={c.value} 
+                className={`px-4 py-2.5 text-sm cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 dark:text-slate-200 transition-colors ${c.value === value ? 'bg-gold-50 dark:bg-gold-500/10 text-gold-600 dark:text-gold-400 font-medium' : ''}`}
+                onClick={() => {
+                  onChange(c.value);
+                  setIsOpen(false);
+                }}
+              >
+                {c.label}
+              </div>
+            ))}
+            {filtered.length === 0 && (
+              <div className="p-4 text-center text-sm text-slate-500">No currency found</div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
 
 interface ShopUser {
   id: number;
@@ -343,94 +417,123 @@ const Settings: React.FC = () => {
           {loadingShop ? (
             <p className="text-slate-600 dark:text-slate-400">Loading company information...</p>
           ) : (
-            <form onSubmit={handleUpdateShopInfo} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">Company Logo</label>
-                <div className="flex items-center gap-4">
-                  {shopInfo.logoUrl && !logoFile ? (
-                    <img src={shopInfo.logoUrl} alt="Shop Logo" className="w-16 h-16 object-contain border border-slate-200 dark:border-slate-800 rounded-lg p-1 bg-white" onError={(e) => e.currentTarget.style.display = 'none'} />
-                  ) : logoFile ? (
-                    <img src={URL.createObjectURL(logoFile)} alt="New Logo" className="w-16 h-16 object-contain border border-slate-200 dark:border-slate-800 rounded-lg p-1 bg-white" />
-                  ) : (
-                    <div className="w-16 h-16 flex items-center justify-center border border-slate-200 dark:border-slate-800 rounded-lg bg-slate-50 dark:bg-slate-900 text-slate-400">
-                      No Logo
+            <form onSubmit={handleUpdateShopInfo} className="space-y-6">
+              
+              {/* Branding & Identity */}
+              <div className="bg-slate-50 dark:bg-slate-800/30 p-5 rounded-xl border border-slate-100 dark:border-slate-800/50">
+                <h4 className="text-xs font-bold text-slate-500 dark:text-slate-400 mb-4 uppercase tracking-wider flex items-center gap-2">
+                  <Building2 className="w-4 h-4 text-gold-500" /> Branding & Identity
+                </h4>
+                
+                <div className="space-y-5">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Company Logo</label>
+                    <div className="flex items-center gap-4">
+                      <div className="relative group">
+                        {shopInfo.logoUrl && !logoFile ? (
+                          <img src={shopInfo.logoUrl} alt="Shop Logo" className="w-20 h-20 object-contain border-2 border-slate-200 dark:border-slate-700 rounded-xl p-2 bg-white dark:bg-slate-900 shadow-sm" onError={(e) => e.currentTarget.style.display = 'none'} />
+                        ) : logoFile ? (
+                          <img src={URL.createObjectURL(logoFile)} alt="New Logo" className="w-20 h-20 object-contain border-2 border-slate-200 dark:border-slate-700 rounded-xl p-2 bg-white dark:bg-slate-900 shadow-sm" />
+                        ) : (
+                          <div className="w-20 h-20 flex items-center justify-center border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-xl bg-slate-100 dark:bg-slate-900/50 text-slate-400 text-xs text-center p-2">
+                            No Logo
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex flex-col gap-2 flex-1">
+                        <label className="cursor-pointer inline-flex items-center justify-center px-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors shadow-sm self-start">
+                          <span>Choose new image</span>
+                          <input 
+                            type="file" 
+                            accept="image/*" 
+                            className="hidden"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) {
+                                if (file.size > 2 * 1024 * 1024) {
+                                  showNotification('error', 'Image size must be less than 2MB');
+                                  e.target.value = ''; // Reset input
+                                  return;
+                                }
+                                setLogoFile(file);
+                              }
+                            }} 
+                          />
+                        </label>
+                        {(shopInfo.logoUrl || logoFile) && (
+                          <button type="button" onClick={logoFile ? () => setLogoFile(null) : handleRemoveLogo} disabled={savingShop} className="text-xs text-red-500 hover:text-red-600 font-medium self-start px-1">
+                            {logoFile ? 'Cancel selection' : 'Remove current logo'}
+                          </button>
+                        )}
+                      </div>
                     </div>
-                  )}
-                  <div className="flex flex-col gap-2">
-                    <input 
-                      type="file" 
-                      accept="image/*" 
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file) {
-                          if (file.size > 2 * 1024 * 1024) {
-                            showNotification('error', 'Image size must be less than 2MB');
-                            e.target.value = ''; // Reset input
-                            return;
-                          }
-                          setLogoFile(file);
-                        }
-                      }} 
-                      className="text-sm text-slate-600 dark:text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-gold-500/10 file:text-gold-500 hover:file:bg-gold-500/20" 
-                    />
-                    {(shopInfo.logoUrl || logoFile) && (
-                      <button type="button" onClick={logoFile ? () => setLogoFile(null) : handleRemoveLogo} disabled={savingShop} className="text-sm text-red-500 hover:text-red-600 font-medium self-start">
-                        {logoFile ? 'Cancel' : 'Remove Logo'}
-                      </button>
-                    )}
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Company / Barcode Print Name</label>
+                      <input required list="branch-names" type="text" value={shopInfo.name} onChange={(e) => setShopInfo({...shopInfo, name: e.target.value})} className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-lg px-4 py-2.5 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gold-500/50 focus:border-gold-500 transition-shadow" placeholder="Select or type name" />
+                      <datalist id="branch-names">
+                        {branches.map(b => (
+                          <option key={b.id} value={b.name} />
+                        ))}
+                      </datalist>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Company Slogan</label>
+                      <input type="text" value={shopInfo.slogan} onChange={(e) => setShopInfo({...shopInfo, slogan: e.target.value})} className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-lg px-4 py-2.5 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gold-500/50 focus:border-gold-500 transition-shadow" placeholder="e.g. Wholesale & Retail Trading" />
+                    </div>
                   </div>
                 </div>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">Company Name</label>
-                <input required type="text" value={shopInfo.name} onChange={(e) => setShopInfo({...shopInfo, name: e.target.value})} className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-4 py-3 text-slate-900 dark:text-white focus:outline-none focus:border-gold-500" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">Company Slogan / Subtitle</label>
-                <input type="text" value={shopInfo.slogan} onChange={(e) => setShopInfo({...shopInfo, slogan: e.target.value})} className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-4 py-3 text-slate-900 dark:text-white focus:outline-none focus:border-gold-500" placeholder="e.g. Wholesale & Retail Trading" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">TRN Number</label>
-                <input type="text" value={shopInfo.trn} onChange={(e) => setShopInfo({...shopInfo, trn: e.target.value})} className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-4 py-3 text-slate-900 dark:text-white focus:outline-none focus:border-gold-500" placeholder="e.g. 100000000000003" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">Currency</label>
-                <select value={shopInfo.currency} onChange={(e) => setShopInfo({...shopInfo, currency: e.target.value})} className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-4 py-3 text-slate-900 dark:text-white focus:outline-none focus:border-gold-500">
-                  <option value="AED">AED (UAE Dirham)</option>
-                  <option value="USD">USD (US Dollar)</option>
-                  <option value="EUR">EUR (Euro)</option>
-                  <option value="GBP">GBP (British Pound)</option>
-                  <option value="INR">INR (Indian Rupee)</option>
-                  <option value="BDT">BDT (Bangladeshi Taka)</option>
-                  <option value="PKR">PKR (Pakistani Rupee)</option>
-                  <option value="SAR">SAR (Saudi Riyal)</option>
-                  <option value="QAR">QAR (Qatari Riyal)</option>
-                  <option value="OMR">OMR (Omani Rial)</option>
-                  <option value="KWD">KWD (Kuwaiti Dinar)</option>
-                  <option value="BHD">BHD (Bahraini Dinar)</option>
-                  <option value="MYR">MYR (Malaysian Ringgit)</option>
-                  <option value="SGD">SGD (Singapore Dollar)</option>
-                  <option value="AUD">AUD (Australian Dollar)</option>
-                  <option value="CAD">CAD (Canadian Dollar)</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">Address</label>
-                <textarea rows={3} value={shopInfo.address} onChange={(e) => setShopInfo({...shopInfo, address: e.target.value})} className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-4 py-3 text-slate-900 dark:text-white focus:outline-none focus:border-gold-500" placeholder="e.g. Shop 12, Gold Souq, Dubai" />
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">Email</label>
-                  <input type="email" value={shopInfo.email} onChange={(e) => setShopInfo({...shopInfo, email: e.target.value})} className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-4 py-3 text-slate-900 dark:text-white focus:outline-none focus:border-gold-500" placeholder="e.g. contact@myjewellery.com" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">Phone Number</label>
-                  <input type="tel" value={shopInfo.phone} onChange={(e) => setShopInfo({...shopInfo, phone: e.target.value})} className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-4 py-3 text-slate-900 dark:text-white focus:outline-none focus:border-gold-500" placeholder="e.g. +971 50 123 4567" />
+
+              {/* Business Settings */}
+              <div className="bg-slate-50 dark:bg-slate-800/30 p-5 rounded-xl border border-slate-100 dark:border-slate-800/50">
+                <h4 className="text-xs font-bold text-slate-500 dark:text-slate-400 mb-4 uppercase tracking-wider flex items-center gap-2">
+                  <CreditCard className="w-4 h-4 text-gold-500" /> Business Settings
+                </h4>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">TRN / Tax Number</label>
+                    <input type="text" value={shopInfo.trn} onChange={(e) => setShopInfo({...shopInfo, trn: e.target.value})} className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-lg px-4 py-2.5 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gold-500/50 focus:border-gold-500 transition-shadow font-mono text-sm" placeholder="e.g. 100000000000003" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Base Currency</label>
+                    <CurrencySelect 
+                      value={shopInfo.currency} 
+                      onChange={(val) => setShopInfo({...shopInfo, currency: val})} 
+                    />
+                  </div>
                 </div>
               </div>
-              <div className="pt-4 mt-6 border-t border-slate-200 dark:border-slate-800">
-                <button type="submit" disabled={savingShop} className="bg-gold-500 hover:bg-gold-600 disabled:opacity-50 text-slate-950 px-6 py-3 rounded-lg font-bold transition-colors w-full sm:w-auto">
-                  {savingShop ? 'Saving...' : 'Save Changes'}
+
+              {/* Contact Information */}
+              <div className="bg-slate-50 dark:bg-slate-800/30 p-5 rounded-xl border border-slate-100 dark:border-slate-800/50">
+                <h4 className="text-xs font-bold text-slate-500 dark:text-slate-400 mb-4 uppercase tracking-wider flex items-center gap-2">
+                  <Users className="w-4 h-4 text-gold-500" /> Contact Information
+                </h4>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Email Address</label>
+                    <input type="email" value={shopInfo.email} onChange={(e) => setShopInfo({...shopInfo, email: e.target.value})} className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-lg px-4 py-2.5 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gold-500/50 focus:border-gold-500 transition-shadow" placeholder="contact@myjewellery.com" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Phone Number</label>
+                    <input type="tel" value={shopInfo.phone} onChange={(e) => setShopInfo({...shopInfo, phone: e.target.value})} className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-lg px-4 py-2.5 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gold-500/50 focus:border-gold-500 transition-shadow" placeholder="+971 50 123 4567" />
+                  </div>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Full Address</label>
+                  <textarea rows={3} value={shopInfo.address} onChange={(e) => setShopInfo({...shopInfo, address: e.target.value})} className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-lg px-4 py-3 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gold-500/50 focus:border-gold-500 transition-shadow resize-none" placeholder="Shop 12, Gold Souq, Dubai, UAE" />
+                </div>
+              </div>
+
+              <div className="flex justify-end pt-2">
+                <button type="submit" disabled={savingShop} className="bg-gradient-to-r from-gold-500 to-gold-600 hover:from-gold-600 hover:to-gold-700 disabled:opacity-70 text-slate-950 px-8 py-3 rounded-xl font-bold transition-all shadow-lg shadow-gold-500/20 w-full sm:w-auto">
+                  {savingShop ? 'Saving Changes...' : 'Save Company Profile'}
                 </button>
               </div>
             </form>

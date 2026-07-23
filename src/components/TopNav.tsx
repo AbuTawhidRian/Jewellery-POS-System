@@ -102,8 +102,12 @@ const TopNav: React.FC = () => {
           <div className="h-8 w-8 bg-gradient-to-br from-[#C28C46] to-[#8C622C] rounded-lg flex items-center justify-center">
             <Diamond className="text-white w-5 h-5" />
           </div>
-          <h1 className="text-lg font-extrabold text-slate-900 dark:text-white tracking-wider">
-            RIAN<span className="text-[#C28C46]">JEWEL</span>
+          <h1 className="text-lg font-extrabold text-slate-900 dark:text-white tracking-wider truncate max-w-[150px]">
+            {activeBranchId && branches.length > 0 ? branches.find(b => b.id === activeBranchId)?.name?.toUpperCase() : (
+              user?.shopName ? user.shopName.toUpperCase() : (
+                <>RIAN<span className="text-[#C28C46]">JEWEL</span></>
+              )
+            )}
           </h1>
         </div>
       </div>

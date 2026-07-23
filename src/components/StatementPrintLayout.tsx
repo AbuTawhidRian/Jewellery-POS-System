@@ -274,7 +274,7 @@ const StatementPrintLayout: React.FC = () => {
                       {isDue ? 'Final Cash Balance Due:' : 'Final Cash Balance:'}
                     </span>
                     <span className={`text-xl font-bold ${isDue ? 'text-red-600' : 'text-emerald-600'}`}>
-                      {bal > 0 ? bal.toFixed(2) + ' AED' : bal < 0 ? `(${Math.abs(bal).toFixed(2)}) AED` : '0.00 AED'}
+                      {bal > 0 ? bal.toFixed(2) + ' ' + (user?.shopCurrency || 'AED') : bal < 0 ? `(${Math.abs(bal).toFixed(2)}) ${user?.shopCurrency || 'AED'}` : '0.00 ' + (user?.shopCurrency || 'AED')}
                     </span>
                   </div>
                 );
