@@ -14,7 +14,7 @@ export const WaitingForApproval: React.FC = () => {
   // Use refs for game state to avoid React render cycle latency in the game loop
   const gameRef = useRef<HTMLDivElement>(null);
   const playerRef = useRef({ y: 0, velocity: 0 });
-  const obstacleRef = useRef({ x: 400, width: 30, height: 40, passed: false });
+  const obstacleRef = useRef({ x: 400, width: 30, gapBottom: 60, gapSize: 100, passed: false });
   const requestRef = useRef<number>(0);
   const scoreRef = useRef(0);
   const collectibleRef = useRef({ x: 500, y: -100, active: false });
@@ -22,6 +22,7 @@ export const WaitingForApproval: React.FC = () => {
   // UI state for rendering
   const [playerY, setPlayerY] = useState(0);
   const [obstacleX, setObstacleX] = useState(400);
+  const [obstacleGapBottom, setObstacleGapBottom] = useState(60);
   const [collectibleX, setCollectibleX] = useState(-100);
   const [collectibleY, setCollectibleY] = useState(0);
   const [collectibleActive, setCollectibleActive] = useState(false);
@@ -32,7 +33,7 @@ export const WaitingForApproval: React.FC = () => {
       if (gameOver) {
         // Reset game
         playerRef.current = { y: 0, velocity: 0 };
-        obstacleRef.current = { x: 400, width: 30, height: 40, passed: false };
+        obstacleRef.current = { x: 400, width: 30, gapBottom: 60, gapSize: 100, passed: false };
         collectibleRef.current = { x: 500, y: -100, active: false };
         scoreRef.current = 0;
         setScore(0);
@@ -53,6 +54,12 @@ export const WaitingForApproval: React.FC = () => {
     playerRef.current.velocity += GRAVITY;
     playerRef.current.y += playerRef.current.velocity;
     
+    // Ceiling collision (Container is 256px tall, player is 40px)
+    if (playerRef.current.y < -216) {
+      playerRef.current.y = -216;
+      playerRef.current.velocity = Math.max(0, playerRef.current.velocity);
+    }
+    
     // Floor collision
     if (playerRef.current.y > 0) {
       playerRef.current.y = 0;
@@ -65,8 +72,8 @@ export const WaitingForApproval: React.FC = () => {
     if (obstacleRef.current.x < -obstacleRef.current.width) {
       obstacleRef.current.x = gameRef.current.clientWidth;
       obstacleRef.current.passed = false;
-      // Vary obstacle height
-      obstacleRef.current.height = 30 + Math.random() * 60;
+      // Vary obstacle gap position (from 30px to 126px from bottom)
+      obstacleRef.current.gapBottom = 30 + Math.random() * 96;
       
       // 40% chance to spawn a collectible diamond
       if (!collectibleRef.current.active && Math.random() > 0.6) {
@@ -95,18 +102,36 @@ export const WaitingForApproval: React.FC = () => {
     // Player is roughly at x=50, width=40, height=40
     // Y is relative to bottom. Ground is 0.
     const playerBox = { left: 50, right: 90, bottom: playerRef.current.y, top: playerRef.current.y - 40 };
-    const obsBox = { 
+    
+    // Bottom obstacle
+    const obsBoxBottom = { 
       left: obstacleRef.current.x, 
       right: obstacleRef.current.x + obstacleRef.current.width, 
       bottom: 0, 
-      top: -obstacleRef.current.height 
+      top: -obstacleRef.current.gapBottom 
+    };
+    
+    // Top obstacle
+    const obsBoxTop = { 
+      left: obstacleRef.current.x, 
+      right: obstacleRef.current.x + obstacleRef.current.width, 
+      bottom: -(obstacleRef.current.gapBottom + obstacleRef.current.gapSize), 
+      top: -256 
     };
 
-    if (
-      playerBox.right > obsBox.left &&
-      playerBox.left < obsBox.right &&
-      playerBox.bottom > obsBox.top
-    ) {
+    const isHitBottom = (
+      playerBox.right > obsBoxBottom.left &&
+      playerBox.left < obsBoxBottom.right &&
+      playerBox.bottom > obsBoxBottom.top
+    );
+    
+    const isHitTop = (
+      playerBox.right > obsBoxTop.left &&
+      playerBox.left < obsBoxTop.right &&
+      playerBox.top < obsBoxTop.bottom
+    );
+
+    if (isHitBottom || isHitTop) {
       // Game Over
       setGameOver(true);
       setIsPlaying(false);
@@ -142,6 +167,7 @@ export const WaitingForApproval: React.FC = () => {
     // Trigger re-render for UI
     setPlayerY(playerRef.current.y);
     setObstacleX(obstacleRef.current.x);
+    setObstacleGapBottom(obstacleRef.current.gapBottom);
     setCollectibleX(collectibleRef.current.x);
     setCollectibleY(collectibleRef.current.y);
     setCollectibleActive(collectibleRef.current.active);
@@ -217,17 +243,31 @@ export const WaitingForApproval: React.FC = () => {
             <img src="/logo.jpg" alt="Al Sema Gold Logo" className="w-full h-full object-cover" />
           </div>
 
-          {/* Obstacle */}
+          {/* Obstacle Bottom */}
           {(isPlaying || gameOver) && (
             <div 
               className="absolute bottom-0 rounded-t-md border-x-2 border-t-2 border-gold-600 dark:border-gold-700 bg-gradient-to-t from-gold-600 to-gold-400 shadow-[inset_0_0_10px_rgba(255,255,255,0.5)]"
               style={{ 
                 left: `${obstacleX}px`, 
                 width: `${obstacleRef.current.width}px`,
-                height: `${obstacleRef.current.height}px` 
+                height: `${obstacleGapBottom}px` 
               }}
             >
               <div className="absolute top-2 left-1/2 -translate-x-1/2 w-4 h-1 bg-gold-700/50 rounded-full" />
+            </div>
+          )}
+          
+          {/* Obstacle Top */}
+          {(isPlaying || gameOver) && (
+            <div 
+              className="absolute top-0 rounded-b-md border-x-2 border-b-2 border-gold-600 dark:border-gold-700 bg-gradient-to-b from-gold-600 to-gold-400 shadow-[inset_0_0_10px_rgba(255,255,255,0.5)] z-10"
+              style={{ 
+                left: `${obstacleX}px`, 
+                width: `${obstacleRef.current.width}px`,
+                height: `${256 - obstacleGapBottom - 100}px` 
+              }}
+            >
+              <div className="absolute bottom-2 left-1/2 -translate-x-1/2 w-4 h-1 bg-gold-700/50 rounded-full" />
             </div>
           )}
 

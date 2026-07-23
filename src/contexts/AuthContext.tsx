@@ -50,8 +50,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(JSON.parse(storedUser));
         
         // Fetch fresh user data to keep permissions up to date
+        const activeBranchId = localStorage.getItem('activeBranchId');
+        const headers: HeadersInit = { 'Authorization': `Bearer ${storedToken}` };
+        if (activeBranchId) {
+          headers['X-Branch-ID'] = activeBranchId;
+        }
+
         fetch('/api/auth/me', {
-          headers: { 'Authorization': `Bearer ${storedToken}` }
+          headers
         })
         .then(res => {
           if (res.ok) return res.json();
