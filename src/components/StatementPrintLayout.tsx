@@ -1,7 +1,7 @@
 import React from 'react';
 import { useInventory } from '../store/InventoryContext';
 import { format } from 'date-fns';
-import { Diamond } from 'lucide-react';
+
 import { useAuth } from '../contexts/AuthContext';
 import clsx from 'clsx';
 

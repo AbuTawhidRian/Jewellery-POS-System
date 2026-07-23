@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Globe, ChevronDown, User, LogOut, Diamond, Sun, Moon, Store } from 'lucide-react';
+import { Globe, ChevronDown, User, LogOut, Sun, Moon, Store } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { Link } from 'react-router-dom';

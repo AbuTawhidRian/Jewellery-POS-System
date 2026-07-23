@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Lock, Barcode, BookOpen, Diamond, Settings as SettingsIcon, ShieldCheck, ArrowRightLeft } from 'lucide-react';
+import { LayoutDashboard, Lock, Barcode, BookOpen, Settings as SettingsIcon, ShieldCheck, ArrowRightLeft } from 'lucide-react';
 import clsx from 'clsx';
 import { useAuth } from '../contexts/AuthContext';
 
