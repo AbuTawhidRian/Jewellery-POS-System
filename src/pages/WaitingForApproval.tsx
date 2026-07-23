@@ -15,7 +15,7 @@ export const WaitingForApproval: React.FC = () => {
   const gameRef = useRef<HTMLDivElement>(null);
   const playerRef = useRef({ y: 0, velocity: 0 });
   const obstacleRef = useRef({ x: 400, width: 30, height: 40, passed: false });
-  const requestRef = useRef<number>();
+  const requestRef = useRef<number>(0);
   const scoreRef = useRef(0);
 
   // UI state for rendering
