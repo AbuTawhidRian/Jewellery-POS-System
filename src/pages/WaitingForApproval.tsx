@@ -17,10 +17,15 @@ export const WaitingForApproval: React.FC = () => {
   const obstacleRef = useRef({ x: 400, width: 30, height: 40, passed: false });
   const requestRef = useRef<number>(0);
   const scoreRef = useRef(0);
+  const collectibleRef = useRef({ x: 500, y: -100, active: false });
 
   // UI state for rendering
   const [playerY, setPlayerY] = useState(0);
   const [obstacleX, setObstacleX] = useState(400);
+  const [collectibleX, setCollectibleX] = useState(-100);
+  const [collectibleY, setCollectibleY] = useState(0);
+  const [collectibleActive, setCollectibleActive] = useState(false);
+  const [showBonus, setShowBonus] = useState(false);
 
   const handleJump = () => {
     if (!isPlaying) {
@@ -28,6 +33,7 @@ export const WaitingForApproval: React.FC = () => {
         // Reset game
         playerRef.current = { y: 0, velocity: 0 };
         obstacleRef.current = { x: 400, width: 30, height: 40, passed: false };
+        collectibleRef.current = { x: 500, y: -100, active: false };
         scoreRef.current = 0;
         setScore(0);
         setGameOver(false);
@@ -35,10 +41,8 @@ export const WaitingForApproval: React.FC = () => {
       setIsPlaying(true);
       playerRef.current.velocity = JUMP_VELOCITY;
     } else {
-      // Only jump if on ground
-      if (playerRef.current.y >= 0) {
-        playerRef.current.velocity = JUMP_VELOCITY;
-      }
+      // Allow jumping at any time (Flappy Bird style)
+      playerRef.current.velocity = JUMP_VELOCITY;
     }
   };
 
@@ -62,7 +66,22 @@ export const WaitingForApproval: React.FC = () => {
       obstacleRef.current.x = gameRef.current.clientWidth;
       obstacleRef.current.passed = false;
       // Vary obstacle height
-      obstacleRef.current.height = 30 + Math.random() * 40;
+      obstacleRef.current.height = 30 + Math.random() * 60;
+      
+      // 40% chance to spawn a collectible diamond
+      if (!collectibleRef.current.active && Math.random() > 0.6) {
+        collectibleRef.current.active = true;
+        collectibleRef.current.x = gameRef.current.clientWidth + 150; // behind obstacle
+        collectibleRef.current.y = -60 - Math.random() * 100; // random height (negative is up)
+      }
+    }
+
+    // Update collectible
+    if (collectibleRef.current.active) {
+      collectibleRef.current.x -= OBSTACLE_SPEED + (scoreRef.current * 0.2);
+      if (collectibleRef.current.x < -30) {
+        collectibleRef.current.active = false;
+      }
     }
 
     // Score counting
@@ -95,9 +114,37 @@ export const WaitingForApproval: React.FC = () => {
       return; // Stop loop
     }
 
+    // Collectible collision
+    if (collectibleRef.current.active) {
+      const colBox = { 
+        left: collectibleRef.current.x, 
+        right: collectibleRef.current.x + 24, 
+        bottom: collectibleRef.current.y + 24, 
+        top: collectibleRef.current.y 
+      };
+      
+      // Check intersection
+      if (
+        playerBox.right > colBox.left &&
+        playerBox.left < colBox.right &&
+        playerBox.bottom > colBox.top &&
+        playerBox.top < colBox.bottom
+      ) {
+        // Collect!
+        collectibleRef.current.active = false;
+        scoreRef.current += 5;
+        setScore(scoreRef.current);
+        setShowBonus(true);
+        setTimeout(() => setShowBonus(false), 1000);
+      }
+    }
+
     // Trigger re-render for UI
     setPlayerY(playerRef.current.y);
     setObstacleX(obstacleRef.current.x);
+    setCollectibleX(collectibleRef.current.x);
+    setCollectibleY(collectibleRef.current.y);
+    setCollectibleActive(collectibleRef.current.active);
 
     requestRef.current = requestAnimationFrame(updateGame);
   };
@@ -160,26 +207,48 @@ export const WaitingForApproval: React.FC = () => {
         >
           {/* Player */}
           <div 
-            className="absolute left-[50px] w-10 h-10 bg-gradient-to-br from-gold-400 to-gold-600 rounded-lg flex items-center justify-center shadow-lg shadow-gold-500/30 z-10"
+            className="absolute left-[50px] w-10 h-10 rounded-lg flex items-center justify-center shadow-lg shadow-gold-500/30 z-10 overflow-hidden bg-white"
             style={{ 
               bottom: `${Math.max(0, -playerY)}px`,
               transform: `rotate(${playerY < 0 ? '10deg' : '0deg'})`,
               transition: 'transform 0.1s'
             }}
           >
-            <Diamond className="w-6 h-6 text-white" />
+            <img src="/logo.jpg" alt="Al Sema Gold Logo" className="w-full h-full object-cover" />
           </div>
 
           {/* Obstacle */}
           {(isPlaying || gameOver) && (
             <div 
-              className="absolute bottom-0 bg-slate-700 dark:bg-slate-800 rounded-t-md border-2 border-slate-600 dark:border-slate-700"
+              className="absolute bottom-0 rounded-t-md border-x-2 border-t-2 border-gold-600 dark:border-gold-700 bg-gradient-to-t from-gold-600 to-gold-400 shadow-[inset_0_0_10px_rgba(255,255,255,0.5)]"
               style={{ 
                 left: `${obstacleX}px`, 
                 width: `${obstacleRef.current.width}px`,
                 height: `${obstacleRef.current.height}px` 
               }}
-            />
+            >
+              <div className="absolute top-2 left-1/2 -translate-x-1/2 w-4 h-1 bg-gold-700/50 rounded-full" />
+            </div>
+          )}
+
+          {/* Collectible Diamond */}
+          {collectibleActive && (
+             <div 
+               className="absolute z-10 animate-bounce"
+               style={{
+                 left: `${collectibleX}px`,
+                 bottom: `${Math.max(0, -collectibleY)}px`,
+               }}
+             >
+               <Diamond className="w-8 h-8 text-cyan-400 drop-shadow-[0_0_8px_rgba(34,211,238,0.8)] fill-cyan-400/20" />
+             </div>
+          )}
+
+          {/* Bonus +5 Text */}
+          {showBonus && (
+             <div className="absolute left-[50px] bottom-[150px] text-gold-500 font-black text-3xl animate-out fade-out slide-out-to-top-12 duration-1000 z-30 drop-shadow-lg">
+               +5
+             </div>
           )}
 
           {/* Ground Line */}
@@ -217,7 +286,13 @@ export const WaitingForApproval: React.FC = () => {
         </div>
       </div>
 
-      <div className="mt-12 text-center animate-in fade-in duration-1000 delay-500">
+      <div className="mt-6 text-center text-sm text-slate-500 animate-in fade-in duration-1000 delay-400 max-w-md mx-auto">
+        <p className="font-semibold text-slate-700 dark:text-slate-300 mb-1">How to Play</p>
+        <p className="mb-1">Press the <kbd className="px-2 py-0.5 bg-slate-200 dark:bg-slate-800 rounded font-mono text-xs mx-1">Spacebar</kbd> or click the game area to jump.</p>
+        <p>You can flap multiple times in the air to avoid the obstacles!</p>
+      </div>
+
+      <div className="mt-8 text-center animate-in fade-in duration-1000 delay-500">
         <button 
           onClick={() => { localStorage.clear(); window.location.href='/login'; }} 
           className="text-slate-500 hover:text-slate-900 dark:hover:text-white font-medium flex items-center gap-2 mx-auto transition-colors"

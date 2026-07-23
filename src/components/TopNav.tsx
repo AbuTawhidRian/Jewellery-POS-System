@@ -29,9 +29,15 @@ const TopNav: React.FC = () => {
 
   useEffect(() => {
     if (user) {
-      api.get('/branches').then(res => setBranches(res.data)).catch(console.error);
+      api.get('/branches').then(res => {
+        setBranches(res.data);
+        if (!activeBranchId && res.data.length > 0) {
+          const defaultBranch = res.data.find((b: any) => b.isMain) || res.data[0];
+          switchBranch(defaultBranch.id);
+        }
+      }).catch(console.error);
     }
-  }, [user]);
+  }, [user, activeBranchId, switchBranch]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {

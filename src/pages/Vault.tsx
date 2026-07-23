@@ -13,7 +13,7 @@ const Vault: React.FC = () => {
   const [totalItems, setTotalItems] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
   const [isFetching, setIsFetching] = useState(false);
-  const ITEMS_PER_PAGE = 50;
+  const ITEMS_PER_PAGE = 7;
 
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
