@@ -246,7 +246,7 @@ app.post('/api/auth/login', authLimiter, async (req, res) => {
         });
         const mainBranchIds = mainBranches.map(b => b.id);
         const token = jsonwebtoken_1.default.sign({ id: user.id, shopId: user.shopId, accessibleBranches: user.accessibleBranches, email: user.email, role: user.role, customRole: user.customRole }, JWT_SECRET, { expiresIn: '7d' });
-        res.json({ token, user: { id: user.id, name: user.name, email: user.email, shopId: user.shopId, accessibleBranches: user.accessibleBranches, mainBranches: mainBranchIds, shopName: user.shop?.name, shopEmail: user.shop?.email, shopPhone: user.shop?.phone, shopSlogan: user.shop?.slogan, shopLogo: user.shop?.logoUrl, role: user.role, customRole: user.customRole } });
+        res.json({ token, user: { id: user.id, name: user.name, email: user.email, shopId: user.shopId, accessibleBranches: user.accessibleBranches, mainBranches: mainBranchIds, shopName: user.shop?.name, shopEmail: user.shop?.email, shopPhone: user.shop?.phone, shopSlogan: user.shop?.slogan, shopLogo: user.shop?.logoUrl, shopCurrency: user.shop?.currency, role: user.role, customRole: user.customRole } });
     }
     catch (error) {
         console.error("Login error:", error);
@@ -279,7 +279,7 @@ app.get('/api/auth/me', authenticateToken, async (req, res) => {
             return res.status(404).json({ error: 'User not found' });
         // Use the active branch from the request header
         const targetBranchId = req.user?.branchId || null;
-        res.json({ id: user.id, name: user.name, email: user.email, shopId: user.shopId, branchId: targetBranchId, shopName: user.shop?.name, shopEmail: user.shop?.email, shopPhone: user.shop?.phone, shopSlogan: user.shop?.slogan, shopLogo: user.shop?.logoUrl, role: user.role, customRole: user.customRole });
+        res.json({ id: user.id, name: user.name, email: user.email, shopId: user.shopId, branchId: targetBranchId, shopName: user.shop?.name, shopEmail: user.shop?.email, shopPhone: user.shop?.phone, shopSlogan: user.shop?.slogan, shopLogo: user.shop?.logoUrl, shopCurrency: user.shop?.currency, role: user.role, customRole: user.customRole });
     }
     catch (error) {
         res.status(500).json({ error: 'Internal Server Error' });
@@ -409,10 +409,10 @@ app.get('/api/shop', authenticateToken, requireRole(client_1.Role.OWNER), async 
 });
 app.put('/api/shop', authenticateToken, requireRole(client_1.Role.OWNER), async (req, res) => {
     try {
-        const { name, trn, address, email, phone, slogan } = req.body;
+        const { name, trn, address, email, phone, slogan, currency } = req.body;
         const shop = await prisma.shop.update({
             where: { id: req.user.shopId },
-            data: { name, trn, address, email, phone, slogan }
+            data: { name, trn, address, email, phone, slogan, currency }
         });
         res.json(shop);
     }
@@ -668,7 +668,7 @@ app.post('/api/transfers/receive', authenticateToken, requireActiveOrTrial, asyn
 });
 app.get('/api/transfers/pending/:barcode', authenticateToken, requireActiveOrTrial, async (req, res) => {
     try {
-        const { barcode } = req.params;
+        const barcode = req.params.barcode;
         const branchId = req.user.branchId;
         if (!branchId)
             return res.status(400).json({ error: 'Please select a branch first' });
@@ -1430,23 +1430,14 @@ app.post('/api/sales/void', authenticateToken, requireActiveOrTrial, requireAcce
                 });
             }
             else {
-                // Update items back to 'In Stock'
+                // We are voiding a regular sale. Delete the sale records and mark items back to 'In Stock'
+                await tx.sale.deleteMany({
+                    where: { id: { in: salesToVoid.map(s => s.id) } }
+                });
                 await tx.item.updateMany({
                     where: { id: { in: itemIds } },
                     data: { status: 'In Stock' }
                 });
-                // Create return records with negative weight and negative making charge instead of deleting
-                const returnSales = salesToVoid.filter(s => s.weight > 0).map(s => ({
-                    shopId: s.shopId,
-                    itemId: s.itemId,
-                    buyerId: s.buyerId,
-                    weight: -Math.abs(s.weight),
-                    makingCharge: -Math.abs(s.makingCharge || 0),
-                    date: new Date()
-                }));
-                if (returnSales.length > 0) {
-                    await tx.sale.createMany({ data: returnSales });
-                }
             }
             return salesToVoid.length;
         });

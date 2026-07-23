@@ -35,6 +35,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   useEffect(() => {
     // Check local storage for token and user on mount
@@ -91,10 +92,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const logout = () => {
-    setToken(null);
-    setUser(null);
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
+    setIsLoggingOut(true);
+    setTimeout(() => {
+      setToken(null);
+      setUser(null);
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      setIsLoggingOut(false);
+    }, 800);
   };
 
   const activeBranchId = localStorage.getItem('activeBranchId') || null;
@@ -130,6 +135,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   return (
     <AuthContext.Provider value={{ user, token, login, logout, isAuthenticated: !!token, hasPermission, updateUser, activeBranchId, switchBranch }}>
       {children}
+      {isLoggingOut && (
+        <div className="fixed inset-0 z-[9999] bg-white/80 dark:bg-slate-950/80 backdrop-blur-md flex items-center justify-center transition-opacity duration-500">
+          <div className="bg-white dark:bg-slate-900 p-8 rounded-3xl shadow-2xl flex flex-col items-center gap-6 border border-slate-200 dark:border-slate-800 animate-in zoom-in-95 duration-300">
+            <div className="relative">
+              <div className="w-16 h-16 rounded-full border-4 border-slate-100 dark:border-slate-800"></div>
+              <div className="w-16 h-16 rounded-full border-4 border-[#C28C46] border-t-transparent animate-spin absolute top-0 left-0"></div>
+            </div>
+            <div className="text-center">
+              <p className="text-xl font-bold text-slate-900 dark:text-white mb-1">Signing out</p>
+              <p className="text-sm text-slate-500 dark:text-slate-400">See you next time!</p>
+            </div>
+          </div>
+        </div>
+      )}
     </AuthContext.Provider>
   );
 }

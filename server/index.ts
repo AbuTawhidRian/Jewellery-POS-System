@@ -1501,25 +1501,14 @@ app.post('/api/sales/void', authenticateToken, requireActiveOrTrial, requireAcce
           data: { status: 'Sold' }
         });
       } else {
-        // Update items back to 'In Stock'
+        // We are voiding a regular sale. Delete the sale records and mark items back to 'In Stock'
+        await tx.sale.deleteMany({
+          where: { id: { in: salesToVoid.map(s => s.id) } }
+        });
         await tx.item.updateMany({
           where: { id: { in: itemIds } },
           data: { status: 'In Stock' }
         });
-
-        // Create return records with negative weight and negative making charge instead of deleting
-        const returnSales = salesToVoid.filter(s => s.weight > 0).map(s => ({
-          shopId: s.shopId,
-          itemId: s.itemId,
-          buyerId: s.buyerId,
-          weight: -Math.abs(s.weight),
-          makingCharge: -Math.abs(s.makingCharge || 0),
-          date: new Date()
-        }));
-
-        if (returnSales.length > 0) {
-          await tx.sale.createMany({ data: returnSales });
-        }
       }
 
       return salesToVoid.length;
