@@ -118,6 +118,13 @@ const authenticateToken = (req: AuthRequest, res: Response, next: NextFunction) 
         }
         user.branchId = requestedBranchId;
       }
+    } else {
+      if (user.role === 'STAFF') {
+        const isGlobalRoute = req.path === '/api/branches' || req.path.startsWith('/api/shop') || req.path === '/api/auth/me';
+        if (!isGlobalRoute) {
+          return res.status(403).json({ error: 'Branch ID is required for staff members' });
+        }
+      }
     }
     
     // Global operations that should never be blocked by read-only mode
