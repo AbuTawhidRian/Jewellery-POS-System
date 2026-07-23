@@ -68,6 +68,7 @@ export interface AuthRequest extends Request {
     role: Role | 'SUPERADMIN';
     customRole?: string | null;
     accessibleBranches?: string[];
+    isReadOnly?: boolean;
   };
   file?: any;
 }
@@ -82,6 +83,16 @@ const authenticateToken = (req: AuthRequest, res: Response, next: NextFunction) 
   jwt.verify(token, JWT_SECRET, async (err: any, user: any) => {
     if (err) return res.status(403).json({ error: 'Invalid token' });
     
+    // Ensure the user actually still exists in the database
+    try {
+      const dbUser = await prisma.user.findUnique({ where: { id: user.id }, select: { id: true, role: true } });
+      if (!dbUser) {
+        return res.status(401).json({ error: 'User no longer exists' });
+      }
+    } catch (dbErr) {
+      return res.status(500).json({ error: 'Database error while verifying user' });
+    }
+
     // Allow switching branches via header
     if (requestedBranchId && typeof requestedBranchId === 'string') {
       if (user.role === 'OWNER' || user.role === 'SUPERADMIN') {
@@ -304,7 +315,7 @@ app.get('/api/auth/me', authenticateToken, async (req: AuthRequest, res) => {
     // Use the active branch from the request header
     const targetBranchId = req.user?.branchId || null;
 
-    res.json({ id: user.id, name: user.name, email: user.email, shopId: user.shopId, branchId: targetBranchId, shopName: user.shop?.name, shopEmail: user.shop?.email, shopPhone: user.shop?.phone, shopSlogan: user.shop?.slogan, shopLogo: user.shop?.logoUrl, shopCurrency: user.shop?.currency, role: user.role, customRole: user.customRole });
+    res.json({ id: user.id, name: user.name, email: user.email, shopId: user.shopId, branchId: targetBranchId, shopName: user.shop?.name, shopEmail: user.shop?.email, shopPhone: user.shop?.phone, shopSlogan: user.shop?.slogan, shopLogo: user.shop?.logoUrl, shopCurrency: user.shop?.currency, role: user.role, customRole: user.customRole, isReadOnly: req.user?.isReadOnly });
   } catch (error) {
     res.status(500).json({ error: 'Internal Server Error' });
   }
@@ -642,29 +653,32 @@ app.post('/api/transfers', authenticateToken, requireActiveOrTrial, async (req: 
     if (fromBranchId === toBranchId) return res.status(400).json({ error: 'Cannot transfer to the same branch' });
     if (!itemIds || !Array.isArray(itemIds) || itemIds.length === 0) return res.status(400).json({ error: 'No items selected' });
 
-    const transfers = [];
-    for (const itemId of itemIds) {
-      const item = await prisma.item.findUnique({ where: { id: itemId } });
-      if (!item) continue;
-      if (item.shopId !== req.user!.shopId) continue;
-      if (item.branchId && item.branchId !== fromBranchId) continue;
+    const transfers = await prisma.$transaction(async (tx: any) => {
+      const result = [];
+      for (const itemId of itemIds) {
+        const item = await tx.item.findUnique({ where: { id: itemId } });
+        if (!item) continue;
+        if (item.shopId !== req.user!.shopId) continue;
+        if (item.branchId && item.branchId !== fromBranchId) continue;
 
-      await prisma.item.update({
-        where: { id: itemId },
-        data: { status: 'In Transit' }
-      });
+        await tx.item.update({
+          where: { id: itemId },
+          data: { status: 'In Transit' }
+        });
 
-      const transfer = await prisma.itemTransfer.create({
-        data: {
-          shopId: req.user!.shopId!,
-          itemId,
-          fromBranchId,
-          toBranchId,
-          status: 'PENDING'
-        }
-      });
-      transfers.push(transfer);
-    }
+        const transfer = await tx.itemTransfer.create({
+          data: {
+            shopId: req.user!.shopId!,
+            itemId,
+            fromBranchId,
+            toBranchId,
+            status: 'PENDING'
+          }
+        });
+        result.push(transfer);
+      }
+      return result;
+    });
 
     res.json(transfers);
   } catch (error: any) {
@@ -699,17 +713,19 @@ app.post('/api/transfers/receive', authenticateToken, requireActiveOrTrial, asyn
       return res.status(400).json({ error: 'This item was not transferred to your branch' });
     }
 
-    await prisma.itemTransfer.update({
-      where: { id: pendingTransfer.id },
-      data: { status: 'RECEIVED' }
-    });
+    await prisma.$transaction(async (tx: any) => {
+      await tx.itemTransfer.update({
+        where: { id: pendingTransfer.id },
+        data: { status: 'RECEIVED' }
+      });
 
-    await prisma.item.update({
-      where: { id: item.id },
-      data: { 
-        status: 'In Stock',
-        branchId: branchId
-      }
+      await tx.item.update({
+        where: { id: item.id },
+        data: { 
+          status: 'In Stock',
+          branchId: branchId
+        }
+      });
     });
 
     res.json({ success: true, item });
@@ -1036,6 +1052,9 @@ app.post('/api/inventory', authenticateToken, requireActiveOrTrial, requireAcces
     let { barcode, type, model, weight, stone_weight } = req.body;
     const shopId = req.user!.shopId!;
     
+    if (parseFloat(weight) < 0) return res.status(400).json({ error: 'Weight cannot be negative' });
+    if (stone_weight && parseFloat(stone_weight) < 0) return res.status(400).json({ error: 'Stone weight cannot be negative' });
+    
     if (!barcode) {
       let prefix = 'XX';
       const shop = await prisma.shop.findUnique({ where: { id: shopId } });
@@ -1098,8 +1117,12 @@ app.put('/api/inventory/:id', authenticateToken, requireActiveOrTrial, requireAc
     const shopId = req.user!.shopId!;
     const { barcode, type, model, weight, stone_weight } = req.body;
     
+    if (weight !== undefined && parseFloat(weight) < 0) return res.status(400).json({ error: 'Weight cannot be negative' });
+    if (stone_weight !== undefined && stone_weight && parseFloat(stone_weight) < 0) return res.status(400).json({ error: 'Stone weight cannot be negative' });
+
     const existing = await prisma.item.findUnique({ where: { id } });
     if (!existing || existing.shopId !== shopId) return res.status(404).json({ error: 'Not found' });
+    if (req.user!.branchId && existing.branchId !== req.user!.branchId) return res.status(403).json({ error: 'Item does not belong to your active branch' });
     
     if (barcode && barcode !== existing.barcode) {
       const barcodeExists = await prisma.item.findUnique({
@@ -1131,6 +1154,7 @@ app.delete('/api/inventory/:id', authenticateToken, requireActiveOrTrial, requir
     
     const existing = await prisma.item.findUnique({ where: { id } });
     if (!existing || existing.shopId !== shopId) return res.status(404).json({ error: 'Not found' });
+    if (req.user!.branchId && existing.branchId !== req.user!.branchId) return res.status(403).json({ error: 'Item does not belong to your active branch' });
     
     await prisma.item.delete({ where: { id } });
     res.json({ success: true });
@@ -1242,6 +1266,8 @@ app.post('/api/sales/bulk', authenticateToken, requireActiveOrTrial, requireAcce
     const { barcodes, buyerId, totalMakingCharge = 0 } = req.body;
     const shopId = req.user!.shopId!;
     
+    if (Number(totalMakingCharge) < 0) return res.status(400).json({ error: 'Making charge cannot be negative' });
+    
     let actualBuyerId = buyerId;
     
     // Validate buyer or create if they sent a name but no ID
@@ -1316,6 +1342,8 @@ app.post('/api/payments', authenticateToken, requireActiveOrTrial, requireAccess
   try {
     const { buyerId, amount, notes } = req.body;
     const shopId = req.user!.shopId!;
+    
+    if (Number(amount) < 0) return res.status(400).json({ error: 'Payment amount cannot be negative' });
     const payment = await prisma.payment.create({
       data: { 
         shopId, 

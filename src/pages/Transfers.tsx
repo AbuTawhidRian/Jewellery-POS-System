@@ -5,8 +5,14 @@ import toast from 'react-hot-toast';
 import { useAuth } from '../contexts/AuthContext';
 
 const Transfers: React.FC = () => {
-  const { activeBranchId } = useAuth();
+  const { activeBranchId, user } = useAuth();
   const [activeTab, setActiveTab] = useState<'receive' | 'dispatch' | 'history'>('receive');
+
+  useEffect(() => {
+    if (user?.isReadOnly && activeTab !== 'history') {
+      setActiveTab('history');
+    }
+  }, [user?.isReadOnly, activeTab]);
   
   // Receive State
   const [receiveBarcode, setReceiveBarcode] = useState('');
@@ -155,29 +161,33 @@ const Transfers: React.FC = () => {
 
         {/* Tabs */}
         <div className="flex gap-2 overflow-x-auto pb-4 mb-6">
-          <button
-            onClick={() => setActiveTab('receive')}
-            className={`flex items-center gap-2 px-6 py-3 font-medium rounded-xl transition-all whitespace-nowrap ${
-              activeTab === 'receive'
-                ? 'bg-[#C28C46] text-white shadow-lg shadow-[#C28C46]/20'
-                : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
-            }`}
-          >
-            <Download className="w-5 h-5" />
-            Receive Delivery
-          </button>
-          
-          <button
-            onClick={() => setActiveTab('dispatch')}
-            className={`flex items-center gap-2 px-6 py-3 font-medium rounded-xl transition-all whitespace-nowrap ${
-              activeTab === 'dispatch'
-                ? 'bg-[#C28C46] text-white shadow-lg shadow-[#C28C46]/20'
-                : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
-            }`}
-          >
-            <Upload className="w-5 h-5" />
-            Dispatch Items
-          </button>
+          {!user?.isReadOnly && (
+            <>
+              <button
+                onClick={() => setActiveTab('receive')}
+                className={`flex items-center gap-2 px-6 py-3 font-medium rounded-xl transition-all whitespace-nowrap ${
+                  activeTab === 'receive'
+                    ? 'bg-[#C28C46] text-white shadow-lg shadow-[#C28C46]/20'
+                    : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
+                }`}
+              >
+                <Download className="w-5 h-5" />
+                Receive Delivery
+              </button>
+              
+              <button
+                onClick={() => setActiveTab('dispatch')}
+                className={`flex items-center gap-2 px-6 py-3 font-medium rounded-xl transition-all whitespace-nowrap ${
+                  activeTab === 'dispatch'
+                    ? 'bg-[#C28C46] text-white shadow-lg shadow-[#C28C46]/20'
+                    : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
+                }`}
+              >
+                <Upload className="w-5 h-5" />
+                Dispatch Items
+              </button>
+            </>
+          )}
 
           <button
             onClick={() => setActiveTab('history')}

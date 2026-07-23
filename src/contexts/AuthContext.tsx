@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import Spinner from '../components/Spinner';
 
 interface User {
   id: string;
@@ -15,6 +16,7 @@ interface User {
   customRole?: string;
   accessibleBranches?: string[];
   mainBranches?: string[];
+  isReadOnly?: boolean;
 }
 
 interface AuthContextType {
@@ -104,10 +106,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const activeBranchId = localStorage.getItem('activeBranchId') || null;
 
-  const hasPermission = useCallback((_permissionId: string) => {
+  const hasPermission = useCallback((permissionId: string) => {
+    // If backend marks the session as Read-Only (e.g. Owner visiting another branch)
+    if (user?.isReadOnly) {
+      const readPermissions = ['view_vault', 'view_ledger', 'view_transfers', 'view_cash'];
+      return readPermissions.includes(permissionId);
+    }
     // Permission system disabled by user request. All staff have full access to their branches.
     return true;
-  }, []);
+  }, [user?.isReadOnly]);
 
   const updateUser = useCallback((data: Partial<User>) => {
     setUser(prev => {
@@ -128,7 +135,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   if (!isInitialized) {
-    return <div>Loading...</div>; // Prevent render until auth state is known
+    return (
+      <div className="fixed inset-0 z-[9999] bg-white dark:bg-slate-950 flex items-center justify-center">
+        <Spinner />
+      </div>
+    );
   }
 
 
@@ -138,10 +149,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       {isLoggingOut && (
         <div className="fixed inset-0 z-[9999] bg-white/80 dark:bg-slate-950/80 backdrop-blur-md flex items-center justify-center transition-opacity duration-500">
           <div className="bg-white dark:bg-slate-900 p-8 rounded-3xl shadow-2xl flex flex-col items-center gap-6 border border-slate-200 dark:border-slate-800 animate-in zoom-in-95 duration-300">
-            <div className="relative">
-              <div className="w-16 h-16 rounded-full border-4 border-slate-100 dark:border-slate-800"></div>
-              <div className="w-16 h-16 rounded-full border-4 border-[#C28C46] border-t-transparent animate-spin absolute top-0 left-0"></div>
-            </div>
+            <Spinner />
             <div className="text-center">
               <p className="text-xl font-bold text-slate-900 dark:text-white mb-1">Signing out</p>
               <p className="text-sm text-slate-500 dark:text-slate-400">See you next time!</p>

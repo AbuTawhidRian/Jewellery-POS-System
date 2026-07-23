@@ -153,17 +153,17 @@ const TopNav: React.FC = () => {
           )}
         </div>
 
-        <div className="h-8 w-px bg-slate-200 dark:bg-[#334155]/50 hidden sm:block"></div>
-
         {(() => {
           const allowedBranches = user?.role === 'OWNER' || user?.role === 'SUPERADMIN' 
             ? branches 
             : branches.filter(b => user?.accessibleBranches?.includes(b.id));
             
-          if (allowedBranches.length === 0) return null;
+          if (allowedBranches.length <= 1) return null;
           
           return (
-            <div className="relative" ref={branchMenuRef}>
+            <>
+              <div className="h-8 w-px bg-slate-200 dark:bg-[#334155]/50 hidden sm:block"></div>
+              <div className="relative" ref={branchMenuRef}>
               <button
                 onClick={() => setIsBranchMenuOpen(!isBranchMenuOpen)}
                 className="flex items-center gap-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors px-2 py-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-900"
@@ -201,6 +201,7 @@ const TopNav: React.FC = () => {
                 </div>
               )}
             </div>
+              </>
           );
         })()}
 
@@ -229,7 +230,7 @@ const TopNav: React.FC = () => {
                 <p className="text-sm font-semibold text-slate-900 dark:text-white truncate">{user?.name || 'Store Owner'}</p>
                 <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{user?.email}</p>
               </div>
-              {!isRetailBranch && (
+              {!isRetailBranch && user?.role === 'OWNER' && (
                 <Link
                   to="/dashboard/settings"
                   onClick={() => setIsProfileMenuOpen(false)}

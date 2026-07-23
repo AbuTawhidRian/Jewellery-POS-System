@@ -6,6 +6,7 @@ import Dialog from '../components/Dialog';
 import api from '../lib/api';
 import toast from 'react-hot-toast';
 import { BranchesTab } from '../components/settings/BranchesTab';
+import Spinner from '../components/Spinner';
 
 const CURRENCIES = [
   { value: "AED", label: "AED (UAE Dirham)" },
@@ -712,7 +713,7 @@ const Settings: React.FC = () => {
               </thead>
               <tbody>
                 {loadingStaff ? (
-                  <tr><td colSpan={4} className="p-8 text-center text-slate-500 dark:text-slate-400">Loading...</td></tr>
+                  <tr><td colSpan={4} className="p-8 text-center"><Spinner /></td></tr>
                 ) : (
                   staff.map((s) => (
                     <tr key={s.id} className="border-b border-slate-200 dark:border-slate-800/50 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">

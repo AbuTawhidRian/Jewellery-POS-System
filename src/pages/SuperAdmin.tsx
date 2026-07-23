@@ -17,6 +17,8 @@ interface Shop {
   };
 }
 
+import Spinner from '../components/Spinner';
+
 const SuperAdmin: React.FC = () => {
   const { user } = useAuth();
   const [shops, setShops] = useState<Shop[]>([]);
@@ -88,7 +90,7 @@ const SuperAdmin: React.FC = () => {
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={7} className="p-8 text-center text-slate-500 dark:text-slate-400">Loading...</td></tr>
+                <tr><td colSpan={7} className="p-8 text-center"><Spinner /></td></tr>
               ) : shops.length === 0 ? (
                 <tr><td colSpan={7} className="p-8 text-center text-slate-500 dark:text-slate-400">No shops found.</td></tr>
               ) : (
