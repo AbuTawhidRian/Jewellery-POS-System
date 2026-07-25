@@ -36,7 +36,7 @@ app.use((0, helmet_1.default)({
 app.use((0, cors_1.default)());
 app.use(express_1.default.json({ limit: '1mb' }));
 // Setup file uploads
-const uploadsDir = path_1.default.resolve(__dirname, '../../public/uploads');
+const uploadsDir = path_1.default.join(__dirname, 'uploads');
 if (!fs_1.default.existsSync(uploadsDir)) {
     fs_1.default.mkdirSync(uploadsDir, { recursive: true });
 }
@@ -106,6 +106,14 @@ const authenticateToken = (req, res, next) => {
                     return res.status(403).json({ error: 'Access denied to this branch' });
                 }
                 user.branchId = requestedBranchId;
+            }
+        }
+        else {
+            if (user.role === 'STAFF') {
+                const isGlobalRoute = req.path === '/api/branches' || req.path.startsWith('/api/shop') || req.path === '/api/auth/me';
+                if (!isGlobalRoute) {
+                    return res.status(403).json({ error: 'Branch ID is required for staff members' });
+                }
             }
         }
         // Global operations that should never be blocked by read-only mode
@@ -289,7 +297,12 @@ app.get('/api/auth/me', authenticateToken, async (req, res) => {
             return res.status(404).json({ error: 'User not found' });
         // Use the active branch from the request header
         const targetBranchId = req.user?.branchId || null;
-        res.json({ id: user.id, name: user.name, email: user.email, shopId: user.shopId, branchId: targetBranchId, shopName: user.shop?.name, shopEmail: user.shop?.email, shopPhone: user.shop?.phone, shopSlogan: user.shop?.slogan, shopLogo: user.shop?.logoUrl, shopCurrency: user.shop?.currency, role: user.role, customRole: user.customRole, isReadOnly: req.user?.isReadOnly });
+        const mainBranches = await prisma.branch.findMany({
+            where: { shopId: user.shopId, isMain: true },
+            select: { id: true }
+        });
+        const mainBranchIds = mainBranches.map(b => b.id);
+        res.json({ id: user.id, name: user.name, email: user.email, shopId: user.shopId, branchId: targetBranchId, accessibleBranches: user.accessibleBranches, mainBranches: mainBranchIds, shopName: user.shop?.name, shopEmail: user.shop?.email, shopPhone: user.shop?.phone, shopSlogan: user.shop?.slogan, shopLogo: user.shop?.logoUrl, shopCurrency: user.shop?.currency, role: user.role, customRole: user.customRole, isReadOnly: req.user?.isReadOnly });
     }
     catch (error) {
         res.status(500).json({ error: 'Internal Server Error' });
@@ -375,6 +388,9 @@ app.patch('/api/users/:id', authenticateToken, requireRole(client_1.Role.OWNER),
         if (accessibleBranches)
             updateData.accessibleBranches = accessibleBranches;
         if (password) {
+            if (password.length < 8) {
+                return res.status(400).json({ error: 'Password must be at least 8 characters' });
+            }
             updateData.passwordHash = await bcrypt_1.default.hash(password, 10);
         }
         const updated = await prisma.user.update({
@@ -1433,8 +1449,8 @@ app.post('/api/payments', authenticateToken, requireActiveOrTrial, requireAccess
     try {
         const { buyerId, amount, notes } = req.body;
         const shopId = req.user.shopId;
-        if (Number(amount) < 0)
-            return res.status(400).json({ error: 'Payment amount cannot be negative' });
+        if (Number(amount) === 0)
+            return res.status(400).json({ error: 'Payment amount cannot be zero' });
         const payment = await prisma.payment.create({
             data: {
                 shopId,

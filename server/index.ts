@@ -322,7 +322,13 @@ app.get('/api/auth/me', authenticateToken, async (req: AuthRequest, res) => {
     // Use the active branch from the request header
     const targetBranchId = req.user?.branchId || null;
 
-    res.json({ id: user.id, name: user.name, email: user.email, shopId: user.shopId, branchId: targetBranchId, shopName: user.shop?.name, shopEmail: user.shop?.email, shopPhone: user.shop?.phone, shopSlogan: user.shop?.slogan, shopLogo: user.shop?.logoUrl, shopCurrency: user.shop?.currency, role: user.role, customRole: user.customRole, isReadOnly: req.user?.isReadOnly });
+    const mainBranches = await prisma.branch.findMany({
+      where: { shopId: user.shopId, isMain: true },
+      select: { id: true }
+    });
+    const mainBranchIds = mainBranches.map(b => b.id);
+
+    res.json({ id: user.id, name: user.name, email: user.email, shopId: user.shopId, branchId: targetBranchId, accessibleBranches: user.accessibleBranches, mainBranches: mainBranchIds, shopName: user.shop?.name, shopEmail: user.shop?.email, shopPhone: user.shop?.phone, shopSlogan: user.shop?.slogan, shopLogo: user.shop?.logoUrl, shopCurrency: user.shop?.currency, role: user.role, customRole: user.customRole, isReadOnly: req.user?.isReadOnly });
   } catch (error) {
     res.status(500).json({ error: 'Internal Server Error' });
   }
@@ -1507,7 +1513,7 @@ app.post('/api/payments', authenticateToken, requireActiveOrTrial, requireAccess
     const { buyerId, amount, notes } = req.body;
     const shopId = req.user!.shopId!;
     
-    if (Number(amount) < 0) return res.status(400).json({ error: 'Payment amount cannot be negative' });
+    if (Number(amount) === 0) return res.status(400).json({ error: 'Payment amount cannot be zero' });
     const payment = await prisma.payment.create({
       data: { 
         shopId, 

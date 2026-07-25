@@ -9,7 +9,7 @@ import api from '../lib/api';
 
 const POS: React.FC = () => {
   const { hasPermission, user } = useAuth();
-  const { buyers, sales, payments, metalReceipts, processBulkSale, returnItems, addBuyer, editBuyer, deleteBuyer, addPayment, editPayment, deletePayment, addMetalReceipt, editMetalReceipt, deleteMetalReceipt, setPrintInvoiceData, setPrintItem, setPrintStatementData } = useInventory();
+  const { buyers, sales, payments, metalReceipts, processBulkSale, returnItems, addBuyer, editBuyer, deleteBuyer, addPayment, editPayment, deletePayment, addMetalReceipt, editMetalReceipt, deleteMetalReceipt, setPrintInvoiceData, setPrintItem, setPrintStatementData, setPrintPaymentData } = useInventory();
   const [selectedBuyer, setSelectedBuyer] = useState('');
   const [barcode, setBarcode] = useState('');
   const [notification, setNotification] = useState<{ type: 'success' | 'error', message: string } | null>(null);
@@ -626,7 +626,7 @@ const POS: React.FC = () => {
         </div>
 
         {/* Right Column: Cart */}
-        <div className="lg:col-span-7 bg-white dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-lg flex flex-col h-[600px] lg:h-auto overflow-hidden relative">
+        <div className="lg:col-span-7 bg-white dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-lg flex flex-col h-[600px] lg:h-full overflow-hidden relative">
           <div className="p-6 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-slate-900/50">
             <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">Shopping Cart</h2>
             <span className="px-3 py-1 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-full text-sm font-semibold">
@@ -850,6 +850,23 @@ const POS: React.FC = () => {
                           </td>
                           <td className="py-3 px-4 text-center">
                             <div className="flex items-center justify-center gap-2">
+                              <button
+                                onClick={() => {
+                                  setPrintPaymentData({
+                                    id: p.id,
+                                    date: p.date,
+                                    buyerName: buyer?.name || 'Unknown',
+                                    type: isReceived ? 'received' : 'paid',
+                                    amount: Math.abs(p.amount),
+                                    notes: p.notes || ''
+                                  });
+                                  setTimeout(() => window.print(), 100);
+                                }}
+                                className="p-1.5 text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700 rounded transition-colors"
+                                title="Print Receipt"
+                              >
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+                              </button>
                               <button
                                 onClick={() => {
                                   setEditingPaymentId(p.id);

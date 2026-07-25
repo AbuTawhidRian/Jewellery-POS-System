@@ -67,10 +67,19 @@ export interface MetalReceipt {
 
 export interface InvoiceData {
   buyerName: string;
-  items: { barcode?: string; type: string; model?: string; weight: number; stone_weight: number }[];
   date: string;
+  items: Item[];
   totalWeight: number;
   totalMakingCharge?: number;
+}
+
+export interface PaymentPrintData {
+  id: string;
+  date: string;
+  buyerName: string;
+  type: 'received' | 'paid';
+  amount: number;
+  notes: string;
 }
 
 export interface StatementData {
@@ -118,6 +127,8 @@ interface InventoryContextType {
   setPrintInvoiceData: (data: InvoiceData | null) => void;
   printStatementData: StatementData | null;
   setPrintStatementData: (data: StatementData | null) => void;
+  printPaymentData: PaymentPrintData | null;
+  setPrintPaymentData: (data: PaymentPrintData | null) => void;
 }
 
 const InventoryContext = createContext<InventoryContextType | undefined>(undefined);
@@ -135,6 +146,7 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const [printItem, setPrintItem] = useState<Item | null>(null);
   const [printInvoiceData, setPrintInvoiceData] = useState<InvoiceData | null>(null);
   const [printStatementData, setPrintStatementData] = useState<StatementData | null>(null);
+  const [printPaymentData, setPrintPaymentData] = useState<PaymentPrintData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   const authFetch = async (url: string, options: RequestInit = {}) => {
@@ -600,7 +612,7 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   };
 
   return (
-    <InventoryContext.Provider value={{ buyers, sales, payments, metalReceipts, itemTypes, models, isLoading, addItem, editItem, deleteItem, addBuyer, editBuyer, deleteBuyer, addItemType, editItemType, deleteItemType, addModel, editModel, deleteModel, processBulkSale, voidTransaction, returnItems, addPayment, editPayment, deletePayment, addMetalReceipt, editMetalReceipt, deleteMetalReceipt, printItem, setPrintItem, printInvoiceData, setPrintInvoiceData, printStatementData, setPrintStatementData }}>
+    <InventoryContext.Provider value={{ buyers, sales, payments, metalReceipts, itemTypes, models, isLoading, addItem, editItem, deleteItem, addBuyer, editBuyer, deleteBuyer, addItemType, editItemType, deleteItemType, addModel, editModel, deleteModel, processBulkSale, voidTransaction, returnItems, addPayment, editPayment, deletePayment, addMetalReceipt, editMetalReceipt, deleteMetalReceipt, printItem, setPrintItem, printInvoiceData, setPrintInvoiceData, printStatementData, setPrintStatementData, printPaymentData, setPrintPaymentData }}>
       {children}
     </InventoryContext.Provider>
   );

@@ -332,10 +332,16 @@ export const WaitingForApproval: React.FC = () => {
         <p>You can flap multiple times in the air to avoid the obstacles!</p>
       </div>
 
-      <div className="mt-8 text-center animate-in fade-in duration-1000 delay-500">
+      <div className="mt-8 flex flex-col items-center gap-4 animate-in fade-in duration-1000 delay-500">
+        <button 
+          onClick={() => window.location.reload()} 
+          className="bg-slate-900 dark:bg-white text-white dark:text-slate-900 px-6 py-2.5 rounded-xl font-bold flex items-center gap-2 hover:bg-slate-800 dark:hover:bg-slate-100 transition-colors shadow-lg"
+        >
+          <RefreshCw className="w-5 h-5" /> Check Status
+        </button>
         <button 
           onClick={() => { localStorage.clear(); window.location.href='/login'; }} 
-          className="text-slate-500 hover:text-slate-900 dark:hover:text-white font-medium flex items-center gap-2 mx-auto transition-colors"
+          className="text-slate-500 hover:text-slate-900 dark:hover:text-white font-medium flex items-center gap-2 transition-colors"
         >
           <LogOut className="w-4 h-4" /> Sign Out
         </button>

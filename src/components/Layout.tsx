@@ -6,17 +6,19 @@ import TopNav from './TopNav';
 import ThermalPrintLayout from './ThermalPrintLayout';
 import InvoicePrintLayout from './InvoicePrintLayout';
 import StatementPrintLayout from './StatementPrintLayout';
+import PaymentPrintLayout from './PaymentPrintLayout';
 import { useInventory } from '../store/InventoryContext';
 
 const Layout: React.FC = () => {
   const location = useLocation();
-  const { setPrintItem, setPrintInvoiceData, setPrintStatementData } = useInventory();
+  const { setPrintItem, setPrintInvoiceData, setPrintStatementData, setPrintPaymentData } = useInventory();
 
   useEffect(() => {
     setPrintItem(null);
     setPrintInvoiceData(null);
     setPrintStatementData(null);
-  }, [location.pathname, setPrintItem, setPrintInvoiceData, setPrintStatementData]);
+    setPrintPaymentData(null);
+  }, [location.pathname, setPrintItem, setPrintInvoiceData, setPrintStatementData, setPrintPaymentData]);
 
   return (
     <div className="flex h-screen bg-white dark:bg-slate-950 transition-colors duration-300 overflow-hidden font-sans animate-page-in">
@@ -33,6 +35,7 @@ const Layout: React.FC = () => {
       <ThermalPrintLayout />
       <InvoicePrintLayout />
       <StatementPrintLayout />
+      <PaymentPrintLayout />
     </div>
   );
 };

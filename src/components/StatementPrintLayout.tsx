@@ -1,13 +1,24 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useInventory } from '../store/InventoryContext';
 import { format } from 'date-fns';
 
 import { useAuth } from '../contexts/AuthContext';
 import clsx from 'clsx';
+import api from '../lib/api';
 
 const StatementPrintLayout: React.FC = () => {
   const { printStatementData } = useInventory();
-  const { user } = useAuth();
+  const { user, activeBranchId } = useAuth();
+  const [activeBranchName, setActiveBranchName] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (activeBranchId) {
+      api.get('/branches').then(res => {
+        const branch = res.data.find((b: any) => b.id === activeBranchId);
+        if (branch) setActiveBranchName(branch.name);
+      }).catch(console.error);
+    }
+  }, [activeBranchId]);
 
   if (!printStatementData) return null;
 
@@ -33,7 +44,7 @@ const StatementPrintLayout: React.FC = () => {
                 <img src="/logo.jpg" alt="Logo" className="w-16 h-16 object-contain rounded-[22%] scale-[1.02]" />
               )}
               <div>
-                <h1 className="text-3xl font-bold tracking-tight text-slate-900">{user?.shopName || 'Jewellery Shop'}</h1>
+                <h1 className="text-3xl font-bold tracking-tight text-slate-900">{activeBranchName || user?.shopName || 'Jewellery Shop'}</h1>
                 <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{user?.shopSlogan || 'Wholesale & Retail Trading'}</p>
               </div>
             </div>
