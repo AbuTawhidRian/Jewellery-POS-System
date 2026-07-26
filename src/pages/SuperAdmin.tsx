@@ -56,6 +56,19 @@ const SuperAdmin: React.FC = () => {
     }
   };
 
+  const handleReject = async (shopId: number) => {
+    if (!confirm('Are you sure you want to reject this payment?')) return;
+    try {
+      await api.patch(`/admin/subscriptions/${shopId}`, {
+        status: 'CANCELLED',
+        voucherNumber: null
+      });
+      fetchShops();
+    } catch (err: any) {
+      alert('Failed to reject payment');
+    }
+  };
+
   if (user?.role !== 'SUPERADMIN') {
     return <div className="p-8 text-center text-red-500">Access Denied</div>;
   }
@@ -143,13 +156,23 @@ const SuperAdmin: React.FC = () => {
                           </button>
                         </div>
                       ) : (
-                        <button 
-                          onClick={() => { setActivatingShop(shop.id); setVoucher(shop.subscription?.voucherNumber || ''); }}
-                          disabled={shop.subscription?.status === 'ACTIVE'}
-                          className="bg-gold-500 hover:bg-gold-600 disabled:opacity-50 disabled:hover:bg-gold-500 text-slate-950 px-4 py-2 rounded-lg text-sm font-semibold transition-colors"
-                        >
-                          Activate
-                        </button>
+                        <div className="flex items-center gap-2 justify-end">
+                          <button 
+                            onClick={() => { setActivatingShop(shop.id); setVoucher(shop.subscription?.voucherNumber || ''); }}
+                            disabled={shop.subscription?.status === 'ACTIVE'}
+                            className="bg-gold-500 hover:bg-gold-600 disabled:opacity-50 disabled:hover:bg-gold-500 text-slate-950 px-4 py-2 rounded-lg text-sm font-semibold transition-colors"
+                          >
+                            Activate
+                          </button>
+                          {shop.subscription?.status === 'PENDING' && (
+                            <button 
+                              onClick={() => handleReject(shop.id)}
+                              className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors"
+                            >
+                              Reject
+                            </button>
+                          )}
+                        </div>
                       )}
                     </td>
                   </tr>

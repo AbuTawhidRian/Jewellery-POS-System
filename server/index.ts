@@ -83,14 +83,16 @@ const authenticateToken = (req: AuthRequest, res: Response, next: NextFunction) 
   jwt.verify(token, JWT_SECRET, async (err: any, user: any) => {
     if (err) return res.status(403).json({ error: 'Invalid token' });
     
-    // Ensure the user actually still exists in the database
-    try {
-      const dbUser = await prisma.user.findUnique({ where: { id: user.id }, select: { id: true, role: true } });
-      if (!dbUser) {
-        return res.status(401).json({ error: 'User no longer exists' });
+    // Ensure the user actually still exists in the database (except for SuperAdmin which is static)
+    if (user.role !== 'SUPERADMIN') {
+      try {
+        const dbUser = await prisma.user.findUnique({ where: { id: user.id }, select: { id: true, role: true } });
+        if (!dbUser) {
+          return res.status(401).json({ error: 'User no longer exists' });
+        }
+      } catch (dbErr) {
+        return res.status(500).json({ error: 'Database error while verifying user' });
       }
-    } catch (dbErr) {
-      return res.status(500).json({ error: 'Database error while verifying user' });
     }
 
     // Allow switching branches via header

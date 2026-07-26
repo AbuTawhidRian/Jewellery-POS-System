@@ -7,7 +7,13 @@ import { useAuth } from '../contexts/AuthContext';
 export default function Landing() {
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
   const [isLangMenuOpen, setIsLangMenuOpen] = useState(false);
-  const [activeLang, setActiveLang] = useState('en');
+  const [activeLang, setActiveLang] = useState(() => {
+    if (typeof document !== 'undefined') {
+      const match = document.cookie.match(/googtrans=\/[a-zA-Z]+\/([a-zA-Z]+)/);
+      return match ? match[1] : 'en';
+    }
+    return 'en';
+  });
   const { isDarkMode, toggleTheme } = useTheme();
   const { isAuthenticated } = useAuth();
 

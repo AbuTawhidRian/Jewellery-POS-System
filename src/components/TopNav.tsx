@@ -20,7 +20,13 @@ const TopNav: React.FC = () => {
   const [isLangMenuOpen, setIsLangMenuOpen] = useState(false);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [isBranchMenuOpen, setIsBranchMenuOpen] = useState(false);
-  const [activeLang, setActiveLang] = useState('en');
+  const [activeLang, setActiveLang] = useState(() => {
+    if (typeof document !== 'undefined') {
+      const match = document.cookie.match(/googtrans=\/[a-zA-Z]+\/([a-zA-Z]+)/);
+      return match ? match[1] : 'en';
+    }
+    return 'en';
+  });
   const [branches, setBranches] = useState<any[]>([]);
   
   const langMenuRef = useRef<HTMLDivElement>(null);
@@ -94,7 +100,6 @@ const TopNav: React.FC = () => {
         select.dispatchEvent(new Event('change'));
       }
     }
-    window.location.reload();
   };
 
   const isRetailBranch = Boolean(activeBranchId && branches.length > 0 && branches.find(b => b.id === activeBranchId)?.isMain === false);
