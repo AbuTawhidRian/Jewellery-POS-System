@@ -20,6 +20,7 @@ const POS: React.FC = () => {
   const [isCashMode, setIsCashMode] = useState(false);
   const [totalMakingCharge, setTotalMakingCharge] = useState<number | ''>('');
   const [makingChargesPerModel, setMakingChargesPerModel] = useState<Record<string, number | ''>>({});
+  const [dailyRates, setDailyRates] = useState<Record<string, number>>({});
   
   // Payment Modal State
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
@@ -81,6 +82,16 @@ const POS: React.FC = () => {
   useEffect(() => {
     cartRef.current = cart;
   }, [cart]);
+
+  useEffect(() => {
+    api.get('/gold_rates').then(res => {
+      if (Array.isArray(res.data)) {
+        const rates: Record<string, number> = {};
+        res.data.forEach((r: any) => { rates[r.type] = r.rate; });
+        setDailyRates(rates);
+      }
+    }).catch(console.error);
+  }, []);
 
   // Keep input focused automatically
   useEffect(() => {
@@ -380,10 +391,15 @@ const POS: React.FC = () => {
     
     cart.forEach(item => {
       const model = item.model || 'Unknown Model';
-      const rate = makingChargesPerModel[model];
-      if (typeof rate === 'number') {
-        const gw = Number(item.weight) || 0;
-        calculatedTotal += gw * rate;
+      const makingChargeRate = makingChargesPerModel[model];
+      const gw = Number(item.weight) || 0;
+      const goldRate = dailyRates[item.type] || 0;
+      
+      const goldValue = gw * goldRate;
+      const makingCharge = (typeof makingChargeRate === 'number') ? gw * makingChargeRate : 0;
+      
+      if (typeof makingChargeRate === 'number' || goldRate > 0) {
+        calculatedTotal += goldValue + makingCharge;
         anyCalculated = true;
       }
     });
@@ -391,7 +407,7 @@ const POS: React.FC = () => {
     if (anyCalculated) {
       setTotalMakingCharge(Number(calculatedTotal.toFixed(2)));
     }
-  }, [makingChargesPerModel, cart]);
+  }, [makingChargesPerModel, cart, dailyRates]);
 
   const handleRecordPayment = async (e: React.FormEvent) => {
     e.preventDefault();

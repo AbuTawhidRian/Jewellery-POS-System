@@ -45,6 +45,8 @@ model Shop {
   subscription Subscription?
   branches     Branch[]
   itemTransfers ItemTransfer[]
+  goldRates    GoldRate[]
+  branchGoldTransfers BranchGoldTransfer[]
 }
 
 model Branch {
@@ -64,6 +66,10 @@ model Branch {
   
   transfersOut ItemTransfer[] @relation("TransfersOut")
   transfersIn  ItemTransfer[] @relation("TransfersIn")
+  
+  goldRates    GoldRate[]
+  goldTransfersOut BranchGoldTransfer[] @relation("GoldTransfersOut")
+  goldTransfersIn  BranchGoldTransfer[] @relation("GoldTransfersIn")
 }
 
 model User {
@@ -104,6 +110,7 @@ model Item {
   model        String?
   stone_weight Float?
   weight       Float
+  makingCharge Float    @default(0)
   status       String   @default("In Stock")
   dateAdded    DateTime @default(now())
 
@@ -167,6 +174,9 @@ model Sale {
   date         DateTime @default(now())
   weight       Float
   makingCharge Float    @default(0)
+  goldRate     Float    @default(0)
+  goldValue    Float    @default(0)
+  totalAmount  Float    @default(0)
 
   shop   Shop    @relation(fields: [shopId], references: [id], onDelete: Cascade)
   branch Branch? @relation(fields: [branchId], references: [id])
@@ -211,3 +221,31 @@ model MetalReceipt {
   buyer  Buyer   @relation(fields: [buyerId], references: [id], onDelete: Cascade)
 }
 
+model GoldRate {
+  id        String   @id @default(uuid())
+  shopId    String
+  branchId  String
+  type      String
+  rate      Float
+  updatedAt DateTime @default(now()) @updatedAt
+
+  shop      Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  branch    Branch   @relation(fields: [branchId], references: [id], onDelete: Cascade)
+
+  @@unique([branchId, type])
+}
+
+model BranchGoldTransfer {
+  id           String   @id @default(uuid())
+  shopId       String
+  fromBranchId String
+  toBranchId   String
+  weight       Float    // Weight of pure gold (9999/995)
+  date         DateTime @default(now())
+  status       String   @default("COMPLETED")
+  notes        String?
+
+  shop         Shop   @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  fromBranch   Branch @relation("GoldTransfersOut", fields: [fromBranchId], references: [id])
+  toBranch     Branch @relation("GoldTransfersIn", fields: [toBranchId], references: [id])
+}

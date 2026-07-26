@@ -1256,7 +1256,7 @@ app.get('/api/inventory/barcode/:barcode', authenticateToken, requireActiveOrTri
 
 app.post('/api/inventory', authenticateToken, requireActiveOrTrial, requireAccess([Role.OWNER, Role.MANAGER], ['view_vault', 'edit_vault', 'manage_buyers']), async (req: AuthRequest, res) => {
   try {
-    let { barcode, type, model, weight, stone_weight } = req.body;
+    let { barcode, type, model, weight, stone_weight, makingCharge } = req.body;
     const shopId = req.user!.shopId!;
     
     if (parseFloat(weight) < 0) return res.status(400).json({ error: 'Weight cannot be negative' });
@@ -1305,6 +1305,7 @@ app.post('/api/inventory', authenticateToken, requireActiveOrTrial, requireAcces
         model: model || null,
         weight: parseFloat(weight),
         stone_weight: parseFloat(stone_weight) || 0,
+        makingCharge: parseFloat(makingCharge) || 0,
         status: 'In Stock',
         shopId,
         branchId: targetBranchId || undefined
@@ -1477,10 +1478,8 @@ app.get('/api/sales', authenticateToken, requireActiveOrTrial, async (req: AuthR
 
 app.post('/api/sales/bulk', authenticateToken, requireActiveOrTrial, requireAccess([Role.OWNER, Role.MANAGER, Role.CASHIER], ['access_pos', 'delete_sale']), async (req: AuthRequest, res) => {
   try {
-    const { barcodes, buyerId, totalMakingCharge = 0 } = req.body;
+    const { barcodes, buyerId } = req.body;
     const shopId = req.user!.shopId!;
-    
-    if (Number(totalMakingCharge) < 0) return res.status(400).json({ error: 'Making charge cannot be negative' });
     
     let actualBuyerId = buyerId;
     
@@ -1508,21 +1507,44 @@ app.post('/api/sales/bulk', authenticateToken, requireActiveOrTrial, requireAcce
         throw new Error('No valid items found to sell');
       }
 
+      const branchIdForRate = req.user!.branchId;
+      if (!branchIdForRate) {
+        throw new Error('You must be assigned to a branch to sell items with live gold rates.');
+      }
+
+      const types = Array.from(new Set(itemsToSell.map((i: any) => i.type)));
+      const rates = await tx.goldRate.findMany({
+        where: { shopId, branchId: branchIdForRate, type: { in: types } }
+      });
+      
+      const rateMap = new Map(rates.map((r: any) => [r.type, r.rate]));
+      
+      const missingRates = types.filter(t => !rateMap.has(t as string));
+      if (missingRates.length > 0) {
+        throw new Error(`Missing active gold rates for types: ${missingRates.join(', ')}`);
+      }
+
       await tx.item.updateMany({
         where: { id: { in: itemsToSell.map((i: any) => i.id) } },
         data: { status: 'Sold' }
       });
 
-      const makingChargePerItem = itemsToSell.length > 0 ? (Number(totalMakingCharge) || 0) / itemsToSell.length : 0;
-
-      const saleData = itemsToSell.map((item: any) => ({
-        shopId,
-        itemId: item.id,
-        buyerId: actualBuyerId,
-        weight: item.weight,
-        makingCharge: makingChargePerItem,
-        branchId: req.user!.branchId || undefined
-      }));
+      const saleData = itemsToSell.map((item: any) => {
+        const rate = Number(rateMap.get(item.type) || 0);
+        const goldValue = item.weight * rate;
+        const makingCharge = item.makingCharge || 0;
+        return {
+          shopId,
+          itemId: item.id,
+          buyerId: actualBuyerId,
+          weight: item.weight,
+          makingCharge: makingCharge,
+          goldRate: rate,
+          goldValue: goldValue,
+          totalAmount: goldValue + makingCharge,
+          branchId: branchIdForRate
+        };
+      });
 
       await tx.sale.createMany({ data: saleData });
 
@@ -1852,6 +1874,78 @@ app.post('/api/sales/return', authenticateToken, requireActiveOrTrial, requireAc
   } catch (error: any) {
     console.error("Return item error:", error);
     res.status(500).json({ error: 'Failed to return items' });
+  }
+});
+
+// --- Gold Rates ---
+app.get('/api/gold_rates', authenticateToken, requireActiveOrTrial, async (req: AuthRequest, res) => {
+  try {
+    const shopId = req.user!.shopId!;
+    let branchId = req.user!.branchId;
+    if (!branchId) {
+      const branches = await prisma.branch.findMany({ where: { shopId }});
+      if (branches.length > 0) branchId = branches[0].id;
+    }
+    
+    if (!branchId) return res.json([]);
+    
+    const rates = await prisma.goldRate.findMany({
+      where: { shopId, branchId }
+    });
+    res.json(rates);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch gold rates' });
+  }
+});
+
+app.post('/api/gold_rates', authenticateToken, requireActiveOrTrial, requireAccess([Role.OWNER, Role.MANAGER], []), async (req: AuthRequest, res) => {
+  try {
+    const { type, rate } = req.body;
+    const shopId = req.user!.shopId!;
+    const branchId = req.user!.branchId;
+    
+    if (!branchId) return res.status(400).json({ error: 'Must be assigned to a branch to set rates' });
+    
+    const upsertRate = await prisma.goldRate.upsert({
+      where: {
+        branchId_type: { branchId, type }
+      },
+      update: { rate: parseFloat(rate) },
+      create: { shopId, branchId, type, rate: parseFloat(rate) }
+    });
+    
+    res.json(upsertRate);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to update gold rate' });
+  }
+});
+
+// --- Branch Gold Transfers ---
+app.get('/api/gold_transfers', authenticateToken, requireActiveOrTrial, async (req: AuthRequest, res) => {
+  try {
+    const shopId = req.user!.shopId!;
+    const transfers = await prisma.branchGoldTransfer.findMany({
+      where: { shopId },
+      include: { fromBranch: true, toBranch: true },
+      orderBy: { date: 'desc' }
+    });
+    res.json(transfers);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch gold transfers' });
+  }
+});
+
+app.post('/api/gold_transfers', authenticateToken, requireActiveOrTrial, requireAccess([Role.OWNER, Role.MANAGER], []), async (req: AuthRequest, res) => {
+  try {
+    const { fromBranchId, toBranchId, weight, notes } = req.body;
+    const shopId = req.user!.shopId!;
+    
+    const transfer = await prisma.branchGoldTransfer.create({
+      data: { shopId, fromBranchId, toBranchId, weight: parseFloat(weight), notes }
+    });
+    res.json(transfer);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to create gold transfer' });
   }
 });
 

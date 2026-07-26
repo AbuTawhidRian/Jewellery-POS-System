@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Lock, Barcode, BookOpen, Settings as SettingsIcon, ShieldCheck, ArrowRightLeft } from 'lucide-react';
+import { LayoutDashboard, Lock, Barcode, BookOpen, Settings as SettingsIcon, ShieldCheck, ArrowRightLeft, TrendingUp } from 'lucide-react';
 import clsx from 'clsx';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -28,12 +28,12 @@ const Sidebar: React.FC = () => {
     if (hasPermission('view_dashboard')) links.push({ to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' });
     if (hasPermission('view_vault')) links.push({ to: '/dashboard/vault', icon: Lock, label: 'The Vault' });
     if (hasPermission('view_vault')) links.push({ to: '/dashboard/transfers', icon: ArrowRightLeft, label: 'Transfers' });
+    if (isRetailBranch && hasPermission('edit_vault')) links.push({ to: '/dashboard/rates', icon: TrendingUp, label: 'Daily Rates' });
     if (hasPermission('access_pos')) links.push({ to: '/dashboard/pos', icon: Barcode, label: 'POS Terminal' });
     if (hasPermission('view_ledger')) links.push({ to: '/dashboard/ledger', icon: BookOpen, label: 'Sales Ledger' });
+    if (user?.role === 'OWNER' || hasPermission('view_vault')) links.push({ to: '/dashboard/settlement', icon: ArrowRightLeft, label: 'Branch Settlement' });
     if (user?.role === 'OWNER' && !isRetailBranch) links.push({ to: '/dashboard/settings', icon: SettingsIcon, label: 'Settings' });
   }
-
-
 
   return (
     <div className="w-64 bg-white dark:bg-slate-950 transition-colors duration-300 h-screen flex flex-col hidden md:flex shrink-0">

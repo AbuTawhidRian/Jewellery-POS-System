@@ -10,6 +10,8 @@ import Register from './pages/Register';
 import Settings from './pages/Settings';
 import SuperAdmin from './pages/SuperAdmin';
 import Transfers from './pages/Transfers';
+import BranchSettlement from './pages/BranchSettlement';
+import DailyRates from './pages/DailyRates';
 import { useAuth } from './contexts/AuthContext';
 
 import Landing from './pages/Landing';
@@ -47,6 +49,8 @@ const App: React.FC = () => {
           <Route path="pos" element={<POS />} />
           <Route path="ledger" element={<Ledger />} />
           <Route path="transfers" element={<Transfers />} />
+          <Route path="settlement" element={<BranchSettlement />} />
+          <Route path="rates" element={<DailyRates />} />
           <Route path="settings" element={<Settings />} />
           <Route path="admin" element={<SuperAdmin />} />
         </Route>
