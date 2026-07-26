@@ -625,6 +625,9 @@ app.delete('/api/branches/:id', authenticateToken, requireRole(Role.OWNER), asyn
     });
     res.json({ success: true });
   } catch (error: any) {
+    if (error.code === 'P2003') {
+      return res.status(400).json({ error: 'Cannot delete this branch because it contains data (items, sales, or transfers).' });
+    }
     res.status(500).json({ error: error.message || 'Internal Server Error' });
   }
 });
@@ -1428,7 +1431,10 @@ app.delete('/api/buyers/:id', authenticateToken, requireActiveOrTrial, async (re
     
     await prisma.buyer.delete({ where: { id } });
     res.json({ success: true });
-  } catch (error) {
+  } catch (error: any) {
+    if (error.code === 'P2003') {
+      return res.status(400).json({ error: 'Cannot delete this buyer because they have recorded sales.' });
+    }
     res.status(500).json({ error: 'Internal Server Error' });
   }
 });
