@@ -34,7 +34,7 @@ const TopNav: React.FC = () => {
   const branchMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (user) {
+    if (user && user.role !== 'SUPERADMIN') {
       api.get('/branches').then(res => {
         setBranches(res.data);
         if (!activeBranchId && res.data.length > 0) {
@@ -114,7 +114,9 @@ const TopNav: React.FC = () => {
             <img src="/logo.jpg" alt="Logo" className="w-full h-full object-cover rounded-[22%] scale-[1.02]" />
           </div>
           <h1 className="text-lg font-extrabold text-slate-900 dark:text-white tracking-wider truncate max-w-[150px]">
-            {activeBranchId && branches.length > 0 ? branches.find(b => b.id === activeBranchId)?.name?.toUpperCase() : (
+            {user?.role === 'SUPERADMIN' ? (
+              <>GOLD<span className="text-[#C28C46]">VAULT</span></>
+            ) : activeBranchId && branches.length > 0 ? branches.find(b => b.id === activeBranchId)?.name?.toUpperCase() : (
               user?.shopName ? user.shopName.toUpperCase() : (
                 <>RIAN<span className="text-[#C28C46]">JEWEL</span></>
               )
@@ -165,7 +167,8 @@ const TopNav: React.FC = () => {
         </div>
 
         {(() => {
-          const allowedBranches = user?.role === 'OWNER' || user?.role === 'SUPERADMIN' 
+          if (user?.role === 'SUPERADMIN') return null;
+          const allowedBranches = user?.role === 'OWNER'
             ? branches 
             : branches.filter(b => user?.accessibleBranches?.includes(b.id));
             

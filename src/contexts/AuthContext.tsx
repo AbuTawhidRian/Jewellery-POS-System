@@ -116,7 +116,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const hasPermission = useCallback((permissionId: string) => {
     // If backend marks the session as Read-Only (e.g. Owner visiting another branch)
     if (user?.isReadOnly) {
-      const readPermissions = ['view_vault', 'view_ledger', 'view_transfers', 'view_cash'];
+      const readPermissions = ['view_vault', 'view_ledger', 'view_transfers', 'view_cash', 'access_pos'];
       return readPermissions.includes(permissionId);
     }
     // Permission system disabled by user request. All staff have full access to their branches.

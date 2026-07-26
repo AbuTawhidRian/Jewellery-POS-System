@@ -11,19 +11,19 @@ const Sidebar: React.FC = () => {
   const [branches, setBranches] = React.useState<any[]>([]);
 
   React.useEffect(() => {
-    if (user) {
+    if (user && user.role !== 'SUPERADMIN') {
       api.get('/branches').then(res => setBranches(res.data)).catch(console.error);
     }
   }, [user]);
 
   const activeBranchName = activeBranchId && branches.length > 0 ? branches.find(b => b.id === activeBranchId)?.name : null;
   const isRetailBranch = Boolean(activeBranchId && branches.length > 0 && branches.find(b => b.id === activeBranchId)?.isMain === false);
-  const displayName = activeBranchName || user?.shopName;
+  const displayName = user?.role === 'SUPERADMIN' ? 'Gold Vault' : (activeBranchName || user?.shopName);
 
   let links: any[] = [];
   
   if (user?.role === 'SUPERADMIN') {
-    links = [{ to: '/dashboard/admin', icon: ShieldCheck, label: 'Super Admin' }];
+    links = [{ to: '/dashboard/admin', icon: ShieldCheck, label: 'Gold Vault' }];
   } else {
     if (hasPermission('view_dashboard')) links.push({ to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' });
     if (hasPermission('view_vault')) links.push({ to: '/dashboard/vault', icon: Lock, label: 'The Vault' });

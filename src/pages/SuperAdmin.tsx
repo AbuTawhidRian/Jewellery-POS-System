@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { ShieldCheck, CheckCircle2, XCircle } from 'lucide-react';
+import { ShieldCheck, CheckCircle2, XCircle, Store, Activity, Users, CreditCard } from 'lucide-react';
 import api from '../lib/api';
+import Spinner from '../components/Spinner';
 
 interface Shop {
   id: number;
@@ -15,9 +16,19 @@ interface Shop {
     endsAt?: string;
     voucherNumber?: string;
   };
+  _count?: {
+    items: number;
+    sales: number;
+    users: number;
+  };
 }
 
-import Spinner from '../components/Spinner';
+interface Stats {
+  totalActiveShops: number;
+  totalPendingApprovals: number;
+  totalUsers: number;
+  estimatedMRR: number;
+}
 
 const SuperAdmin: React.FC = () => {
   const { user } = useAuth();
@@ -26,13 +37,18 @@ const SuperAdmin: React.FC = () => {
   const [activatingShop, setActivatingShop] = useState<number | null>(null);
   const [voucher, setVoucher] = useState('');
   const [error, setError] = useState('');
+  const [stats, setStats] = useState<Stats | null>(null);
 
-  const fetchShops = async () => {
+    const fetchShops = async () => {
     try {
-      const res = await api.get('/admin/shops');
-      setShops(res.data);
+      const [shopsRes, statsRes] = await Promise.all([
+        api.get("/admin/shops"),
+        api.get("/admin/stats")
+      ]);
+      setShops(shopsRes.data);
+      setStats(statsRes.data);
     } catch (err: any) {
-      setError('Failed to load shops');
+      setError("Failed to load data");
     } finally {
       setLoading(false);
     }
@@ -79,13 +95,65 @@ const SuperAdmin: React.FC = () => {
         <div>
           <h2 className="text-3xl font-bold text-slate-900 dark:text-white tracking-tight flex items-center gap-3">
             <ShieldCheck className="text-gold-500 w-8 h-8" />
-            Super Admin Dashboard
+            Gold Vault Dashboard
           </h2>
           <p className="text-slate-600 dark:text-slate-400 mt-2">Manage all shops and subscriptions</p>
         </div>
       </div>
 
       {error && <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400">{error}</div>}
+
+      {stats && (
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-emerald-500/10 text-emerald-500 rounded-xl flex items-center justify-center">
+                <Store className="w-6 h-6" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Active Shops</p>
+                <h3 className="text-2xl font-bold text-slate-900 dark:text-white">{stats.totalActiveShops}</h3>
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-amber-500/10 text-amber-500 rounded-xl flex items-center justify-center">
+                <Activity className="w-6 h-6" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Pending Approvals</p>
+                <h3 className="text-2xl font-bold text-slate-900 dark:text-white">{stats.totalPendingApprovals}</h3>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-blue-500/10 text-blue-500 rounded-xl flex items-center justify-center">
+                <Users className="w-6 h-6" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Total Users</p>
+                <h3 className="text-2xl font-bold text-slate-900 dark:text-white">{stats.totalUsers}</h3>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-gold-500/10 text-gold-500 rounded-xl flex items-center justify-center">
+                <CreditCard className="w-6 h-6" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Est. MRR</p>
+                <h3 className="text-2xl font-bold text-slate-900 dark:text-white">DH {stats.estimatedMRR.toFixed(2)}</h3>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-xl">
         <div className="overflow-x-auto">

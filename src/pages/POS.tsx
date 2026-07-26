@@ -455,24 +455,28 @@ const POS: React.FC = () => {
         </div>
         
         <div className="flex bg-slate-200 dark:bg-slate-800 p-1 rounded-xl w-max">
-          <button 
-            onClick={() => { setIsReturnMode(false); setIsCashMode(false); setIsGoldMode(false); setCart([]); setTotalMakingCharge(''); }}
-            className={clsx(
-              "px-6 py-2.5 rounded-lg text-sm font-bold transition-all", 
-              !isReturnMode && !isCashMode && !isGoldMode ? "bg-white dark:bg-slate-950 text-gold-500 shadow-sm" : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300"
-            )}
-          >
-            Sale Mode
-          </button>
-          <button 
-            onClick={() => { setIsReturnMode(true); setIsCashMode(false); setIsGoldMode(false); setCart([]); setTotalMakingCharge(''); }}
-            className={clsx(
-              "px-6 py-2.5 rounded-lg text-sm font-bold transition-all border-r border-slate-300 dark:border-slate-700 rounded-r-none", 
-              isReturnMode && !isCashMode && !isGoldMode ? "bg-white dark:bg-slate-950 text-orange-500 shadow-sm" : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300"
-            )}
-          >
-            Return Mode
-          </button>
+          {!user?.isReadOnly && (
+            <>
+              <button 
+                onClick={() => { setIsReturnMode(false); setIsCashMode(false); setIsGoldMode(false); setCart([]); setTotalMakingCharge(''); }}
+                className={clsx(
+                  "px-6 py-2.5 rounded-lg text-sm font-bold transition-all", 
+                  !isReturnMode && !isCashMode && !isGoldMode ? "bg-white dark:bg-slate-950 text-gold-500 shadow-sm" : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300"
+                )}
+              >
+                Sale Mode
+              </button>
+              <button 
+                onClick={() => { setIsReturnMode(true); setIsCashMode(false); setIsGoldMode(false); setCart([]); setTotalMakingCharge(''); }}
+                className={clsx(
+                  "px-6 py-2.5 rounded-lg text-sm font-bold transition-all border-r border-slate-300 dark:border-slate-700 rounded-r-none", 
+                  isReturnMode && !isCashMode && !isGoldMode ? "bg-white dark:bg-slate-950 text-orange-500 shadow-sm" : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300"
+                )}
+              >
+                Return Mode
+              </button>
+            </>
+          )}
           <button 
             onClick={() => { setIsCashMode(true); setIsGoldMode(false); }}
             className={clsx(
@@ -791,16 +795,18 @@ const POS: React.FC = () => {
                     </div>
                   )}
                 </div>
-                <button
-                  onClick={() => {
-                    setEditingPaymentId(null);
-                    setPaymentFormData({ buyerId: cashFilterBuyerId !== 'all' ? cashFilterBuyerId : '', type: 'received', amount: '', notes: '' });
-                    setIsPaymentModalOpen(true);
-                  }}
-                  className="bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-2 px-6 rounded-lg flex items-center gap-2 transition-colors shadow-lg shadow-emerald-500/20"
-                >
-                  Record Payment
-                </button>
+                {!user?.isReadOnly && (
+                  <button
+                    onClick={() => {
+                      setEditingPaymentId(null);
+                      setPaymentFormData({ buyerId: cashFilterBuyerId !== 'all' ? cashFilterBuyerId : '', type: 'received', amount: '', notes: '' });
+                      setIsPaymentModalOpen(true);
+                    }}
+                    className="bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-2 px-6 rounded-lg flex items-center gap-2 transition-colors shadow-lg shadow-emerald-500/20"
+                  >
+                    Record Payment
+                  </button>
+                )}
               </div>
             </div>
             
@@ -867,45 +873,49 @@ const POS: React.FC = () => {
                               >
                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
                               </button>
-                              <button
-                                onClick={() => {
-                                  setEditingPaymentId(p.id);
-                                  setPaymentFormData({
-                                    buyerId: p.buyerId,
-                                    type: isReceived ? 'received' : 'paid',
-                                    amount: Math.abs(p.amount).toString(),
-                                    notes: p.notes || ''
-                                  });
-                                  setIsPaymentModalOpen(true);
-                                }}
-                                className="p-1.5 text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-500/10 rounded transition-colors"
-                                title="Edit Payment"
-                              >
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>
-                              </button>
-                              <button
-                                onClick={() => {
-                                  setDialogConfig({
-                                    isOpen: true,
-                                    type: 'confirm',
-                                    title: 'Delete Payment',
-                                    message: 'Are you sure you want to delete this payment record? This action cannot be undone.',
-                                    onConfirm: async () => {
-                                      const success = await deletePayment(p.id);
-                                      if (success) {
-                                        showNotification('success', 'Payment deleted successfully');
-                                      } else {
-                                        showNotification('error', 'Failed to delete payment');
-                                      }
-                                      setDialogConfig(prev => ({...prev, isOpen: false}));
-                                    }
-                                  });
-                                }}
-                                className="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded transition-colors"
-                                title="Delete Payment"
-                              >
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path></svg>
-                              </button>
+                              {!user?.isReadOnly && (
+                                <>
+                                  <button
+                                    onClick={() => {
+                                      setEditingPaymentId(p.id);
+                                      setPaymentFormData({
+                                        buyerId: p.buyerId,
+                                        type: isReceived ? 'received' : 'paid',
+                                        amount: Math.abs(p.amount).toString(),
+                                        notes: p.notes || ''
+                                      });
+                                      setIsPaymentModalOpen(true);
+                                    }}
+                                    className="p-1.5 text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-500/10 rounded transition-colors"
+                                    title="Edit Payment"
+                                  >
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>
+                                  </button>
+                                  <button
+                                    onClick={() => {
+                                      setDialogConfig({
+                                        isOpen: true,
+                                        type: 'confirm',
+                                        title: 'Delete Payment',
+                                        message: 'Are you sure you want to delete this payment record? This action cannot be undone.',
+                                        onConfirm: async () => {
+                                          const success = await deletePayment(p.id);
+                                          if (success) {
+                                            showNotification('success', 'Payment deleted successfully');
+                                          } else {
+                                            showNotification('error', 'Failed to delete payment');
+                                          }
+                                          setDialogConfig(prev => ({...prev, isOpen: false}));
+                                        }
+                                      });
+                                    }}
+                                    className="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded transition-colors"
+                                    title="Delete Payment"
+                                  >
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path></svg>
+                                  </button>
+                                </>
+                              )}
                             </div>
                           </td>
                         </tr>
@@ -964,16 +974,18 @@ const POS: React.FC = () => {
                     </div>
                   )}
                 </div>
-                <button
-                  onClick={() => {
-                    setEditingMetalId(null);
-                    setMetalFormData({ buyerId: metalFilterBuyerId !== 'all' ? metalFilterBuyerId : '', weight: '', purity: '995', notes: '' });
-                    setIsMetalModalOpen(true);
-                  }}
-                  className="bg-amber-500 hover:bg-amber-600 text-white font-bold py-2 px-6 rounded-lg flex items-center gap-2 transition-colors shadow-lg shadow-amber-500/20"
-                >
-                  Receive Gold
-                </button>
+                {!user?.isReadOnly && (
+                  <button
+                    onClick={() => {
+                      setEditingMetalId(null);
+                      setMetalFormData({ buyerId: metalFilterBuyerId !== 'all' ? metalFilterBuyerId : '', weight: '', purity: '995', notes: '' });
+                      setIsMetalModalOpen(true);
+                    }}
+                    className="bg-amber-500 hover:bg-amber-600 text-white font-bold py-2 px-6 rounded-lg flex items-center gap-2 transition-colors shadow-lg shadow-amber-500/20"
+                  >
+                    Receive Gold
+                  </button>
+                )}
               </div>
             </div>
             
@@ -1018,45 +1030,49 @@ const POS: React.FC = () => {
                           <td className="py-3 px-4 max-w-[150px] truncate">{m.notes || '-'}</td>
                           <td className="py-3 px-4 text-center">
                             <div className="flex items-center justify-center gap-2">
-                              <button
-                                onClick={() => {
-                                  setEditingMetalId(m.id);
-                                  setMetalFormData({
-                                    buyerId: m.buyerId,
-                                    weight: m.weight.toString(),
-                                    purity: (m.purity >= 1 ? m.purity : m.purity * 1000).toString(),
-                                    notes: m.notes || ''
-                                  });
-                                  setIsMetalModalOpen(true);
-                                }}
-                                className="p-1.5 text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-500/10 rounded transition-colors"
-                                title="Edit Receipt"
-                              >
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>
-                              </button>
-                              <button
-                                onClick={() => {
-                                  setDialogConfig({
-                                    isOpen: true,
-                                    type: 'confirm',
-                                    title: 'Delete Metal Receipt',
-                                    message: 'Are you sure you want to delete this metal receipt? This action cannot be undone.',
-                                    onConfirm: async () => {
-                                      const success = await deleteMetalReceipt(m.id);
-                                      if (success) {
-                                        showNotification('success', 'Receipt deleted successfully');
-                                      } else {
-                                        showNotification('error', 'Failed to delete receipt');
-                                      }
-                                      setDialogConfig(prev => ({...prev, isOpen: false}));
-                                    }
-                                  });
-                                }}
-                                className="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded transition-colors"
-                                title="Delete Receipt"
-                              >
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path></svg>
-                              </button>
+                              {!user?.isReadOnly && (
+                                <>
+                                  <button
+                                    onClick={() => {
+                                      setEditingMetalId(m.id);
+                                      setMetalFormData({
+                                        buyerId: m.buyerId,
+                                        weight: m.weight.toString(),
+                                        purity: (m.purity >= 1 ? m.purity : m.purity * 1000).toString(),
+                                        notes: m.notes || ''
+                                      });
+                                      setIsMetalModalOpen(true);
+                                    }}
+                                    className="p-1.5 text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-500/10 rounded transition-colors"
+                                    title="Edit Receipt"
+                                  >
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>
+                                  </button>
+                                  <button
+                                    onClick={() => {
+                                      setDialogConfig({
+                                        isOpen: true,
+                                        type: 'confirm',
+                                        title: 'Delete Metal Receipt',
+                                        message: 'Are you sure you want to delete this metal receipt? This action cannot be undone.',
+                                        onConfirm: async () => {
+                                          const success = await deleteMetalReceipt(m.id);
+                                          if (success) {
+                                            showNotification('success', 'Receipt deleted successfully');
+                                          } else {
+                                            showNotification('error', 'Failed to delete receipt');
+                                          }
+                                          setDialogConfig(prev => ({...prev, isOpen: false}));
+                                        }
+                                      });
+                                    }}
+                                    className="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded transition-colors"
+                                    title="Delete Receipt"
+                                  >
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path></svg>
+                                  </button>
+                                </>
+                              )}
                             </div>
                           </td>
                         </tr>

@@ -97,7 +97,7 @@ const authenticateToken = (req: AuthRequest, res: Response, next: NextFunction) 
 
     // Allow switching branches via header
     if (requestedBranchId && typeof requestedBranchId === 'string') {
-      if (user.role === 'OWNER' || user.role === 'SUPERADMIN') {
+      if (user.role === 'OWNER') {
         // Global owner logic
         if (user.branchId !== requestedBranchId) {
           if (!user.branchId) {
@@ -154,7 +154,7 @@ const requireRole = (...allowedRoles: (Role | 'SUPERADMIN')[]) => {
 const requireAccess = (allowedRoles: (Role | 'SUPERADMIN')[], requiredPermissions: string[] = []) => {
   return async (req: AuthRequest, res: Response, next: NextFunction) => {
     if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
-    if (req.user.role === 'OWNER' || req.user.role === 'SUPERADMIN') return next();
+    if (req.user.role === 'OWNER') return next();
     
     if (allowedRoles.length === 1 && allowedRoles[0] === 'OWNER') {
       return res.status(403).json({ error: 'Forbidden: Owner only' });
@@ -168,7 +168,9 @@ const requireSuperAdmin = requireRole('SUPERADMIN');
 
 const requireActiveOrTrial = async (req: AuthRequest, res: Response, next: NextFunction) => {
   if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
-  if (req.user.role === 'SUPERADMIN') return next();
+  if (req.user.role === 'SUPERADMIN') {
+    return res.status(403).json({ error: 'Super Admin cannot access shop-specific resources directly' });
+  }
   if (!req.user.shopId) return res.status(403).json({ error: 'No shop associated' });
 
   try {
@@ -518,6 +520,10 @@ app.delete('/api/shop/logo', authenticateToken, requireRole(Role.OWNER), async (
 // --- Branches Routes ---
 app.get('/api/branches', authenticateToken, requireActiveOrTrial, async (req: AuthRequest, res) => {
   try {
+    if (req.user!.role === 'SUPERADMIN') {
+      return res.json([]);
+    }
+
     const branches = await prisma.branch.findMany({
       where: { shopId: req.user!.shopId! },
       orderBy: { createdAt: 'asc' }
@@ -837,6 +843,28 @@ app.post('/api/subscription/voucher-number', authenticateToken, requireRole(Role
 
 // --- Super-Admin Routes ---
 
+app.get('/api/admin/stats', authenticateToken, requireSuperAdmin, async (req: AuthRequest, res) => {
+  try {
+    const [totalActiveShops, totalPendingApprovals, totalUsers] = await Promise.all([
+      prisma.subscription.count({ where: { status: 'ACTIVE' } }),
+      prisma.subscription.count({ where: { status: 'PENDING' } }),
+      prisma.user.count()
+    ]);
+    
+    // Estimate MRR based on active shops * DH 29.99 (from pricing)
+    const estimatedMRR = totalActiveShops * 29.99;
+
+    res.json({
+      totalActiveShops,
+      totalPendingApprovals,
+      totalUsers,
+      estimatedMRR
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
 app.get('/api/admin/shops', authenticateToken, requireSuperAdmin, async (req: AuthRequest, res) => {
   try {
     const shops = await prisma.shop.findMany({
@@ -845,6 +873,9 @@ app.get('/api/admin/shops', authenticateToken, requireSuperAdmin, async (req: Au
         users: {
           where: { role: Role.OWNER },
           select: { name: true, email: true }
+        },
+        _count: {
+          select: { items: true, sales: true, users: true }
         }
       }
     });
