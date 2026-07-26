@@ -1190,7 +1190,7 @@ app.get('/api/inventory', authenticateToken, requireActiveOrTrial, async (req: A
       const [items, total] = await Promise.all([
         prisma.item.findMany({
           where: whereClause,
-          orderBy: { dateAdded: 'asc' },
+          orderBy: [{ dateAdded: 'desc' }, { id: 'desc' }],
           skip,
           take: limitNum
         }),
@@ -1207,7 +1207,7 @@ app.get('/api/inventory', authenticateToken, requireActiveOrTrial, async (req: A
 
     const items = await prisma.item.findMany({
       where: whereClause,
-      orderBy: { dateAdded: 'asc' }
+      orderBy: [{ dateAdded: 'desc' }, { id: 'desc' }]
     });
     res.json(items);
   } catch (error) {
