@@ -28,7 +28,7 @@ const Sidebar: React.FC = () => {
     if (hasPermission('view_dashboard')) links.push({ to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' });
     if (hasPermission('view_vault')) links.push({ to: '/dashboard/vault', icon: Lock, label: 'The Vault' });
     if (hasPermission('view_vault')) links.push({ to: '/dashboard/transfers', icon: ArrowRightLeft, label: 'Transfers' });
-    if (isRetailBranch && hasPermission('edit_vault')) links.push({ to: '/dashboard/rates', icon: TrendingUp, label: 'Daily Rates' });
+    if (user?.role === 'OWNER' || (isRetailBranch && hasPermission('edit_vault'))) links.push({ to: '/dashboard/rates', icon: TrendingUp, label: 'Daily Rates' });
     if (hasPermission('access_pos')) links.push({ to: '/dashboard/pos', icon: Barcode, label: 'POS Terminal' });
     if (hasPermission('view_ledger')) links.push({ to: '/dashboard/ledger', icon: BookOpen, label: 'Sales Ledger' });
     if (user?.role === 'OWNER' || hasPermission('view_vault')) links.push({ to: '/dashboard/settlement', icon: ArrowRightLeft, label: 'Branch Settlement' });
