@@ -1359,7 +1359,11 @@ app.delete('/api/inventory/:id', authenticateToken, requireActiveOrTrial, requir
     if (!existing || existing.shopId !== shopId) return res.status(404).json({ error: 'Not found' });
     if (req.user!.branchId && existing.branchId !== req.user!.branchId) return res.status(403).json({ error: 'Item does not belong to your active branch' });
     
-    await prisma.item.delete({ where: { id } });
+    await prisma.$transaction([
+      prisma.itemTransfer.deleteMany({ where: { itemId: id } }),
+      prisma.item.delete({ where: { id } })
+    ]);
+    
     res.json({ success: true });
   } catch (error) {
     res.status(500).json({ error: 'Internal Server Error' });

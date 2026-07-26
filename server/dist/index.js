@@ -1302,7 +1302,10 @@ app.delete('/api/inventory/:id', authenticateToken, requireActiveOrTrial, requir
             return res.status(404).json({ error: 'Not found' });
         if (req.user.branchId && existing.branchId !== req.user.branchId)
             return res.status(403).json({ error: 'Item does not belong to your active branch' });
-        await prisma.item.delete({ where: { id } });
+        await prisma.$transaction([
+            prisma.itemTransfer.deleteMany({ where: { itemId: id } }),
+            prisma.item.delete({ where: { id } })
+        ]);
         res.json({ success: true });
     }
     catch (error) {
