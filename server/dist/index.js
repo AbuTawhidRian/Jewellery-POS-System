@@ -656,6 +656,8 @@ app.post('/api/transfers', authenticateToken, requireActiveOrTrial, async (req, 
                     continue;
                 if (item.branchId && item.branchId !== fromBranchId)
                     continue;
+                if (item.status !== 'In Stock')
+                    continue;
                 await tx.item.update({
                     where: { id: itemId },
                     data: { status: 'In Transit' }
@@ -1735,14 +1737,18 @@ app.post('/api/sales/return', authenticateToken, requireActiveOrTrial, requireAc
                         itemId: sale.itemId,
                         buyerId: sale.buyerId,
                         weight: -Math.abs(sale.weight),
-                        makingCharge: -Math.abs(sale.makingCharge || 0)
+                        makingCharge: -Math.abs(sale.makingCharge || 0),
+                        branchId: req.user.branchId || undefined
                     });
                 }
             }
-            // Update items back to 'In Stock'
+            const itemUpdateData = { status: 'In Stock' };
+            if (req.user.branchId)
+                itemUpdateData.branchId = req.user.branchId;
+            // Update items back to 'In Stock' and assign to the current branch
             await tx.item.updateMany({
                 where: { id: { in: itemIds } },
-                data: { status: 'In Stock' }
+                data: itemUpdateData
             });
             // Insert return sales
             if (returnSalesData.length > 0) {
