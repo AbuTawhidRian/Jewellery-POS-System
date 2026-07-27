@@ -1875,6 +1875,56 @@ app.put('/api/cash_transfers/:id/status', authenticateToken, requireActiveOrTria
         res.status(500).json({ error: 'Failed to update transfer status' });
     }
 });
+// --- Branch Gold Transfers ---
+app.get('/api/gold_transfers', authenticateToken, requireActiveOrTrial, async (req, res) => {
+    try {
+        const shopId = req.user.shopId;
+        const transfers = await prisma.branchGoldTransfer.findMany({
+            where: { shopId },
+            include: {
+                fromBranch: true,
+                toBranch: true,
+            },
+            orderBy: { date: 'desc' }
+        });
+        res.json(transfers);
+    }
+    catch (error) {
+        res.status(500).json({ error: 'Failed to fetch gold transfers' });
+    }
+});
+app.post('/api/gold_transfers', authenticateToken, requireActiveOrTrial, async (req, res) => {
+    try {
+        const { fromBranchId, toBranchId, weight, notes } = req.body;
+        const shopId = req.user.shopId;
+        // Create as PENDING
+        const transfer = await prisma.branchGoldTransfer.create({
+            data: { shopId, fromBranchId, toBranchId, weight: parseFloat(weight), notes, status: 'PENDING' }
+        });
+        res.json(transfer);
+    }
+    catch (error) {
+        res.status(500).json({ error: 'Failed to create gold transfer' });
+    }
+});
+app.put('/api/gold_transfers/:id/status', authenticateToken, requireActiveOrTrial, requireRole(client_1.Role.OWNER), async (req, res) => {
+    try {
+        const id = req.params.id;
+        const status = req.body.status; // 'ACCEPTED' or 'REJECTED'
+        const shopId = req.user.shopId;
+        const transfer = await prisma.branchGoldTransfer.findFirst({ where: { id, shopId } });
+        if (!transfer)
+            return res.status(404).json({ error: 'Transfer not found' });
+        const updated = await prisma.branchGoldTransfer.update({
+            where: { id },
+            data: { status }
+        });
+        res.json(updated);
+    }
+    catch (error) {
+        res.status(500).json({ error: 'Failed to update transfer status' });
+    }
+});
 // --- Serve React Frontend ---
 const distPath = path_1.default.join(process.cwd(), 'dist');
 app.use(express_1.default.static(distPath));
