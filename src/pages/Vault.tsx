@@ -103,6 +103,29 @@ const Vault: React.FC = () => {
   // Edit Item Modal State
   const [isEditItemModalOpen, setIsEditItemModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<{ id: string; type: string; model: string; weight: string; stone_weight: string; makingCharge: string } | null>(null);
+  const [editMakingPerGram, setEditMakingPerGram] = useState('');
+
+  const handleEditMakingPerGramChange = (val: string) => {
+    setEditMakingPerGram(val);
+    if (!editingItem) return;
+    const gw = parseFloat(editingItem.weight) || 0;
+    if (val && gw > 0) {
+      setEditingItem({ ...editingItem, makingCharge: (parseFloat(val) * gw).toFixed(2) });
+    } else if (!val) {
+      setEditingItem({ ...editingItem, makingCharge: '' });
+    }
+  };
+
+  const handleEditTotalMakingChange = (val: string) => {
+    if (!editingItem) return;
+    setEditingItem({ ...editingItem, makingCharge: val });
+    const gw = parseFloat(editingItem.weight) || 0;
+    if (val && gw > 0) {
+      setEditMakingPerGram((parseFloat(val) / gw).toFixed(2));
+    } else if (!val) {
+      setEditMakingPerGram('');
+    }
+  };
 
   // Table Actions Menu State
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
@@ -692,6 +715,13 @@ const Vault: React.FC = () => {
                                       <button 
                                         onClick={() => {
                                           setActiveMenuId(null);
+                                          const gw = Number(item.weight) || 0;
+                                          const mk = Number(item.makingCharge) || 0;
+                                          if (gw > 0 && mk > 0) {
+                                            setEditMakingPerGram((mk / gw).toFixed(2));
+                                          } else {
+                                            setEditMakingPerGram('');
+                                          }
                                           setEditingItem({
                                             id: item.id,
                                             type: item.type,
@@ -1144,7 +1174,16 @@ const Vault: React.FC = () => {
                     type="number"
                     step="0.01"
                     value={editingItem.weight}
-                    onChange={(e) => setEditingItem({ ...editingItem, weight: e.target.value })}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      const gw = parseFloat(val) || 0;
+                      const mpg = parseFloat(editMakingPerGram) || 0;
+                      let newMakingCharge = editingItem.makingCharge;
+                      if (gw > 0 && mpg > 0) {
+                        newMakingCharge = (gw * mpg).toFixed(2);
+                      }
+                      setEditingItem({ ...editingItem, weight: val, makingCharge: newMakingCharge });
+                    }}
                     className="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg px-4 py-2 text-slate-900 dark:text-slate-100 focus:outline-none focus:border-gold-500 focus:ring-1 focus:ring-gold-500 transition-colors"
                   />
                 </div>
@@ -1160,15 +1199,31 @@ const Vault: React.FC = () => {
                 </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">Making Charge</label>
-                <input 
-                  type="number"
-                  step="0.01"
-                  value={editingItem.makingCharge}
-                  onChange={(e) => setEditingItem({ ...editingItem, makingCharge: e.target.value })}
-                  className="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg px-4 py-2 text-slate-900 dark:text-slate-100 focus:outline-none focus:border-gold-500 focus:ring-1 focus:ring-gold-500 transition-colors"
-                />
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">Making Rate /g</label>
+                  <input 
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={editMakingPerGram}
+                    onChange={(e) => handleEditMakingPerGramChange(e.target.value)}
+                    className="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg px-4 py-2 text-slate-900 dark:text-slate-100 focus:outline-none focus:border-gold-500 focus:ring-1 focus:ring-gold-500 transition-colors"
+                    placeholder="0.00"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">Total Making</label>
+                  <input 
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={editingItem.makingCharge}
+                    onChange={(e) => handleEditTotalMakingChange(e.target.value)}
+                    className="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg px-4 py-2 text-slate-900 dark:text-slate-100 focus:outline-none focus:border-gold-500 focus:ring-1 focus:ring-gold-500 transition-colors"
+                    placeholder="0.00"
+                  />
+                </div>
               </div>
 
               <div className="pt-4 border-t border-slate-200 dark:border-slate-800">
