@@ -170,17 +170,17 @@ const Transfers: React.FC = () => {
         <div className="bg-white dark:bg-slate-950 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm relative overflow-hidden group">
           <div className="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-gradient-to-br from-amber-500/10 to-transparent rounded-full blur-2xl group-hover:bg-amber-500/20 transition-colors"></div>
           <h3 className="text-sm font-bold tracking-wider text-slate-500 dark:text-slate-400 uppercase mb-2">Total Successfully Dispatched</h3>
-          <div className="flex items-end gap-3 relative z-10">
+          <div className="flex items-baseline gap-3 relative z-10">
              <span className="text-3xl font-bold text-slate-900 dark:text-white">{transferStats.dispatchCount} <span className="text-base font-medium text-slate-500">items</span></span>
-             <span className="text-xl font-bold text-[#C28C46] mb-1">{transferStats.dispatchWeight.toFixed(2)}g</span>
+             <span className="text-xl font-bold text-[#C28C46]">{transferStats.dispatchWeight.toFixed(2)}g</span>
           </div>
         </div>
         <div className="bg-white dark:bg-slate-950 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm relative overflow-hidden group">
           <div className="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-gradient-to-br from-emerald-500/10 to-transparent rounded-full blur-2xl group-hover:bg-emerald-500/20 transition-colors"></div>
           <h3 className="text-sm font-bold tracking-wider text-slate-500 dark:text-slate-400 uppercase mb-2">Total Successfully Received</h3>
-          <div className="flex items-end gap-3 relative z-10">
+          <div className="flex items-baseline gap-3 relative z-10">
              <span className="text-3xl font-bold text-slate-900 dark:text-white">{transferStats.receiveCount} <span className="text-base font-medium text-slate-500">items</span></span>
-             <span className="text-xl font-bold text-emerald-500 mb-1">{transferStats.receiveWeight.toFixed(2)}g</span>
+             <span className="text-xl font-bold text-emerald-500">{transferStats.receiveWeight.toFixed(2)}g</span>
           </div>
         </div>
       </div>
