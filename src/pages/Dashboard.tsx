@@ -6,17 +6,37 @@ import { useAuth } from '../contexts/AuthContext';
 import { useInventory } from '../store/InventoryContext';
 
 const Dashboard: React.FC = () => {
-  const { user, hasPermission } = useAuth();
+  const { user, hasPermission, activeBranchId } = useAuth();
   const { itemTypes } = useInventory();
   const currency = user?.shopCurrency || 'AED';
 
   const [stats, setStats] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [selectedBranchId, setSelectedBranchId] = useState<string>('');
+  const [branches, setBranches] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (user?.role === 'OWNER') {
+      const fetchBranches = async () => {
+        try {
+          const res = await api.get('/branches');
+          setBranches(res.data);
+        } catch (err) {
+          console.error(err);
+        }
+      };
+      fetchBranches();
+    }
+  }, [user]);
 
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const res = await api.get('/dashboard/stats');
+        let url = '/dashboard/stats';
+        if ((user?.role === 'OWNER' || !activeBranchId) && selectedBranchId) {
+          url += `?branchId=${selectedBranchId}`;
+        }
+        const res = await api.get(url);
         setStats(res.data);
       } catch (error: any) {
         toast.error(error.response?.data?.error || 'Failed to load dashboard stats');
@@ -25,7 +45,7 @@ const Dashboard: React.FC = () => {
       }
     };
     fetchStats();
-  }, []);
+  }, [selectedBranchId, user]);
 
   const [dailyRates, setDailyRates] = useState<Record<string, number>>({});
   const [isRatesModalOpen, setIsRatesModalOpen] = useState(false);
@@ -135,6 +155,21 @@ const Dashboard: React.FC = () => {
           <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">Dashboard</h1>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Overview of inventory and sales</p>
         </div>
+        {(user?.role === 'OWNER' || !activeBranchId) && (
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-slate-500 dark:text-slate-400">Branch:</span>
+            <select
+              value={selectedBranchId}
+              onChange={(e) => setSelectedBranchId(e.target.value)}
+              className="rounded-lg border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white px-3 py-2 text-sm focus:ring-[#C28C46] focus:border-[#C28C46]"
+            >
+              <option value="">All Branches</option>
+              {branches.map(b => (
+                <option key={b.id} value={b.id}>{b.name}</option>
+              ))}
+            </select>
+          </div>
+        )}
       </div>
 
       {/* Main Bento Grid */}

@@ -915,7 +915,12 @@ app.patch('/api/admin/subscriptions/:shopId', authenticateToken, requireSuperAdm
 app.get('/api/dashboard/stats', authenticateToken, requireActiveOrTrial, async (req: AuthRequest, res) => {
   try {
     const shopId = req.user!.shopId!;
-    const branchId = req.user!.branchId;
+    let branchId = req.user!.branchId;
+    
+    // Allow OWNER (who has no fixed branchId) to filter by a specific branch
+    if (!branchId && req.query.branchId) {
+      branchId = String(req.query.branchId);
+    }
     
     let whereClause: any = { shopId };
     if (branchId) whereClause.branchId = branchId;
@@ -1953,7 +1958,7 @@ app.post('/api/cash_transfers', authenticateToken, requireActiveOrTrial, async (
   }
 });
 
-app.put('/api/cash_transfers/:id/status', authenticateToken, requireActiveOrTrial, requireRole(Role.OWNER), async (req: AuthRequest, res) => {
+app.put('/api/cash_transfers/:id/status', authenticateToken, requireActiveOrTrial, requireAccess([Role.OWNER, Role.MANAGER], ['view_vault']), async (req: AuthRequest, res) => {
   try {
     const id = req.params.id as string;
     const status = req.body.status as string; // 'ACCEPTED' or 'REJECTED'
@@ -1961,6 +1966,11 @@ app.put('/api/cash_transfers/:id/status', authenticateToken, requireActiveOrTria
 
     const transfer = await prisma.branchCashTransfer.findFirst({ where: { id, shopId } });
     if (!transfer) return res.status(404).json({ error: 'Transfer not found' });
+
+    // Ensure the user is OWNER or the manager of the receiving branch
+    if (req.user!.role !== 'OWNER' && req.user!.branchId !== transfer.toBranchId) {
+      return res.status(403).json({ error: 'Only the receiving branch or Owner can accept this transfer.' });
+    }
 
     const updated = await prisma.branchCashTransfer.update({
       where: { id },
@@ -2005,7 +2015,7 @@ app.post('/api/gold_transfers', authenticateToken, requireActiveOrTrial, async (
   }
 });
 
-app.put('/api/gold_transfers/:id/status', authenticateToken, requireActiveOrTrial, requireRole(Role.OWNER), async (req: AuthRequest, res) => {
+app.put('/api/gold_transfers/:id/status', authenticateToken, requireActiveOrTrial, requireAccess([Role.OWNER, Role.MANAGER], ['view_vault']), async (req: AuthRequest, res) => {
   try {
     const id = req.params.id as string;
     const status = req.body.status as string; // 'ACCEPTED' or 'REJECTED'
@@ -2013,6 +2023,11 @@ app.put('/api/gold_transfers/:id/status', authenticateToken, requireActiveOrTria
 
     const transfer = await prisma.branchGoldTransfer.findFirst({ where: { id, shopId } });
     if (!transfer) return res.status(404).json({ error: 'Transfer not found' });
+
+    // Ensure the user is OWNER or the manager of the receiving branch
+    if (req.user!.role !== 'OWNER' && req.user!.branchId !== transfer.toBranchId) {
+      return res.status(403).json({ error: 'Only the receiving branch or Owner can accept this transfer.' });
+    }
 
     const updated = await prisma.branchGoldTransfer.update({
       where: { id },
