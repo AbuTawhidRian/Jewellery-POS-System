@@ -109,6 +109,12 @@ const Dashboard: React.FC = () => {
     );
   }
 
+  // Determine the effective branch being viewed (explicit dropdown > active context)
+  const effectiveBranchId = selectedBranchId || activeBranchId;
+  const effectiveBranch = branches.find(b => b.id === effectiveBranchId);
+  // Main branch: hide all sales sections — they only do stock/transfers, not retail sales
+  const isMainBranch = effectiveBranch?.isMain === true;
+
   const StatCard = ({ label, value, icon: Icon, colorClass }: { label: string, value: string | number, icon: any, colorClass: string }) => (
     <div className="bg-white dark:bg-slate-950 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 flex flex-col justify-between h-full">
       <div className="flex items-center gap-2 mb-3">
@@ -183,11 +189,15 @@ const Dashboard: React.FC = () => {
         <StatCard label="Gross Wt (g)" value={stats.totalGrossWeightInStock?.toFixed(2) || '0.00'} icon={Scale} colorClass="text-slate-700 dark:text-slate-300" />
         <StatCard label="Pure Wt (g)" value={stats.totalPureWeightInStock?.toFixed(2) || '0.00'} icon={Diamond} colorClass="text-slate-700 dark:text-slate-300" />
         
-        {/* Sales KPIs */}
-        <StatCard label="Total Items Sold" value={stats.totalItemsSold} icon={ShoppingBag} colorClass="text-slate-700 dark:text-slate-300" />
-        <StatCard label="Total Sales Wt (g)" value={stats.totalSalesNetWeight?.toFixed(2) || '0.00'} icon={Scale} colorClass="text-slate-700 dark:text-slate-300" />
-        <StatCard label="Sales Today" value={stats.totalSalesTodayItems} icon={TrendingUp} colorClass="text-slate-700 dark:text-slate-300" />
-        <StatCard label="Today Sales Wt (g)" value={stats.todaySalesNetWeight?.toFixed(2) || '0.00'} icon={Scale} colorClass="text-slate-700 dark:text-slate-300" />
+        {/* Sales KPIs — hidden for main branch */}
+        {!isMainBranch && (
+          <>
+            <StatCard label="Total Items Sold" value={stats.totalItemsSold} icon={ShoppingBag} colorClass="text-slate-700 dark:text-slate-300" />
+            <StatCard label="Total Sales Wt (g)" value={stats.totalSalesNetWeight?.toFixed(2) || '0.00'} icon={Scale} colorClass="text-slate-700 dark:text-slate-300" />
+            <StatCard label="Sales Today" value={stats.totalSalesTodayItems} icon={TrendingUp} colorClass="text-slate-700 dark:text-slate-300" />
+            <StatCard label="Today Sales Wt (g)" value={stats.todaySalesNetWeight?.toFixed(2) || '0.00'} icon={Scale} colorClass="text-slate-700 dark:text-slate-300" />
+          </>
+        )}
 
         {/* Breakdown Blocks */}
         
@@ -225,75 +235,80 @@ const Dashboard: React.FC = () => {
           </div>
         </div>
 
-        {/* Sales by Type */}
-        <div className="md:col-span-2 xl:col-span-1 bg-white dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 flex flex-col h-[280px]">
-          <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-4 flex items-center gap-2"><TrendingUp className="w-4 h-4"/> Sales by Type</h3>
-          <div className="flex-1 overflow-y-auto space-y-2 custom-scrollbar pr-2">
-            {!stats.typeWiseSales || Object.keys(stats.typeWiseSales).length === 0 ? (
-              <p className="text-slate-400 text-xs">No data.</p>
-            ) : (
-              Object.entries(stats.typeWiseSales).map(([type, data]: any) => (
-                <div key={type} className="flex justify-between items-center text-sm">
-                  <span className="text-slate-700 dark:text-slate-200">{type}</span>
-                  <span className="font-medium text-slate-900 dark:text-white">{data.weight?.toFixed(2) || '0.00'}g</span>
-                </div>
-              ))
-            )}
-          </div>
-        </div>
+        {/* Sales by Type, Top Models, Recent Sales — hidden for main branch */}
+        {!isMainBranch && (
+          <>
+            {/* Sales by Type */}
+            <div className="md:col-span-2 xl:col-span-1 bg-white dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 flex flex-col h-[280px]">
+              <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-4 flex items-center gap-2"><TrendingUp className="w-4 h-4"/> Sales by Type</h3>
+              <div className="flex-1 overflow-y-auto space-y-2 custom-scrollbar pr-2">
+                {!stats.typeWiseSales || Object.keys(stats.typeWiseSales).length === 0 ? (
+                  <p className="text-slate-400 text-xs">No data.</p>
+                ) : (
+                  Object.entries(stats.typeWiseSales).map(([type, data]: any) => (
+                    <div key={type} className="flex justify-between items-center text-sm">
+                      <span className="text-slate-700 dark:text-slate-200">{type}</span>
+                      <span className="font-medium text-slate-900 dark:text-white">{data.weight?.toFixed(2) || '0.00'}g</span>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
 
-        {/* Top Selling Models */}
-        <div className="md:col-span-2 xl:col-span-1 bg-white dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 flex flex-col h-[280px]">
-          <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-4 flex items-center gap-2"><Star className="w-4 h-4"/> Top Models</h3>
-          <div className="flex-1 overflow-y-auto space-y-2 custom-scrollbar pr-2">
-            {!stats.topModels || stats.topModels.length === 0 ? (
-              <p className="text-slate-400 text-xs">No data.</p>
-            ) : (
-              stats.topModels.map(([model, data]: any) => (
-                <div key={model} className="flex justify-between items-center text-sm">
-                  <span className="text-slate-700 dark:text-slate-200 truncate pr-2">{model}</span>
-                  <span className="font-medium text-slate-900 dark:text-white shrink-0">{data.weight?.toFixed(2) || '0.00'}g</span>
-                </div>
-              ))
-            )}
-          </div>
-        </div>
+            {/* Top Selling Models */}
+            <div className="md:col-span-2 xl:col-span-1 bg-white dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 flex flex-col h-[280px]">
+              <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-4 flex items-center gap-2"><Star className="w-4 h-4"/> Top Models</h3>
+              <div className="flex-1 overflow-y-auto space-y-2 custom-scrollbar pr-2">
+                {!stats.topModels || stats.topModels.length === 0 ? (
+                  <p className="text-slate-400 text-xs">No data.</p>
+                ) : (
+                  stats.topModels.map(([model, data]: any) => (
+                    <div key={model} className="flex justify-between items-center text-sm">
+                      <span className="text-slate-700 dark:text-slate-200 truncate pr-2">{model}</span>
+                      <span className="font-medium text-slate-900 dark:text-white shrink-0">{data.weight?.toFixed(2) || '0.00'}g</span>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
 
-        {/* Recent Sales Activity Table */}
-        <div className="md:col-span-4 bg-white dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 flex flex-col h-[360px]">
-          <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-4 flex items-center gap-2"><Clock className="w-4 h-4"/> Recent Sales</h3>
-          <div className="flex-1 overflow-y-auto custom-scrollbar">
-            {(!stats.recentSales || stats.recentSales.length === 0) ? (
-              <p className="text-slate-400 text-xs">No recent sales.</p>
-            ) : (
-              <table className="w-full text-left text-sm">
-                <thead className="sticky top-0 bg-white dark:bg-slate-950 z-10">
-                  <tr className="text-slate-400 text-xs font-medium border-b border-slate-200 dark:border-slate-800">
-                    <th className="pb-3 font-normal uppercase tracking-wider">Item Details</th>
-                    <th className="pb-3 font-normal uppercase tracking-wider text-right">Net Weight</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
-                  {stats.recentSales.map((sale: any) => (
-                    <tr key={sale.id} className="hover:bg-slate-50 dark:hover:bg-slate-900/50 transition-colors">
-                      <td className="py-3">
-                        <div className="font-medium text-slate-900 dark:text-slate-200">
-                          {sale.type} {sale.model ? <span className="text-slate-500 font-normal">/ {sale.model}</span> : ''}
-                        </div>
-                        <div className="text-xs text-slate-400 mt-1">
-                          {sale.barcode} • {sale.buyer_name || 'Walk-in'}
-                        </div>
-                      </td>
-                      <td className="py-3 text-right font-medium text-slate-900 dark:text-slate-100">
-                        {(Number(sale.weight) - Number(sale.stone_weight || 0)).toFixed(2)}g
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </div>
-        </div>
+            {/* Recent Sales Activity Table */}
+            <div className="md:col-span-4 bg-white dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 flex flex-col h-[360px]">
+              <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-4 flex items-center gap-2"><Clock className="w-4 h-4"/> Recent Sales</h3>
+              <div className="flex-1 overflow-y-auto custom-scrollbar">
+                {(!stats.recentSales || stats.recentSales.length === 0) ? (
+                  <p className="text-slate-400 text-xs">No recent sales.</p>
+                ) : (
+                  <table className="w-full text-left text-sm">
+                    <thead className="sticky top-0 bg-white dark:bg-slate-950 z-10">
+                      <tr className="text-slate-400 text-xs font-medium border-b border-slate-200 dark:border-slate-800">
+                        <th className="pb-3 font-normal uppercase tracking-wider">Item Details</th>
+                        <th className="pb-3 font-normal uppercase tracking-wider text-right">Net Weight</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
+                      {stats.recentSales.map((sale: any) => (
+                        <tr key={sale.id} className="hover:bg-slate-50 dark:hover:bg-slate-900/50 transition-colors">
+                          <td className="py-3">
+                            <div className="font-medium text-slate-900 dark:text-slate-200">
+                              {sale.type} {sale.model ? <span className="text-slate-500 font-normal">/ {sale.model}</span> : ''}
+                            </div>
+                            <div className="text-xs text-slate-400 mt-1">
+                              {sale.barcode} • {sale.buyer_name || 'Walk-in'}
+                            </div>
+                          </td>
+                          <td className="py-3 text-right font-medium text-slate-900 dark:text-slate-100">
+                            {(Number(sale.weight) - Number(sale.stone_weight || 0)).toFixed(2)}g
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+              </div>
+            </div>
+          </>
+        )}
 
       </div>
 
