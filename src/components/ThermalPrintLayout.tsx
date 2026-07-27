@@ -111,12 +111,14 @@ const ThermalPrintLayout: React.FC = () => {
           </div>
           
           {/* Right Half (Back of Tag) - Details and Weight (35mm) */}
-          <div className="flex flex-col justify-center w-[35mm] h-full flex-shrink-0 px-[3mm] text-[8px] font-bold leading-[1.3]">
+          <div className="flex flex-col justify-center w-[35mm] h-full flex-shrink-0 px-[3mm] py-[1px] text-[7.5px] font-bold leading-[1.2]">
             <div className="flex w-full mb-[1px]">
-              <span className="truncate w-full text-center border-b border-black/40 pb-[1px]">{printItem.type}</span>
+              <span className="truncate w-full text-center border-b border-black/40 pb-[1px]">
+                {printItem.type}{printItem.model ? ` - ${printItem.model}` : ''}
+              </span>
             </div>
             
-            <div className="flex justify-between w-full">
+            <div className="flex justify-between w-full mt-[1px]">
               <span>GW:</span>
               <span>{parseFloat(printItem.weight as any || '0').toFixed(2)}g</span>
             </div>
