@@ -1266,7 +1266,7 @@ app.put('/api/inventory/:id', authenticateToken, requireActiveOrTrial, requireAc
     try {
         const id = String(req.params.id);
         const shopId = req.user.shopId;
-        const { barcode, type, model, weight, stone_weight } = req.body;
+        const { barcode, type, model, weight, stone_weight, makingCharge } = req.body;
         if (weight !== undefined && parseFloat(weight) < 0)
             return res.status(400).json({ error: 'Weight cannot be negative' });
         if (stone_weight !== undefined && stone_weight && parseFloat(stone_weight) < 0)
@@ -1291,6 +1291,7 @@ app.put('/api/inventory/:id', authenticateToken, requireActiveOrTrial, requireAc
                 model: model !== undefined ? model : undefined,
                 weight: weight !== undefined ? parseFloat(weight) : undefined,
                 stone_weight: stone_weight !== undefined ? (stone_weight ? parseFloat(stone_weight) : null) : undefined,
+                makingCharge: makingCharge !== undefined ? parseFloat(makingCharge) : undefined,
             }
         });
         res.json(updatedItem);

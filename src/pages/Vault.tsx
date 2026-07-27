@@ -55,30 +55,24 @@ const Vault: React.FC = () => {
   const handleWeightChange = (val: string) => {
     setWeight(val);
     const gw = parseFloat(val) || 0;
-    const sw = parseFloat(stoneWeight) || 0;
-    const nw = Math.max(0, gw - sw);
     if (makingPerGram) {
-      setTotalMaking(nw > 0 ? (parseFloat(makingPerGram) * nw).toFixed(2) : '');
+      setTotalMaking(gw > 0 ? (parseFloat(makingPerGram) * gw).toFixed(2) : '');
     }
   };
 
   const handleStoneWeightChange = (val: string) => {
     setStoneWeight(val);
     const gw = parseFloat(weight) || 0;
-    const sw = parseFloat(val) || 0;
-    const nw = Math.max(0, gw - sw);
     if (makingPerGram) {
-      setTotalMaking(nw > 0 ? (parseFloat(makingPerGram) * nw).toFixed(2) : '');
+      setTotalMaking(gw > 0 ? (parseFloat(makingPerGram) * gw).toFixed(2) : '');
     }
   };
 
   const handleMakingPerGramChange = (val: string) => {
     setMakingPerGram(val);
     const gw = parseFloat(weight) || 0;
-    const sw = parseFloat(stoneWeight) || 0;
-    const nw = Math.max(0, gw - sw);
-    if (val && nw > 0) {
-      setTotalMaking((parseFloat(val) * nw).toFixed(2));
+    if (val && gw > 0) {
+      setTotalMaking((parseFloat(val) * gw).toFixed(2));
     } else if (!val) {
       setTotalMaking('');
     }
@@ -87,10 +81,8 @@ const Vault: React.FC = () => {
   const handleTotalMakingChange = (val: string) => {
     setTotalMaking(val);
     const gw = parseFloat(weight) || 0;
-    const sw = parseFloat(stoneWeight) || 0;
-    const nw = Math.max(0, gw - sw);
-    if (val && nw > 0) {
-      setMakingPerGram((parseFloat(val) / nw).toFixed(2));
+    if (val && gw > 0) {
+      setMakingPerGram((parseFloat(val) / gw).toFixed(2));
     } else if (!val) {
       setMakingPerGram('');
     }
@@ -110,7 +102,7 @@ const Vault: React.FC = () => {
 
   // Edit Item Modal State
   const [isEditItemModalOpen, setIsEditItemModalOpen] = useState(false);
-  const [editingItem, setEditingItem] = useState<{ id: string; type: string; model: string; weight: string; stone_weight: string } | null>(null);
+  const [editingItem, setEditingItem] = useState<{ id: string; type: string; model: string; weight: string; stone_weight: string; makingCharge: string } | null>(null);
 
   // Table Actions Menu State
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
@@ -647,6 +639,7 @@ const Vault: React.FC = () => {
                       <th className="pb-3 px-4 font-medium">Gr. Wt</th>
                       <th className="pb-3 px-4 font-medium">St. Wt</th>
                       <th className="pb-3 px-4 font-medium">Net Wt</th>
+                      <th className="pb-3 px-4 font-medium">Making</th>
                       <th className="pb-3 px-4 font-medium text-right">Actions</th>
                     </tr>
                   </thead>
@@ -670,6 +663,7 @@ const Vault: React.FC = () => {
                           <td className="py-3 px-4 font-medium text-slate-700 dark:text-slate-300">{gw.toFixed(2)}g</td>
                           <td className="py-3 px-4 text-slate-600 dark:text-slate-400">{sw > 0 ? sw.toFixed(2) + 'g' : '-'}</td>
                           <td className="py-3 px-4 font-medium text-gold-400">{nw.toFixed(2)}g</td>
+                          <td className="py-3 px-4 text-slate-600 dark:text-slate-400">{(Number(item.makingCharge) || 0).toFixed(2)}</td>
                           <td className="py-3 px-4 text-right relative">
                             <div className="flex gap-2 justify-end items-center">
                               <button 
@@ -688,7 +682,7 @@ const Vault: React.FC = () => {
                                   <MoreVertical className="w-4 h-4" />
                                 </button>
 
-                                {activeMenuId === item.id && canEditVault && !isRetailBranch && (
+                                {activeMenuId === item.id && canEditVault && (
                                   <>
                                     <div 
                                       className="fixed inset-0 z-40" 
@@ -703,7 +697,8 @@ const Vault: React.FC = () => {
                                             type: item.type,
                                             model: item.model || '',
                                             weight: item.weight.toString(),
-                                            stone_weight: item.stone_weight ? item.stone_weight.toString() : ''
+                                            stone_weight: item.stone_weight ? item.stone_weight.toString() : '',
+                                            makingCharge: item.makingCharge ? item.makingCharge.toString() : ''
                                           });
                                           setIsEditItemModalOpen(true);
                                         }}
@@ -1165,6 +1160,17 @@ const Vault: React.FC = () => {
                 </div>
               </div>
 
+              <div>
+                <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">Making Charge</label>
+                <input 
+                  type="number"
+                  step="0.01"
+                  value={editingItem.makingCharge}
+                  onChange={(e) => setEditingItem({ ...editingItem, makingCharge: e.target.value })}
+                  className="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg px-4 py-2 text-slate-900 dark:text-slate-100 focus:outline-none focus:border-gold-500 focus:ring-1 focus:ring-gold-500 transition-colors"
+                />
+              </div>
+
               <div className="pt-4 border-t border-slate-200 dark:border-slate-800">
                 <button
                   onClick={async () => {
@@ -1172,7 +1178,8 @@ const Vault: React.FC = () => {
                       type: editingItem.type,
                       model: editingItem.model,
                       weight: parseFloat(editingItem.weight as string) || 0,
-                      stone_weight: editingItem.stone_weight ? parseFloat(editingItem.stone_weight as string) : 0
+                      stone_weight: editingItem.stone_weight ? parseFloat(editingItem.stone_weight as string) : 0,
+                      makingCharge: editingItem.makingCharge ? parseFloat(editingItem.makingCharge as string) : 0
                     });
                     if (res.success) {
                       setIsEditItemModalOpen(false);

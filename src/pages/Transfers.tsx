@@ -211,9 +211,19 @@ const Transfers: React.FC = () => {
                 <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4">Receive Details</h3>
                 
                 <div className="space-y-6">
-                  <div className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-4 border border-slate-200 dark:border-slate-800">
-                    <p className="text-sm text-slate-500 dark:text-slate-400 mb-1">Items Staged</p>
-                    <p className="text-2xl font-bold text-slate-900 dark:text-white">{receiveItems.length}</p>
+                  <div className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-4 border border-slate-200 dark:border-slate-800 grid gap-4">
+                    <div>
+                      <p className="text-sm text-slate-500 dark:text-slate-400 mb-1">Items Staged</p>
+                      <p className="text-2xl font-bold text-slate-900 dark:text-white">{receiveItems.length}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-slate-500 dark:text-slate-400 mb-1">Total Weight (g)</p>
+                      <p className="text-xl font-bold text-slate-900 dark:text-white">{receiveItems.reduce((s, i) => s + (Number(i.weight) || 0), 0).toFixed(2)}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-slate-500 dark:text-slate-400 mb-1">Total Making</p>
+                      <p className="text-xl font-bold text-slate-900 dark:text-white">{receiveItems.reduce((s, i) => s + (Number(i.makingCharge) || 0), 0).toFixed(2)}</p>
+                    </div>
                   </div>
 
                   <button
@@ -268,6 +278,7 @@ const Transfers: React.FC = () => {
                           <th className="p-4 text-slate-500 font-medium">Barcode</th>
                           <th className="p-4 text-slate-500 font-medium">Type</th>
                           <th className="p-4 text-slate-500 font-medium text-right">Weight (g)</th>
+                          <th className="p-4 text-slate-500 font-medium text-right">Making</th>
                           <th className="p-4 text-slate-500 font-medium text-right">Action</th>
                         </tr>
                       </thead>
@@ -277,6 +288,7 @@ const Transfers: React.FC = () => {
                             <td className="p-4 font-mono font-medium">{item.barcode}</td>
                             <td className="p-4">{item.type}</td>
                             <td className="p-4 text-right">{item.weight}</td>
+                            <td className="p-4 text-right">{(Number(item.makingCharge) || 0).toFixed(2)}</td>
                             <td className="p-4 text-right">
                               <button 
                                 onClick={() => setReceiveItems(receiveItems.filter(i => i.barcode !== item.barcode))}
@@ -314,6 +326,23 @@ const Transfers: React.FC = () => {
                       ))}
                     </select>
                   </div>
+
+                  {dispatchItems.length > 0 && (
+                    <div className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-4 border border-slate-200 dark:border-slate-800 grid gap-4 mt-4">
+                      <div>
+                        <p className="text-sm text-slate-500 dark:text-slate-400 mb-1">Items Staged</p>
+                        <p className="text-2xl font-bold text-slate-900 dark:text-white">{dispatchItems.length}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-slate-500 dark:text-slate-400 mb-1">Total Weight (g)</p>
+                        <p className="text-xl font-bold text-slate-900 dark:text-white">{dispatchItems.reduce((s, i) => s + (Number(i.weight) || 0), 0).toFixed(2)}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-slate-500 dark:text-slate-400 mb-1">Total Making</p>
+                        <p className="text-xl font-bold text-slate-900 dark:text-white">{dispatchItems.reduce((s, i) => s + (Number(i.makingCharge) || 0), 0).toFixed(2)}</p>
+                      </div>
+                    </div>
+                  )}
 
                   <button
                     onClick={handleDispatch}
@@ -367,6 +396,7 @@ const Transfers: React.FC = () => {
                           <th className="p-4 text-slate-500 font-medium">Barcode</th>
                           <th className="p-4 text-slate-500 font-medium">Type</th>
                           <th className="p-4 text-slate-500 font-medium text-right">Weight (g)</th>
+                          <th className="p-4 text-slate-500 font-medium text-right">Making</th>
                           <th className="p-4 text-slate-500 font-medium text-right">Action</th>
                         </tr>
                       </thead>
@@ -376,6 +406,7 @@ const Transfers: React.FC = () => {
                             <td className="p-4 font-mono font-medium">{item.barcode}</td>
                             <td className="p-4">{item.type}</td>
                             <td className="p-4 text-right">{item.weight}</td>
+                            <td className="p-4 text-right">{(Number(item.makingCharge) || 0).toFixed(2)}</td>
                             <td className="p-4 text-right">
                               <button 
                                 onClick={() => {
@@ -408,6 +439,7 @@ const Transfers: React.FC = () => {
                       <tr className="border-b border-slate-200 dark:border-slate-800">
                         <th className="p-4 text-slate-500 font-medium">Date</th>
                         <th className="p-4 text-slate-500 font-medium">Item</th>
+                        <th className="p-4 text-slate-500 font-medium">Wt/Making</th>
                         <th className="p-4 text-slate-500 font-medium">From</th>
                         <th className="p-4 text-slate-500 font-medium">To</th>
                         <th className="p-4 text-slate-500 font-medium">Status</th>
@@ -422,6 +454,10 @@ const Transfers: React.FC = () => {
                           <td className="p-4">
                             <div className="font-medium text-slate-900 dark:text-white">{transfer.item?.type || 'Unknown'}</div>
                             <div className="text-xs text-slate-500 font-mono">{transfer.item?.barcode || 'N/A'}</div>
+                          </td>
+                          <td className="p-4">
+                            <div className="font-medium text-slate-900 dark:text-white">{transfer.item?.weight || 0}g</div>
+                            <div className="text-xs text-slate-500">Mkg: {(Number(transfer.item?.makingCharge) || 0).toFixed(2)}</div>
                           </td>
                           <td className="p-4">{transfer.fromBranch?.name || 'Unknown'}</td>
                           <td className="p-4">{transfer.toBranch?.name || 'Unknown'}</td>
