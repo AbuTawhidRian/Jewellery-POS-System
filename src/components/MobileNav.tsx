@@ -26,8 +26,8 @@ const MobileNav: React.FC = () => {
     if (hasPermission('view_dashboard')) links.push({ to: '/dashboard', icon: LayoutDashboard, label: 'Dash' });
     if (hasPermission('view_vault')) links.push({ to: '/dashboard/vault', icon: Lock, label: 'Vault' });
     if (hasPermission('view_vault')) links.push({ to: '/dashboard/transfers', icon: ArrowRightLeft, label: 'Transfers' });
-    if (hasPermission('access_pos')) links.push({ to: '/dashboard/pos', icon: Barcode, label: 'POS' });
-    if (hasPermission('view_ledger')) links.push({ to: '/dashboard/ledger', icon: BookOpen, label: 'Ledger' });
+    if (hasPermission('access_pos') && isRetailBranch) links.push({ to: '/dashboard/pos', icon: Barcode, label: 'POS' });
+    if (hasPermission('view_ledger') && isRetailBranch) links.push({ to: '/dashboard/ledger', icon: BookOpen, label: 'Ledger' });
     if (user?.role === 'OWNER' && !isRetailBranch) links.push({ to: '/dashboard/settings', icon: SettingsIcon, label: 'Set' });
   }
 

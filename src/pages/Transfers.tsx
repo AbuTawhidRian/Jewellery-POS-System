@@ -33,13 +33,8 @@ const Transfers: React.FC = () => {
 
   useEffect(() => {
     fetchBranches();
-  }, []);
-
-  useEffect(() => {
-    if (activeTab === 'history') {
-      fetchHistory();
-    }
-  }, [activeTab, activeBranchId]);
+    fetchHistory();
+  }, [activeBranchId]);
 
   const fetchBranches = async () => {
     try {
@@ -54,7 +49,7 @@ const Transfers: React.FC = () => {
     setLoadingHistory(true);
     try {
       const res = await api.get('/transfers');
-      setTransfers(res.data.filter((t: any) => t.status === 'PENDING'));
+      setTransfers(res.data);
     } catch (err) {
       toast.error('Failed to load transfers');
     } finally {
@@ -142,24 +137,46 @@ const Transfers: React.FC = () => {
     }
   };
 
+  const successfulDispatches = transfers.filter(t => t.fromBranchId === activeBranchId && t.status === 'RECEIVED');
+  const successfulReceives = transfers.filter(t => t.toBranchId === activeBranchId && t.status === 'RECEIVED');
+
+  const transferStats = {
+    dispatchCount: successfulDispatches.length,
+    dispatchWeight: successfulDispatches.reduce((acc, t) => acc + (Number(t.item?.weight) || 0), 0),
+    receiveCount: successfulReceives.length,
+    receiveWeight: successfulReceives.reduce((acc, t) => acc + (Number(t.item?.weight) || 0), 0),
+  };
+
   return (
-    <div className="flex-1 overflow-x-hidden relative h-[calc(100vh-5rem)] pb-20 md:pb-0">
-      <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
-        
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
-          <div>
-            <h1 className="text-3xl font-bold text-slate-900 dark:text-white tracking-tight flex items-center gap-3">
-              <ArrowRightLeft className="w-8 h-8 text-[#C28C46]" />
-              Stock Transfers
-            </h1>
-            <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
-              Manage inventory movement between branches
-            </p>
+    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 ease-out space-y-6 pb-10 max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
+      <header className="mb-6">
+        <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-3">
+          <ArrowRightLeft className="w-8 h-8 text-[#C28C46]" />
+          Branch Transfers
+        </h1>
+        <p className="text-slate-600 dark:text-slate-400 mt-2">Manage inventory movement between branches.</p>
+      </header>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <div className="bg-white dark:bg-slate-950 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm relative overflow-hidden group">
+          <div className="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-gradient-to-br from-amber-500/10 to-transparent rounded-full blur-2xl group-hover:bg-amber-500/20 transition-colors"></div>
+          <h3 className="text-sm font-bold tracking-wider text-slate-500 dark:text-slate-400 uppercase mb-2">Total Successfully Dispatched</h3>
+          <div className="flex items-end gap-3 relative z-10">
+             <span className="text-3xl font-bold text-slate-900 dark:text-white">{transferStats.dispatchCount} <span className="text-base font-medium text-slate-500">items</span></span>
+             <span className="text-xl font-bold text-[#C28C46] mb-1">{transferStats.dispatchWeight.toFixed(2)}g</span>
           </div>
         </div>
+        <div className="bg-white dark:bg-slate-950 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm relative overflow-hidden group">
+          <div className="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-gradient-to-br from-emerald-500/10 to-transparent rounded-full blur-2xl group-hover:bg-emerald-500/20 transition-colors"></div>
+          <h3 className="text-sm font-bold tracking-wider text-slate-500 dark:text-slate-400 uppercase mb-2">Total Successfully Received</h3>
+          <div className="flex items-end gap-3 relative z-10">
+             <span className="text-3xl font-bold text-slate-900 dark:text-white">{transferStats.receiveCount} <span className="text-base font-medium text-slate-500">items</span></span>
+             <span className="text-xl font-bold text-emerald-500 mb-1">{transferStats.receiveWeight.toFixed(2)}g</span>
+          </div>
+        </div>
+      </div>
 
-        {/* Tabs */}
+      <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 p-6">
         <div className="flex gap-2 overflow-x-auto pb-4 mb-6">
           {!user?.isReadOnly && (
             <>
