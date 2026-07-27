@@ -33,8 +33,10 @@ const Dashboard: React.FC = () => {
     const fetchStats = async () => {
       try {
         let url = '/dashboard/stats';
-        if ((user?.role === 'OWNER' || !activeBranchId) && selectedBranchId) {
-          url += `?branchId=${selectedBranchId}`;
+        // Priority: explicit dropdown selection > active branch from context
+        const branchToFilter = selectedBranchId || activeBranchId;
+        if (branchToFilter) {
+          url += `?branchId=${branchToFilter}`;
         }
         const res = await api.get(url);
         setStats(res.data);
@@ -45,7 +47,7 @@ const Dashboard: React.FC = () => {
       }
     };
     fetchStats();
-  }, [selectedBranchId, user]);
+  }, [selectedBranchId, activeBranchId, user]);
 
   const [dailyRates, setDailyRates] = useState<Record<string, number>>({});
   const [isRatesModalOpen, setIsRatesModalOpen] = useState(false);
@@ -118,7 +120,7 @@ const Dashboard: React.FC = () => {
   );
 
   return (
-    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 ease-out pb-12 max-w-7xl mx-auto space-y-6">
+    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 ease-out pb-12 space-y-6 w-full">
       
       {/* Daily Rates Strip */}
       <div className="w-full bg-slate-900 dark:bg-slate-950 text-white border border-slate-800 rounded-xl px-4 py-2.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-sm">
