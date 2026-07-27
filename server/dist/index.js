@@ -1515,20 +1515,30 @@ app.post('/api/payments', authenticateToken, requireActiveOrTrial, requireAccess
     try {
         const { buyerId, amount, notes } = req.body;
         const shopId = req.user.shopId;
-        if (Number(amount) === 0)
+        const branchId = req.user.branchId;
+        const numAmount = Number(amount);
+        if (numAmount === 0)
             return res.status(400).json({ error: 'Payment amount cannot be zero' });
-        const payment = await prisma.payment.create({
-            data: {
-                shopId,
-                buyerId,
-                amount: Number(amount),
-                notes,
-                branchId: req.user.branchId || undefined
+        const paymentWithBuyer = await prisma.$transaction(async (tx) => {
+            const payment = await tx.payment.create({
+                data: {
+                    shopId,
+                    buyerId,
+                    amount: numAmount,
+                    notes,
+                    branchId: branchId || undefined
+                }
+            });
+            if (branchId) {
+                await tx.branch.update({
+                    where: { id: branchId },
+                    data: { cashBalance: { increment: numAmount } }
+                });
             }
-        });
-        const paymentWithBuyer = await prisma.payment.findUnique({
-            where: { id: payment.id },
-            include: { buyer: true }
+            return await tx.payment.findUnique({
+                where: { id: payment.id },
+                include: { buyer: true }
+            });
         });
         res.json(paymentWithBuyer);
     }
@@ -1543,7 +1553,15 @@ app.delete('/api/payments/:id', authenticateToken, requireActiveOrTrial, require
         const existing = await prisma.payment.findUnique({ where: { id } });
         if (!existing || existing.shopId !== shopId)
             return res.status(404).json({ error: 'Not found' });
-        await prisma.payment.delete({ where: { id } });
+        await prisma.$transaction(async (tx) => {
+            await tx.payment.delete({ where: { id } });
+            if (existing.branchId) {
+                await tx.branch.update({
+                    where: { id: existing.branchId },
+                    data: { cashBalance: { decrement: existing.amount } }
+                });
+            }
+        });
         res.json({ success: true });
     }
     catch (error) {
@@ -1558,17 +1576,28 @@ app.put('/api/payments/:id', authenticateToken, requireActiveOrTrial, requireAcc
         const existing = await prisma.payment.findUnique({ where: { id } });
         if (!existing || existing.shopId !== shopId)
             return res.status(404).json({ error: 'Not found' });
-        const updatedPayment = await prisma.payment.update({
-            where: { id },
-            data: {
-                buyerId: buyerId !== undefined ? buyerId : undefined,
-                amount: amount !== undefined ? Number(amount) : undefined,
-                notes: notes !== undefined ? notes : undefined
+        if (amount !== undefined && Number(amount) === 0)
+            return res.status(400).json({ error: 'Payment amount cannot be zero' });
+        const amountDifference = amount !== undefined ? Number(amount) - existing.amount : 0;
+        const paymentWithBuyer = await prisma.$transaction(async (tx) => {
+            const payment = await tx.payment.update({
+                where: { id },
+                data: {
+                    buyerId: buyerId !== undefined ? buyerId : undefined,
+                    amount: amount !== undefined ? Number(amount) : undefined,
+                    notes: notes !== undefined ? notes : undefined
+                }
+            });
+            if (existing.branchId && amountDifference !== 0) {
+                await tx.branch.update({
+                    where: { id: existing.branchId },
+                    data: { cashBalance: { increment: amountDifference } }
+                });
             }
-        });
-        const paymentWithBuyer = await prisma.payment.findUnique({
-            where: { id: updatedPayment.id },
-            include: { buyer: true }
+            return await tx.payment.findUnique({
+                where: { id: payment.id },
+                include: { buyer: true }
+            });
         });
         res.json(paymentWithBuyer);
     }
@@ -1873,6 +1902,28 @@ app.put('/api/cash_transfers/:id/status', authenticateToken, requireActiveOrTria
         if (req.user.role !== 'OWNER' && req.user.branchId !== transfer.toBranchId) {
             return res.status(403).json({ error: 'Only the receiving branch or Owner can accept this transfer.' });
         }
+        // If accepting a pending transfer, we need to update branch balances
+        if (status === 'ACCEPTED' && transfer.status === 'PENDING') {
+            const updated = await prisma.$transaction(async (tx) => {
+                // Decrement from sender
+                await tx.branch.update({
+                    where: { id: transfer.fromBranchId },
+                    data: { cashBalance: { decrement: transfer.amount } }
+                });
+                // Increment for receiver
+                await tx.branch.update({
+                    where: { id: transfer.toBranchId },
+                    data: { cashBalance: { increment: transfer.amount } }
+                });
+                // Update transfer status
+                return await tx.branchCashTransfer.update({
+                    where: { id },
+                    data: { status }
+                });
+            });
+            return res.json(updated);
+        }
+        // Otherwise, just update the status (e.g. REJECTED)
         const updated = await prisma.branchCashTransfer.update({
             where: { id },
             data: { status }
@@ -1927,6 +1978,28 @@ app.put('/api/gold_transfers/:id/status', authenticateToken, requireActiveOrTria
         if (req.user.role !== 'OWNER' && req.user.branchId !== transfer.toBranchId) {
             return res.status(403).json({ error: 'Only the receiving branch or Owner can accept this transfer.' });
         }
+        // If accepting a pending transfer, we need to update branch balances
+        if (status === 'ACCEPTED' && transfer.status === 'PENDING') {
+            const updated = await prisma.$transaction(async (tx) => {
+                // Decrement from sender
+                await tx.branch.update({
+                    where: { id: transfer.fromBranchId },
+                    data: { goldBalance: { decrement: transfer.weight } }
+                });
+                // Increment for receiver
+                await tx.branch.update({
+                    where: { id: transfer.toBranchId },
+                    data: { goldBalance: { increment: transfer.weight } }
+                });
+                // Update transfer status
+                return await tx.branchGoldTransfer.update({
+                    where: { id },
+                    data: { status }
+                });
+            });
+            return res.json(updated);
+        }
+        // Otherwise, just update the status (e.g. REJECTED)
         const updated = await prisma.branchGoldTransfer.update({
             where: { id },
             data: { status }

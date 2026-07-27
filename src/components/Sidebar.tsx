@@ -30,7 +30,7 @@ const Sidebar: React.FC = () => {
     if (hasPermission('view_vault')) links.push({ to: '/dashboard/transfers', icon: ArrowRightLeft, label: 'Transfers' });
 
     if (hasPermission('access_pos') && isRetailBranch) links.push({ to: '/dashboard/pos', icon: Barcode, label: 'POS Terminal' });
-    if (hasPermission('view_ledger') && isRetailBranch) links.push({ to: '/dashboard/ledger', icon: BookOpen, label: 'Sales Ledger' });
+    if (hasPermission('view_ledger')) links.push({ to: '/dashboard/ledger', icon: BookOpen, label: 'Sales Ledger' });
     if (user?.role === 'OWNER' || hasPermission('view_vault')) links.push({ to: '/dashboard/settlement', icon: ArrowRightLeft, label: 'Branch Settlement' });
     if (user?.role === 'OWNER' && !isRetailBranch) links.push({ to: '/dashboard/settings', icon: SettingsIcon, label: 'Settings' });
   }

@@ -1586,21 +1586,35 @@ app.post('/api/payments', authenticateToken, requireActiveOrTrial, requireAccess
   try {
     const { buyerId, amount, notes } = req.body;
     const shopId = req.user!.shopId!;
+    const branchId = req.user!.branchId;
+    const numAmount = Number(amount);
     
-    if (Number(amount) === 0) return res.status(400).json({ error: 'Payment amount cannot be zero' });
-    const payment = await prisma.payment.create({
-      data: { 
-        shopId, 
-        buyerId, 
-        amount: Number(amount), 
-        notes,
-        branchId: req.user!.branchId || undefined
+    if (numAmount === 0) return res.status(400).json({ error: 'Payment amount cannot be zero' });
+    
+    const paymentWithBuyer = await prisma.$transaction(async (tx) => {
+      const payment = await tx.payment.create({
+        data: { 
+          shopId, 
+          buyerId, 
+          amount: numAmount, 
+          notes,
+          branchId: branchId || undefined
+        }
+      });
+      
+      if (branchId) {
+        await tx.branch.update({
+          where: { id: branchId },
+          data: { cashBalance: { increment: numAmount } }
+        });
       }
+      
+      return await tx.payment.findUnique({
+        where: { id: payment.id },
+        include: { buyer: true }
+      });
     });
-    const paymentWithBuyer = await prisma.payment.findUnique({
-      where: { id: payment.id },
-      include: { buyer: true }
-    });
+    
     res.json(paymentWithBuyer);
   } catch (error) {
     res.status(500).json({ error: 'Internal Server Error' });
@@ -1614,7 +1628,16 @@ app.delete('/api/payments/:id', authenticateToken, requireActiveOrTrial, require
     const existing = await prisma.payment.findUnique({ where: { id } });
     if (!existing || existing.shopId !== shopId) return res.status(404).json({ error: 'Not found' });
     
-    await prisma.payment.delete({ where: { id } });
+    await prisma.$transaction(async (tx) => {
+      await tx.payment.delete({ where: { id } });
+      if (existing.branchId) {
+        await tx.branch.update({
+          where: { id: existing.branchId },
+          data: { cashBalance: { decrement: existing.amount } }
+        });
+      }
+    });
+    
     res.json({ success: true });
   } catch (error) {
     res.status(500).json({ error: 'Internal Server Error' });
@@ -1630,19 +1653,33 @@ app.put('/api/payments/:id', authenticateToken, requireActiveOrTrial, requireAcc
     const existing = await prisma.payment.findUnique({ where: { id } });
     if (!existing || existing.shopId !== shopId) return res.status(404).json({ error: 'Not found' });
 
-    const updatedPayment = await prisma.payment.update({
-      where: { id },
-      data: {
-        buyerId: buyerId !== undefined ? buyerId : undefined,
-        amount: amount !== undefined ? Number(amount) : undefined,
-        notes: notes !== undefined ? notes : undefined
+    if (amount !== undefined && Number(amount) === 0) return res.status(400).json({ error: 'Payment amount cannot be zero' });
+    
+    const amountDifference = amount !== undefined ? Number(amount) - existing.amount : 0;
+
+    const paymentWithBuyer = await prisma.$transaction(async (tx) => {
+      const payment = await tx.payment.update({
+        where: { id },
+        data: { 
+          buyerId: buyerId !== undefined ? buyerId : undefined,
+          amount: amount !== undefined ? Number(amount) : undefined,
+          notes: notes !== undefined ? notes : undefined
+        }
+      });
+      
+      if (existing.branchId && amountDifference !== 0) {
+        await tx.branch.update({
+          where: { id: existing.branchId },
+          data: { cashBalance: { increment: amountDifference } }
+        });
       }
+      
+      return await tx.payment.findUnique({
+        where: { id: payment.id },
+        include: { buyer: true }
+      });
     });
     
-    const paymentWithBuyer = await prisma.payment.findUnique({
-      where: { id: updatedPayment.id },
-      include: { buyer: true }
-    });
     res.json(paymentWithBuyer);
   } catch (error) {
     res.status(500).json({ error: 'Internal Server Error' });

@@ -6,12 +6,16 @@ import Dialog from '../components/Dialog';
 import { useAuth } from '../contexts/AuthContext';
 
 const Ledger: React.FC = () => {
-  const { hasPermission } = useAuth();
-  const { sales, buyers, itemTypes, payments, metalReceipts, setPrintInvoiceData, setPrintStatementData, setPrintItem, voidTransaction } = useInventory();
+  const { hasPermission, user } = useAuth();
+  const { sales, buyers, itemTypes, payments, metalReceipts, setPrintInvoiceData, setPrintStatementData, setPrintItem, voidTransaction, addPayment } = useInventory();
   const [filterBuyerId, setFilterBuyerId] = useState<string>('all');
   const [filterDateRange, setFilterDateRange] = useState<string>('all');
   const [customStartDate, setCustomStartDate] = useState<string>('');
   const [customEndDate, setCustomEndDate] = useState<string>('');
+  
+  const [isSupplierPaymentOpen, setIsSupplierPaymentOpen] = useState(false);
+  const [supplierPaymentAmount, setSupplierPaymentAmount] = useState('');
+  const [supplierPaymentNotes, setSupplierPaymentNotes] = useState('');
   
   const [buyerDropdownOpen, setBuyerDropdownOpen] = useState(false);
   const [buyerSearch, setBuyerSearch] = useState('');
@@ -452,6 +456,19 @@ const Ledger: React.FC = () => {
           </button>
           
           <button 
+            onClick={() => {
+              setSupplierPaymentAmount('');
+              setSupplierPaymentNotes('');
+              setIsSupplierPaymentOpen(true);
+            }}
+            disabled={filterBuyerId === 'all'}
+            className={`inline-flex items-center justify-center gap-2 font-semibold py-2 px-4 rounded-lg border transition-colors shadow-sm ${filterBuyerId === 'all' ? 'bg-slate-100 dark:bg-slate-800 text-slate-400 border-slate-200 dark:border-slate-700 cursor-not-allowed' : 'bg-red-500 hover:bg-red-600 text-white border-red-600'}`}
+          >
+            <Wallet className="w-4 h-4 text-white" />
+            <span className="hidden sm:inline">Pay Supplier (Issue Cash)</span>
+          </button>
+          
+          <button 
             onClick={handlePrintStatement}
             disabled={filterBuyerId === 'all'}
             className={`inline-flex items-center justify-center gap-2 font-semibold py-2 px-4 rounded-lg border transition-colors shadow-sm ${filterBuyerId === 'all' ? 'bg-slate-100 dark:bg-slate-800 text-slate-400 border-slate-200 dark:border-slate-700 cursor-not-allowed' : 'bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-900 dark:text-slate-100 border-slate-300 dark:border-slate-700'}`}
@@ -800,6 +817,86 @@ const Ledger: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Pay Supplier Modal */}
+      {isSupplierPaymentOpen && (
+        <div className="fixed inset-0 bg-white dark:bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-md shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="p-6 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center bg-white dark:bg-slate-950/50">
+              <h3 className="text-xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                <Wallet className="w-5 h-5 text-red-500" />
+                Pay Supplier
+              </h3>
+              <button onClick={() => setIsSupplierPaymentOpen(false)} className="text-slate-400 hover:text-slate-500 dark:hover:text-slate-300 transition-colors">
+                <Trash2 className="w-5 h-5" style={{ display: 'none' }} />
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+              </button>
+            </div>
+            <div className="p-6 bg-slate-50 dark:bg-slate-900">
+              <form onSubmit={async (e) => {
+                e.preventDefault();
+                if (!filterBuyerId || filterBuyerId === 'all' || !supplierPaymentAmount) return;
+                
+                // Submit negative amount to deduct from supplier debt and branch cashBalance
+                const result = await addPayment(
+                  filterBuyerId,
+                  -Math.abs(Number(supplierPaymentAmount)),
+                  supplierPaymentNotes || 'Cash issued to supplier'
+                );
+                
+                if (result) {
+                  setIsSupplierPaymentOpen(false);
+                  setDialogConfig({ isOpen: true, type: 'alert', title: 'Success', message: 'Payment successfully issued to supplier.' });
+                } else {
+                  setDialogConfig({ isOpen: true, type: 'alert', title: 'Error', message: 'Failed to issue payment.' });
+                }
+              }} className="space-y-4">
+                <div className="bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-900/30 rounded-lg p-3 text-sm text-red-600 dark:text-red-400 mb-4">
+                  Entering a payment here will automatically <strong>deduct</strong> the exact cash amount from this Branch's Vault Cash Balance.
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Amount ({user?.shopCurrency || 'AED'})</label>
+                  <input
+                    type="number"
+                    required
+                    step="0.01"
+                    min="0"
+                    value={supplierPaymentAmount}
+                    onChange={(e) => setSupplierPaymentAmount(e.target.value)}
+                    className="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg px-4 py-2.5 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-red-500/50 focus:border-red-500"
+                    placeholder="Enter positive amount"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Notes</label>
+                  <input
+                    type="text"
+                    value={supplierPaymentNotes}
+                    onChange={(e) => setSupplierPaymentNotes(e.target.value)}
+                    className="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg px-4 py-2.5 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-red-500/50 focus:border-red-500"
+                    placeholder="e.g. For gold batch #102..."
+                  />
+                </div>
+                <div className="pt-4 border-t border-slate-200 dark:border-slate-800 mt-6 flex justify-end gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setIsSupplierPaymentOpen(false)}
+                    className="px-4 py-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 font-medium"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-6 py-2 bg-red-500 hover:bg-red-600 text-white font-bold rounded-lg transition-colors shadow-lg shadow-red-500/20"
+                  >
+                    Issue Cash
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
 
       <Dialog 
         isOpen={dialogConfig.isOpen}
