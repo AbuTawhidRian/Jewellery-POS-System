@@ -46,7 +46,7 @@ model Shop {
   branches     Branch[]
   itemTransfers ItemTransfer[]
   goldRates    GoldRate[]
-  branchGoldTransfers BranchGoldTransfer[]
+  branchCashTransfers BranchCashTransfer[]
 }
 
 model Branch {
@@ -68,8 +68,8 @@ model Branch {
   transfersIn  ItemTransfer[] @relation("TransfersIn")
   
   goldRates    GoldRate[]
-  goldTransfersOut BranchGoldTransfer[] @relation("GoldTransfersOut")
-  goldTransfersIn  BranchGoldTransfer[] @relation("GoldTransfersIn")
+  cashTransfersOut BranchCashTransfer[] @relation("CashTransfersOut")
+  cashTransfersIn  BranchCashTransfer[] @relation("CashTransfersIn")
 }
 
 model User {
@@ -235,17 +235,17 @@ model GoldRate {
   @@unique([branchId, type])
 }
 
-model BranchGoldTransfer {
+model BranchCashTransfer {
   id           String   @id @default(uuid())
   shopId       String
   fromBranchId String
   toBranchId   String
-  weight       Float    // Weight of pure gold (9999/995)
+  amount       Float
   date         DateTime @default(now())
-  status       String   @default("COMPLETED")
+  status       String   @default("PENDING") // PENDING, ACCEPTED, REJECTED
   notes        String?
 
   shop         Shop   @relation(fields: [shopId], references: [id], onDelete: Cascade)
-  fromBranch   Branch @relation("GoldTransfersOut", fields: [fromBranchId], references: [id])
-  toBranch     Branch @relation("GoldTransfersIn", fields: [toBranchId], references: [id])
+  fromBranch   Branch @relation("CashTransfersOut", fields: [fromBranchId], references: [id])
+  toBranch     Branch @relation("CashTransfersIn", fields: [toBranchId], references: [id])
 }
