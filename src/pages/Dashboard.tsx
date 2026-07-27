@@ -351,7 +351,7 @@ const Dashboard: React.FC = () => {
       </section>
       {/* Daily Rates Modal */}
       {isRatesModalOpen && (
-        <div className="fixed inset-0 z-30 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm pt-20 md:pl-64 pb-16 md:pb-0">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
           <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl w-full max-w-2xl overflow-hidden border border-slate-200 dark:border-slate-800">
             <div className="p-6 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-slate-950">
               <h2 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
