@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowRightLeft, Download, Upload, ScanLine, Package, CheckCircle2 } from 'lucide-react';
+import { ArrowRightLeft, Download, Upload, ScanLine, Package, CheckCircle2, ChevronLeft, ChevronRight } from 'lucide-react';
 import api from '../lib/api';
 import toast from 'react-hot-toast';
 import { useAuth } from '../contexts/AuthContext';
@@ -30,6 +30,8 @@ const Transfers: React.FC = () => {
   // History State
   const [transfers, setTransfers] = useState<any[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 7;
 
   useEffect(() => {
     fetchBranches();
@@ -146,9 +148,16 @@ const Transfers: React.FC = () => {
     receiveCount: successfulReceives.length,
     receiveWeight: successfulReceives.reduce((acc, t) => acc + (Number(t.item?.weight) || 0), 0),
   };
+  const sortedTransfers = [...transfers].sort((a, b) => {
+    if (a.status === 'PENDING' && b.status !== 'PENDING') return -1;
+    if (b.status === 'PENDING' && a.status !== 'PENDING') return 1;
+    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+  });
+  const totalPages = Math.ceil(sortedTransfers.length / itemsPerPage) || 1;
+  const paginatedTransfers = sortedTransfers.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   return (
-    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 ease-out space-y-6 pb-10 max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
+    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 ease-out space-y-6 pb-10">
       <header className="mb-6">
         <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-3">
           <ArrowRightLeft className="w-8 h-8 text-[#C28C46]" />
@@ -463,7 +472,7 @@ const Transfers: React.FC = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {transfers.map(transfer => (
+                      {paginatedTransfers.map(transfer => (
                         <tr key={transfer.id} className="border-b border-slate-200 dark:border-slate-800">
                           <td className="p-4 text-slate-600 dark:text-slate-400">
                             {new Date(transfer.createdAt).toLocaleString()}
@@ -491,7 +500,7 @@ const Transfers: React.FC = () => {
                           </td>
                         </tr>
                       ))}
-                      {transfers.length === 0 && (
+                      {paginatedTransfers.length === 0 && (
                         <tr>
                           <td colSpan={5} className="p-8 text-center text-slate-500">
                             No transfer history found for this branch.
@@ -500,6 +509,32 @@ const Transfers: React.FC = () => {
                       )}
                     </tbody>
                   </table>
+                </div>
+              )}
+              {activeTab === 'history' && transfers.length > 0 && !loadingHistory && (
+                <div className="flex items-center justify-between p-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/50">
+                  <p className="text-sm text-slate-500 dark:text-slate-400">
+                    Showing <span className="font-medium text-slate-900 dark:text-white">{(currentPage - 1) * itemsPerPage + 1}</span> to <span className="font-medium text-slate-900 dark:text-white">{Math.min(currentPage * itemsPerPage, transfers.length)}</span> of <span className="font-medium text-slate-900 dark:text-white">{transfers.length}</span> results
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                      disabled={currentPage === 1}
+                      className="p-1 rounded hover:bg-slate-200 dark:hover:bg-slate-800 disabled:opacity-50 transition-colors"
+                    >
+                      <ChevronLeft className="w-5 h-5 text-slate-600 dark:text-slate-400" />
+                    </button>
+                    <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                      Page {currentPage} of {totalPages}
+                    </span>
+                    <button
+                      onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                      disabled={currentPage === totalPages}
+                      className="p-1 rounded hover:bg-slate-200 dark:hover:bg-slate-800 disabled:opacity-50 transition-colors"
+                    >
+                      <ChevronRight className="w-5 h-5 text-slate-600 dark:text-slate-400" />
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
