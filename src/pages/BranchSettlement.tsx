@@ -162,7 +162,7 @@ const BranchSettlement: React.FC = () => {
             Gold Settlement
           </button>
         </div>
-      </div>
+      </header>
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
         {/* Form Section */}
