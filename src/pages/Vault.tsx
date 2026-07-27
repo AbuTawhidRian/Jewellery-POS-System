@@ -49,6 +49,52 @@ const Vault: React.FC = () => {
   const [model, setModel] = useState('');
   const [weight, setWeight] = useState('');
   const [stoneWeight, setStoneWeight] = useState('');
+  const [makingPerGram, setMakingPerGram] = useState('');
+  const [totalMaking, setTotalMaking] = useState('');
+
+  const handleWeightChange = (val: string) => {
+    setWeight(val);
+    const gw = parseFloat(val) || 0;
+    const sw = parseFloat(stoneWeight) || 0;
+    const nw = Math.max(0, gw - sw);
+    if (makingPerGram) {
+      setTotalMaking(nw > 0 ? (parseFloat(makingPerGram) * nw).toFixed(2) : '');
+    }
+  };
+
+  const handleStoneWeightChange = (val: string) => {
+    setStoneWeight(val);
+    const gw = parseFloat(weight) || 0;
+    const sw = parseFloat(val) || 0;
+    const nw = Math.max(0, gw - sw);
+    if (makingPerGram) {
+      setTotalMaking(nw > 0 ? (parseFloat(makingPerGram) * nw).toFixed(2) : '');
+    }
+  };
+
+  const handleMakingPerGramChange = (val: string) => {
+    setMakingPerGram(val);
+    const gw = parseFloat(weight) || 0;
+    const sw = parseFloat(stoneWeight) || 0;
+    const nw = Math.max(0, gw - sw);
+    if (val && nw > 0) {
+      setTotalMaking((parseFloat(val) * nw).toFixed(2));
+    } else if (!val) {
+      setTotalMaking('');
+    }
+  };
+
+  const handleTotalMakingChange = (val: string) => {
+    setTotalMaking(val);
+    const gw = parseFloat(weight) || 0;
+    const sw = parseFloat(stoneWeight) || 0;
+    const nw = Math.max(0, gw - sw);
+    if (val && nw > 0) {
+      setMakingPerGram((parseFloat(val) / nw).toFixed(2));
+    } else if (!val) {
+      setMakingPerGram('');
+    }
+  };
 
   const [isManageTypesOpen, setIsManageTypesOpen] = useState(false);
   const [newTypeName, setNewTypeName] = useState('');
@@ -259,7 +305,8 @@ const Vault: React.FC = () => {
       type,
       model,
       weight: gw,
-      stone_weight: sw
+      stone_weight: sw,
+      makingCharge: totalMaking ? parseFloat(totalMaking) : 0
     });
 
     if (!result.success) {
@@ -276,6 +323,8 @@ const Vault: React.FC = () => {
     // Reset form for rapid entry - KEEP Type and Model!
     setWeight('');
     setStoneWeight('');
+    setMakingPerGram('');
+    setTotalMaking('');
   };
 
   return (
@@ -416,7 +465,7 @@ const Vault: React.FC = () => {
                     step="0.01"
                     min="0"
                     value={weight}
-                    onChange={(e) => setWeight(e.target.value)}
+                    onChange={(e) => handleWeightChange(e.target.value)}
                     className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg px-4 py-2 text-slate-900 dark:text-slate-100 focus:outline-none focus:border-gold-500 focus:ring-1 focus:ring-gold-500 transition-colors"
                     placeholder="0.00"
                   />
@@ -428,7 +477,34 @@ const Vault: React.FC = () => {
                     step="0.01"
                     min="0"
                     value={stoneWeight}
-                    onChange={(e) => setStoneWeight(e.target.value)}
+                    onChange={(e) => handleStoneWeightChange(e.target.value)}
+                    className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg px-4 py-2 text-slate-900 dark:text-slate-100 focus:outline-none focus:border-gold-500 focus:ring-1 focus:ring-gold-500 transition-colors"
+                    placeholder="0.00"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">Making Rate /g</label>
+                  <input 
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={makingPerGram}
+                    onChange={(e) => handleMakingPerGramChange(e.target.value)}
+                    className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg px-4 py-2 text-slate-900 dark:text-slate-100 focus:outline-none focus:border-gold-500 focus:ring-1 focus:ring-gold-500 transition-colors"
+                    placeholder="0.00"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">Total Making</label>
+                  <input 
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={totalMaking}
+                    onChange={(e) => handleTotalMakingChange(e.target.value)}
                     className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg px-4 py-2 text-slate-900 dark:text-slate-100 focus:outline-none focus:border-gold-500 focus:ring-1 focus:ring-gold-500 transition-colors"
                     placeholder="0.00"
                   />

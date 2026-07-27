@@ -11,6 +11,7 @@ export interface Item {
   model?: string;
   weight: number;
   stone_weight: number;
+  makingCharge?: number;
   status: ItemStatus;
   date_added?: string;
 }
