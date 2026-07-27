@@ -41,7 +41,8 @@ const Vault: React.FC = () => {
       .finally(() => setLoadingBranches(false));
   }, []);
 
-  const isRetailBranch = Boolean(activeBranchId && branches.length > 0 && branches.find(b => b.id === activeBranchId)?.isMain === false);
+  const currentBranch = activeBranchId ? branches.find(b => b.id === activeBranchId) : branches.find(b => b.isMain);
+  const isRetailBranch = Boolean(currentBranch && currentBranch.isMain === false);
   const canEditVault = hasPermission('edit_vault');
   
   // Form State
@@ -344,12 +345,26 @@ const Vault: React.FC = () => {
 
   return (
     <div className="h-full flex flex-col space-y-6 animate-in fade-in duration-500">
-      <div>
-        <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-3">
-          <Lock className="w-8 h-8 text-gold-500" />
-          The Vault
-        </h1>
-        <p className="text-slate-600 dark:text-slate-400 mt-2 text-sm">Manage your active jewelry inventory.</p>
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-3">
+            <Lock className="w-8 h-8 text-gold-500" />
+            The Vault
+          </h1>
+          <p className="text-slate-600 dark:text-slate-400 mt-2 text-sm">Manage your active jewelry inventory and branch balances.</p>
+        </div>
+        {currentBranch && (
+          <div className="flex gap-4">
+            <div className="bg-slate-900 dark:bg-slate-950 px-5 py-3 rounded-xl border border-slate-800 flex flex-col">
+              <span className="text-xs text-slate-400 font-medium uppercase tracking-wider mb-1">Cash Balance</span>
+              <span className="text-xl font-bold text-emerald-500">{currentBranch.cashBalance?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}</span>
+            </div>
+            <div className="bg-slate-900 dark:bg-slate-950 px-5 py-3 rounded-xl border border-slate-800 flex flex-col">
+              <span className="text-xs text-slate-400 font-medium uppercase tracking-wider mb-1">Gold Balance</span>
+              <span className="text-xl font-bold text-[#C28C46]">{currentBranch.goldBalance?.toFixed(2) || '0.00'}g</span>
+            </div>
+          </div>
+        )}
       </div>
 
       <div className={`grid grid-cols-1 gap-8 ${canEditVault && !loadingBranches && !isRetailBranch ? 'xl:grid-cols-3' : ''}`}>

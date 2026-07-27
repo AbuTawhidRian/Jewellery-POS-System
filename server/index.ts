@@ -1972,6 +1972,31 @@ app.put('/api/cash_transfers/:id/status', authenticateToken, requireActiveOrTria
       return res.status(403).json({ error: 'Only the receiving branch or Owner can accept this transfer.' });
     }
 
+    // If accepting a pending transfer, we need to update branch balances
+    if (status === 'ACCEPTED' && transfer.status === 'PENDING') {
+      const updated = await prisma.$transaction(async (tx) => {
+        // Decrement from sender
+        await tx.branch.update({
+          where: { id: transfer.fromBranchId },
+          data: { cashBalance: { decrement: transfer.amount } }
+        });
+        
+        // Increment for receiver
+        await tx.branch.update({
+          where: { id: transfer.toBranchId },
+          data: { cashBalance: { increment: transfer.amount } }
+        });
+
+        // Update transfer status
+        return await tx.branchCashTransfer.update({
+          where: { id },
+          data: { status }
+        });
+      });
+      return res.json(updated);
+    }
+
+    // Otherwise, just update the status (e.g. REJECTED)
     const updated = await prisma.branchCashTransfer.update({
       where: { id },
       data: { status }
@@ -2029,6 +2054,31 @@ app.put('/api/gold_transfers/:id/status', authenticateToken, requireActiveOrTria
       return res.status(403).json({ error: 'Only the receiving branch or Owner can accept this transfer.' });
     }
 
+    // If accepting a pending transfer, we need to update branch balances
+    if (status === 'ACCEPTED' && transfer.status === 'PENDING') {
+      const updated = await prisma.$transaction(async (tx) => {
+        // Decrement from sender
+        await tx.branch.update({
+          where: { id: transfer.fromBranchId },
+          data: { goldBalance: { decrement: transfer.weight } }
+        });
+        
+        // Increment for receiver
+        await tx.branch.update({
+          where: { id: transfer.toBranchId },
+          data: { goldBalance: { increment: transfer.weight } }
+        });
+
+        // Update transfer status
+        return await tx.branchGoldTransfer.update({
+          where: { id },
+          data: { status }
+        });
+      });
+      return res.json(updated);
+    }
+
+    // Otherwise, just update the status (e.g. REJECTED)
     const updated = await prisma.branchGoldTransfer.update({
       where: { id },
       data: { status }

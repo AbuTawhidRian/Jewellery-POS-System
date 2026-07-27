@@ -55,6 +55,8 @@ model Branch {
   shopId    String
   name      String
   isMain    Boolean  @default(false)
+  cashBalance Float  @default(0)
+  goldBalance Float  @default(0)
   createdAt DateTime @default(now())
 
   shop      Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
