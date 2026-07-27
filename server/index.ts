@@ -930,6 +930,7 @@ app.get('/api/dashboard/stats', authenticateToken, requireActiveOrTrial, async (
     const totalItemsInStock = activeStock.length;
     const totalWeightInStock = activeStock.reduce((acc, item) => acc + Math.max(0, (Number(item.weight) || 0) - (Number(item.stone_weight) || 0)), 0);
     const totalGrossWeightInStock = activeStock.reduce((acc, item) => acc + (Number(item.weight) || 0), 0);
+    const totalStoneWeightInStock = activeStock.reduce((acc, item) => acc + (Number(item.stone_weight) || 0), 0);
     const totalPureWeightInStock = activeStock.reduce((acc, item) => {
       const gw = Number(item.weight) || 0;
       const sw = Number(item.stone_weight) || 0;
@@ -1008,6 +1009,7 @@ app.get('/api/dashboard/stats', authenticateToken, requireActiveOrTrial, async (
       totalItemsInStock,
       totalWeightInStock,
       totalGrossWeightInStock,
+      totalStoneWeightInStock,
       totalPureWeightInStock,
       totalSalesTodayItems,
       totalItemsSold,

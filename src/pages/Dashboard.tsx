@@ -101,6 +101,7 @@ const Dashboard: React.FC = () => {
   const inventoryStats = [
     { label: 'Items In Stock', value: stats.totalItemsInStock, icon: Package, color: 'text-blue-500', bg: 'bg-blue-500/10' },
     { label: 'Gross Weight (g)', value: stats.totalGrossWeightInStock.toFixed(2), icon: Scale, color: 'text-orange-500', bg: 'bg-orange-500/10' },
+    { label: 'Total Stone Weight (g)', value: (stats.totalStoneWeightInStock || 0).toFixed(2), icon: Diamond, color: 'text-rose-500', bg: 'bg-rose-500/10' },
     { label: 'Net Weight (g)', value: stats.totalWeightInStock.toFixed(2), icon: Scale, color: 'text-gold-500', bg: 'bg-gold-500/10' },
     { label: 'Pure Weight (g)', value: stats.totalPureWeightInStock.toFixed(2), icon: Diamond, color: 'text-emerald-500', bg: 'bg-emerald-500/10' },
   ];
@@ -350,7 +351,7 @@ const Dashboard: React.FC = () => {
       </section>
       {/* Daily Rates Modal */}
       {isRatesModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+        <div className="fixed inset-0 z-30 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm pt-20 md:pl-64 pb-16 md:pb-0">
           <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl w-full max-w-2xl overflow-hidden border border-slate-200 dark:border-slate-800">
             <div className="p-6 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-slate-950">
               <h2 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">

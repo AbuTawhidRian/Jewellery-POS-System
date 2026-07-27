@@ -8,6 +8,7 @@ const ThermalPrintLayout: React.FC = () => {
   const { user } = useAuth();
   const barcodeRef = useRef<SVGSVGElement>(null);
   const [barcodeError, setBarcodeError] = useState(false);
+  const branchName = user?.shopName || 'Jewellery';
 
   useEffect(() => {
     if (printItem && barcodeRef.current) {
@@ -99,7 +100,7 @@ const ThermalPrintLayout: React.FC = () => {
 
           {/* Left Half (Front of Tag) - Shop Name and Barcode (35mm) */}
           <div className="flex flex-col items-center justify-center w-[35mm] h-full flex-shrink-0 px-[2mm]">
-            <h1 className="text-[10px] font-extrabold leading-none mb-[1px] uppercase tracking-tight text-center">{user?.shopName || 'Jewellery'}</h1>
+            <h1 className="text-[10px] font-extrabold leading-none mb-[1px] uppercase tracking-tight text-center">{branchName}</h1>
             {barcodeError ? (
               <div className="text-center my-[1px] border border-black p-[1px] w-full">
                 <div className="text-[10px] font-mono font-bold">{printItem.barcode}</div>
@@ -110,10 +111,9 @@ const ThermalPrintLayout: React.FC = () => {
           </div>
           
           {/* Right Half (Back of Tag) - Details and Weight (35mm) */}
-          <div className="flex flex-col justify-center w-[35mm] h-full flex-shrink-0 px-[3mm] text-[9px] font-bold leading-[1.3]">
-            <div className="flex justify-between w-full mb-[1px]">
-              <span className="truncate pr-1">{printItem.type}</span>
-              <span className="truncate">{printItem.model}</span>
+          <div className="flex flex-col justify-center w-[35mm] h-full flex-shrink-0 px-[3mm] text-[8px] font-bold leading-[1.3]">
+            <div className="flex w-full mb-[1px]">
+              <span className="truncate w-full text-center border-b border-black/40 pb-[1px]">{printItem.type}</span>
             </div>
             
             <div className="flex justify-between w-full">
@@ -121,23 +121,20 @@ const ThermalPrintLayout: React.FC = () => {
               <span>{parseFloat(printItem.weight as any || '0').toFixed(2)}g</span>
             </div>
             
-            {parseFloat(printItem.stone_weight as any || '0') > 0 ? (
-              <>
-                <div className="flex justify-between w-full">
-                  <span>SW:</span>
-                  <span>{parseFloat(printItem.stone_weight as any || '0').toFixed(2)}g</span>
-                </div>
-                <div className="flex justify-between w-full border-t border-black/40 mt-[1px] pt-[1px]">
-                  <span>NW:</span>
-                  <span>{(parseFloat(printItem.weight as any || '0') - parseFloat(printItem.stone_weight as any || '0')).toFixed(2)}g</span>
-                </div>
-              </>
-            ) : (
-              <div className="flex justify-between w-full border-t border-black/40 mt-[1px] pt-[1px]">
-                <span>NW:</span>
-                <span>{parseFloat(printItem.weight as any || '0').toFixed(2)}g</span>
-              </div>
-            )}
+            <div className="flex justify-between w-full">
+              <span>SW:</span>
+              <span>{parseFloat(printItem.stone_weight as any || '0').toFixed(2)}g</span>
+            </div>
+            
+            <div className="flex justify-between w-full border-t border-black/40 mt-[1px] pt-[1px]">
+              <span>NW:</span>
+              <span>{(parseFloat(printItem.weight as any || '0') - parseFloat(printItem.stone_weight as any || '0')).toFixed(2)}g</span>
+            </div>
+
+            <div className="flex justify-between w-full">
+              <span>MC:</span>
+              <span>{parseFloat(printItem.makingCharge as any || '0').toFixed(2)}</span>
+            </div>
           </div>
 
       </div>
