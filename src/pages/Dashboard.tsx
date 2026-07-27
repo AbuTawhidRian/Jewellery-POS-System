@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Package, Scale, TrendingUp, ShoppingBag, LayoutDashboard, Diamond, Star, Clock, Edit2, X, Save } from 'lucide-react';
+import { Package, Scale, TrendingUp, ShoppingBag, Diamond, Star, Clock, Edit2, X } from 'lucide-react';
 import api from '../lib/api';
 import toast from 'react-hot-toast';
 import { useAuth } from '../contexts/AuthContext';
@@ -77,308 +77,219 @@ const Dashboard: React.FC = () => {
   if (isLoading || !stats) {
     return (
       <div className="flex-1 flex items-center justify-center min-h-[60vh]">
-        <div className="relative w-16 h-16">
-          <svg viewBox="0 0 64 64" className="w-16 h-16">
-            <circle cx="32" cy="32" r="24" fill="none" className="stroke-slate-100 dark:stroke-slate-800" strokeWidth="5" />
-            <g className="animate-spin" style={{ transformOrigin: '32px 32px', animationDuration: '1.1s' }}>
-              <circle
-                cx="32" cy="32" r="24" fill="none"
-                stroke="#C28C46" strokeWidth="5" strokeLinecap="round"
-                strokeDasharray="56 150"
-              />
-              <g transform="translate(32,8)">
-                <polygon points="-6,-2 6,-2 3,-6 -3,-6" fill="#E0B276" />
-                <polygon points="-6,-2 6,-2 0,9" fill="#C28C46" />
-                <line x1="-6" y1="-2" x2="6" y2="-2" stroke="#8A6530" strokeWidth="0.6" />
-              </g>
-            </g>
+        <div className="relative w-12 h-12">
+          <svg viewBox="0 0 64 64" className="w-12 h-12 animate-spin">
+            <circle cx="32" cy="32" r="24" fill="none" className="stroke-slate-200 dark:stroke-slate-800" strokeWidth="4" />
+            <circle cx="32" cy="32" r="24" fill="none" stroke="#C28C46" strokeWidth="4" strokeLinecap="round" strokeDasharray="40 150" />
           </svg>
         </div>
       </div>
     );
   }
 
-  const inventoryStats = [
-    { label: 'Items In Stock', value: stats.totalItemsInStock, icon: Package, color: 'text-blue-500', bg: 'bg-blue-500/10' },
-    { label: 'Gross Weight (g)', value: stats.totalGrossWeightInStock.toFixed(2), icon: Scale, color: 'text-orange-500', bg: 'bg-orange-500/10' },
-    { label: 'Total Stone Weight (g)', value: (stats.totalStoneWeightInStock || 0).toFixed(2), icon: Diamond, color: 'text-rose-500', bg: 'bg-rose-500/10' },
-    { label: 'Net Weight (g)', value: stats.totalWeightInStock.toFixed(2), icon: Scale, color: 'text-gold-500', bg: 'bg-gold-500/10' },
-    { label: 'Pure Weight (g)', value: stats.totalPureWeightInStock.toFixed(2), icon: Diamond, color: 'text-emerald-500', bg: 'bg-emerald-500/10' },
-  ];
-
-  const salesStats = [
-    { label: 'Sales Today (Items)', value: stats.totalSalesTodayItems, icon: TrendingUp, color: 'text-cyan-500', bg: 'bg-cyan-500/10' },
-    { label: 'Today Sales Weight (g)', value: stats.todaySalesNetWeight.toFixed(2), icon: Scale, color: 'text-teal-500', bg: 'bg-teal-500/10' },
-    { label: 'Total Items Sold', value: stats.totalItemsSold, icon: ShoppingBag, color: 'text-purple-500', bg: 'bg-purple-500/10' },
-    { label: 'Total Sales Weight (g)', value: stats.totalSalesNetWeight.toFixed(2), icon: Scale, color: 'text-indigo-500', bg: 'bg-indigo-500/10' },
-  ];
-
-  const StatCard = ({ stat }: { stat: any }) => {
-    const Icon = stat.icon;
-    return (
-      <div className="bg-white dark:bg-slate-950 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm relative overflow-hidden group hover:border-slate-300 dark:hover:border-slate-700 transition-all hover:shadow-md">
-        <div className="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-gradient-to-br from-black/5 dark:from-white/5 to-transparent rounded-full blur-2xl group-hover:bg-black/10 dark:group-hover:bg-white/10 transition-colors"></div>
-        <div className="flex items-center justify-between relative z-10">
-          <div>
-            <p className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">{stat.label}</p>
-            <h3 className="text-2xl lg:text-3xl font-bold text-slate-900 dark:text-slate-100">{stat.value}</h3>
-          </div>
-          <div className={`p-3 rounded-xl ${stat.bg} ${stat.color}`}>
-            <Icon className="w-6 h-6" />
-          </div>
+  const StatCard = ({ label, value, icon: Icon, colorClass }: { label: string, value: string | number, icon: any, colorClass: string }) => (
+    <div className="bg-white dark:bg-slate-900/50 p-5 rounded-2xl border border-slate-100 dark:border-slate-800/50 flex flex-col justify-between hover:shadow-sm transition-all h-full">
+      <div className="flex items-center justify-between mb-4">
+        <span className="text-sm font-medium text-slate-500 dark:text-slate-400">{label}</span>
+        <div className={`p-2 rounded-xl bg-slate-50 dark:bg-slate-800/50 ${colorClass}`}>
+          <Icon className="w-4 h-4" />
         </div>
       </div>
-    );
-  };
+      <h3 className="text-2xl font-bold text-slate-900 dark:text-slate-100">{value}</h3>
+    </div>
+  );
 
   return (
-    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 ease-out space-y-10 pb-10">
-      <header>
-        <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-3">
-          <LayoutDashboard className="w-8 h-8 text-gold-500" />
-          Dashboard
-        </h1>
-        <p className="text-slate-600 dark:text-slate-400 mt-2">Comprehensive overview of your jewelry inventory and sales performance.</p>
-      </header>
-
-      {/* DAILY RATES SECTION */}
-      <section>
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-2">
-            <div className="p-2 bg-amber-500/10 rounded-lg">
-              <TrendingUp className="w-5 h-5 text-amber-500" />
-            </div>
-            <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-200">Daily Rates</h2>
-          </div>
+    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 ease-out pb-12 max-w-7xl mx-auto space-y-6">
+      
+      {/* Header & Daily Rates Strip */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-2">
+        <div>
+          <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">Dashboard</h1>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Overview of inventory and sales</p>
+        </div>
+        
+        {/* Compact Daily Rates */}
+        <div className="flex flex-wrap items-center gap-3 bg-white dark:bg-slate-900/50 px-4 py-2 rounded-full border border-slate-200 dark:border-slate-800 shadow-sm text-sm">
+          <TrendingUp className="w-4 h-4 text-amber-500" />
+          {Object.keys(dailyRates).length === 0 ? (
+            <span className="text-slate-500">No rates</span>
+          ) : (
+            Object.entries(dailyRates).map(([type, rate]) => (
+              <div key={type} className="flex items-center gap-1.5 border-r border-slate-200 dark:border-slate-700 pr-3 last:border-0 last:pr-0">
+                <span className="text-slate-500 font-medium">{type}</span>
+                <span className="font-bold text-slate-900 dark:text-slate-100">{currency}{Number(rate).toFixed(2)}</span>
+              </div>
+            ))
+          )}
           {(user?.role === 'OWNER' || hasPermission('edit_vault')) && (
             <button
               onClick={openRatesModal}
-              className="flex items-center gap-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors"
+              className="ml-1 p-1.5 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors"
+              title="Edit Rates"
             >
-              <Edit2 className="w-4 h-4" />
-              Edit Rates
+              <Edit2 className="w-3.5 h-3.5" />
             </button>
           )}
         </div>
+      </div>
+
+      {/* Main Bento Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         
-        <div className="flex flex-wrap gap-4">
-          {Object.entries(dailyRates).map(([type, rate]) => (
-            <div key={type} className="bg-white dark:bg-slate-950 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm flex items-center justify-between min-w-[200px] flex-1">
-              <span className="text-slate-600 dark:text-slate-400 font-medium">{type}</span>
-              <span className="text-lg font-bold text-slate-900 dark:text-slate-100">{currency} {Number(rate).toFixed(2)} /g</span>
-            </div>
-          ))}
-          {Object.keys(dailyRates).length === 0 && (
-            <div className="w-full text-center p-6 text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-900/50 rounded-xl border border-dashed border-slate-300 dark:border-slate-700">
-              No daily rates configured yet.
-            </div>
-          )}
-        </div>
-      </section>
-
-      {/* INVENTORY SECTION */}
-      <section>
-        <div className="flex items-center gap-2 mb-6">
-          <div className="p-2 bg-blue-500/10 rounded-lg">
-            <Package className="w-5 h-5 text-blue-500" />
-          </div>
-          <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-200">Inventory Overview</h2>
-        </div>
+        {/* KPI Row 1: Inventory */}
+        <StatCard label="Items In Stock" value={stats.totalItemsInStock} icon={Package} colorClass="text-blue-500" />
+        <StatCard label="Net Weight (g)" value={stats.totalWeightInStock.toFixed(2)} icon={Scale} colorClass="text-[#C28C46]" />
+        <StatCard label="Gross Weight (g)" value={stats.totalGrossWeightInStock.toFixed(2)} icon={Scale} colorClass="text-orange-500" />
+        <StatCard label="Pure Weight (g)" value={stats.totalPureWeightInStock.toFixed(2)} icon={Diamond} colorClass="text-emerald-500" />
         
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-          {inventoryStats.map((stat, idx) => <StatCard key={`inv-${idx}`} stat={stat} />)}
-        </div>
+        {/* KPI Row 2: Sales */}
+        <StatCard label="Total Items Sold" value={stats.totalItemsSold} icon={ShoppingBag} colorClass="text-purple-500" />
+        <StatCard label="Total Sales Wt (g)" value={stats.totalSalesNetWeight.toFixed(2)} icon={Scale} colorClass="text-indigo-500" />
+        <StatCard label="Sales Today" value={stats.totalSalesTodayItems} icon={TrendingUp} colorClass="text-cyan-500" />
+        <StatCard label="Today Sales Wt (g)" value={stats.todaySalesNetWeight.toFixed(2)} icon={Scale} colorClass="text-teal-500" />
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Stock by Type */}
-          <div className="bg-white dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
-            <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100 mb-4 flex items-center gap-2">
-              <Diamond className="w-4 h-4 text-gold-500" />
-              Stock by Type
-            </h3>
-            {stats.topStockModels.length === 0 ? (
-              <p className="text-slate-500 dark:text-slate-400 text-sm py-4">No models data.</p>
-            ) : (
-              <div className="space-y-3">
-                {stats.topStockModels.map(([model, data]: any) => (
-                  <div key={model} className="flex justify-between items-center p-3 rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800/50">
-                    <span className="text-slate-700 dark:text-slate-300 font-medium truncate pr-4">{model}</span>
-                    <div className="text-right flex flex-col items-end shrink-0">
-                      <span className="bg-slate-200 dark:bg-slate-800 text-slate-800 dark:text-slate-200 font-bold px-2 py-0.5 rounded text-xs mb-1">{data.count} items</span>
-                      <span className="text-gold-600 dark:text-gold-500 font-bold text-sm">{data.weight.toFixed(2)}g</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
+        {/* Breakdown Blocks (Spanning rows/cols) */}
+        
+        {/* Stock by Type */}
+        <div className="lg:col-span-2 bg-white dark:bg-slate-900/50 rounded-3xl border border-slate-100 dark:border-slate-800/50 p-6 flex flex-col h-[320px]">
+          <div className="flex items-center gap-2 mb-4">
+            <Diamond className="w-4 h-4 text-[#C28C46]" />
+            <h3 className="font-bold text-slate-900 dark:text-slate-100">Stock by Type</h3>
           </div>
-
-          {/* Stock by Model */}
-          <div className="bg-white dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
-            <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100 mb-4 flex items-center gap-2">
-              <Star className="w-4 h-4 text-indigo-500" />
-              Stock by Model
-            </h3>
+          <div className="flex-1 overflow-y-auto pr-2 space-y-3 custom-scrollbar">
             {stats.topStockModels.length === 0 ? (
-              <p className="text-slate-500 dark:text-slate-400 text-sm py-4">No model stock recorded.</p>
+              <p className="text-slate-400 text-sm">No data available.</p>
             ) : (
-              <div className="space-y-3">
-                {stats.topStockModels.map(([model, data]: any, index: number) => (
-                  <div key={model} className="flex justify-between items-center p-3 rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800/50">
-                    <div className="flex items-center gap-3">
-                      <div className="w-6 h-6 rounded-full bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-xs font-bold">
-                        {index + 1}
-                      </div>
-                      <span className="text-slate-700 dark:text-slate-300 font-medium">{model}</span>
-                    </div>
-                    <div className="text-right flex flex-col items-end">
-                      <span className="bg-slate-200 dark:bg-slate-800 text-slate-800 dark:text-slate-200 font-bold px-2 py-0.5 rounded text-xs mb-1">{data.count} items</span>
-                      <span className="text-indigo-600 dark:text-indigo-500 font-bold text-sm">{data.weight.toFixed(2)}g</span>
-                    </div>
+              stats.topStockModels.map(([model, data]: any) => (
+                <div key={model} className="flex justify-between items-center text-sm group">
+                  <span className="text-slate-600 dark:text-slate-300 font-medium truncate pr-4">{model}</span>
+                  <div className="flex items-center gap-4 shrink-0">
+                    <span className="text-slate-400 tabular-nums w-12 text-right">{data.count} pcs</span>
+                    <span className="font-bold text-slate-900 dark:text-slate-100 tabular-nums w-16 text-right">{data.weight.toFixed(2)}g</span>
                   </div>
-                ))}
-              </div>
+                </div>
+              ))
             )}
           </div>
         </div>
-      </section>
 
-      <hr className="border-slate-200 dark:border-slate-800" />
-
-      {/* SALES SECTION */}
-      <section>
-        <div className="flex items-center gap-2 mb-6">
-          <div className="p-2 bg-emerald-500/10 rounded-lg">
-            <TrendingUp className="w-5 h-5 text-emerald-500" />
+        {/* Sales by Type */}
+        <div className="lg:col-span-2 bg-white dark:bg-slate-900/50 rounded-3xl border border-slate-100 dark:border-slate-800/50 p-6 flex flex-col h-[320px]">
+          <div className="flex items-center gap-2 mb-4">
+            <TrendingUp className="w-4 h-4 text-emerald-500" />
+            <h3 className="font-bold text-slate-900 dark:text-slate-100">Sales by Type</h3>
           </div>
-          <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-200">Sales Overview</h2>
-        </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-          {salesStats.map((stat, idx) => <StatCard key={`sale-${idx}`} stat={stat} />)}
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-          {/* Sales by Type */}
-          <div className="bg-white dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
-            <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100 mb-4 flex items-center gap-2">
-              <Diamond className="w-4 h-4 text-emerald-500" />
-              Sales by Type
-            </h3>
+          <div className="flex-1 overflow-y-auto pr-2 space-y-3 custom-scrollbar">
             {Object.keys(stats.typeWiseSales || {}).length === 0 ? (
-              <p className="text-slate-500 dark:text-slate-400 text-sm py-4">No sales data.</p>
+              <p className="text-slate-400 text-sm">No sales data.</p>
             ) : (
-              <div className="space-y-3">
-                {Object.entries(stats.typeWiseSales).map(([type, data]: any) => (
-                  <div key={type} className="flex justify-between items-center p-3 rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800/50">
-                    <span className="text-slate-700 dark:text-slate-300 font-medium">{type}</span>
-                    <div className="text-right flex flex-col items-end">
-                      <span className="bg-slate-200 dark:bg-slate-800 text-slate-800 dark:text-slate-200 font-bold px-2 py-0.5 rounded text-xs mb-1">{data.count} sold</span>
-                      <span className="text-indigo-600 dark:text-indigo-400 font-bold text-sm">{data.weight.toFixed(2)}g</span>
-                    </div>
+              Object.entries(stats.typeWiseSales).map(([type, data]: any) => (
+                <div key={type} className="flex justify-between items-center text-sm group">
+                  <span className="text-slate-600 dark:text-slate-300 font-medium">{type}</span>
+                  <div className="flex items-center gap-4 shrink-0">
+                    <span className="text-slate-400 tabular-nums w-12 text-right">{data.count} sold</span>
+                    <span className="font-bold text-slate-900 dark:text-slate-100 tabular-nums w-16 text-right">{data.weight.toFixed(2)}g</span>
                   </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Top Selling Models */}
-          <div className="bg-white dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
-            <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100 mb-4 flex items-center gap-2">
-              <Star className="w-4 h-4 text-amber-500" />
-              Top Selling Models
-            </h3>
-            {(stats.topModels || []).length === 0 ? (
-              <p className="text-slate-500 dark:text-slate-400 text-sm py-4">No model sales recorded.</p>
-            ) : (
-              <div className="space-y-3">
-                {(stats.topModels || []).map(([model, data]: any, index: number) => (
-                  <div key={model} className="flex justify-between items-center p-3 rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800/50">
-                    <div className="flex items-center gap-3">
-                      <div className="w-6 h-6 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 flex items-center justify-center text-xs font-bold">
-                        {index + 1}
-                      </div>
-                      <span className="text-slate-700 dark:text-slate-300 font-medium">{model}</span>
-                    </div>
-                    <div className="text-right flex flex-col items-end">
-                      <span className="bg-slate-200 dark:bg-slate-800 text-slate-800 dark:text-slate-200 font-bold px-2 py-0.5 rounded text-xs mb-1">{data.count} sold</span>
-                      <span className="text-amber-600 dark:text-amber-500 font-bold text-sm">{data.weight.toFixed(2)}g</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
+                </div>
+              ))
             )}
           </div>
         </div>
 
-        {/* Quick overview of recent activity */}
-        <div className="bg-white dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
-          <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100 mb-4 flex items-center gap-2">
+        {/* Top Selling Models */}
+        <div className="lg:col-span-2 bg-white dark:bg-slate-900/50 rounded-3xl border border-slate-100 dark:border-slate-800/50 p-6 flex flex-col h-[320px]">
+          <div className="flex items-center gap-2 mb-4">
+            <Star className="w-4 h-4 text-amber-500" />
+            <h3 className="font-bold text-slate-900 dark:text-slate-100">Top Selling Models</h3>
+          </div>
+          <div className="flex-1 overflow-y-auto pr-2 space-y-3 custom-scrollbar">
+            {(stats.topModels || []).length === 0 ? (
+              <p className="text-slate-400 text-sm">No model sales.</p>
+            ) : (
+              (stats.topModels || []).map(([model, data]: any, index: number) => (
+                <div key={model} className="flex justify-between items-center text-sm">
+                  <div className="flex items-center gap-3 truncate pr-4">
+                    <span className="text-xs text-slate-400 w-4">{index + 1}.</span>
+                    <span className="text-slate-600 dark:text-slate-300 font-medium truncate">{model}</span>
+                  </div>
+                  <div className="flex items-center gap-4 shrink-0">
+                    <span className="text-slate-400 tabular-nums w-12 text-right">{data.count} sold</span>
+                    <span className="font-bold text-slate-900 dark:text-slate-100 tabular-nums w-16 text-right">{data.weight.toFixed(2)}g</span>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+
+        {/* Recent Sales Activity Table */}
+        <div className="lg:col-span-2 bg-white dark:bg-slate-900/50 rounded-3xl border border-slate-100 dark:border-slate-800/50 p-6 flex flex-col h-[320px]">
+          <div className="flex items-center gap-2 mb-4">
             <Clock className="w-4 h-4 text-blue-500" />
-            Recent Sales Activity
-          </h3>
-          {(stats.recentSales || []).length === 0 ? (
-            <p className="text-slate-500 dark:text-slate-400 text-center py-8">No sales recorded yet.</p>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse min-w-[600px]">
-                <thead>
-                  <tr className="border-b border-slate-200 dark:border-slate-800 text-sm text-slate-500 dark:text-slate-400">
-                    <th className="pb-3 font-medium">Item Type</th>
-                    <th className="pb-3 font-medium">Model</th>
-                    <th className="pb-3 font-medium">Barcode</th>
-                    <th className="pb-3 font-medium">Net Weight</th>
-                    <th className="pb-3 font-medium">Buyer</th>
+            <h3 className="font-bold text-slate-900 dark:text-slate-100">Recent Sales</h3>
+          </div>
+          <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
+            {(stats.recentSales || []).length === 0 ? (
+              <p className="text-slate-400 text-sm">No recent sales.</p>
+            ) : (
+              <table className="w-full text-left text-sm">
+                <thead className="sticky top-0 bg-white dark:bg-slate-900/90 backdrop-blur z-10">
+                  <tr className="text-slate-400 font-medium border-b border-slate-100 dark:border-slate-800/50">
+                    <th className="pb-2 font-normal">Item</th>
+                    <th className="pb-2 font-normal text-right">Net Wt</th>
                   </tr>
                 </thead>
-                <tbody className="text-sm">
+                <tbody>
                   {(stats.recentSales || []).map((sale: any) => (
-                    <tr key={sale.id} className="border-b border-slate-100 dark:border-slate-800/50 last:border-0 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
-                      <td className="py-3 text-slate-800 dark:text-slate-200 font-medium">{sale.type}</td>
-                      <td className="py-3 text-slate-600 dark:text-slate-400">{sale.model || '-'}</td>
-                      <td className="py-3 text-slate-500 dark:text-slate-400 font-mono text-xs">{sale.barcode}</td>
-                      <td className="py-3 text-gold-600 dark:text-gold-500 font-medium">
+                    <tr key={sale.id} className="border-b border-slate-50 dark:border-slate-800/30 last:border-0 hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
+                      <td className="py-2.5">
+                        <div className="font-medium text-slate-700 dark:text-slate-200">{sale.type} <span className="text-slate-400 font-normal text-xs">{sale.model ? `- ${sale.model}` : ''}</span></div>
+                        <div className="text-xs text-slate-400 font-mono mt-0.5">{sale.barcode} • {sale.buyer_name}</div>
+                      </td>
+                      <td className="py-2.5 text-right font-bold text-slate-900 dark:text-slate-100 tabular-nums">
                         {(Number(sale.weight) - Number(sale.stone_weight || 0)).toFixed(2)}g
                       </td>
-                      <td className="py-3 text-slate-700 dark:text-slate-300">{sale.buyer_name}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
-            </div>
-          )}
+            )}
+          </div>
         </div>
-      </section>
+
+      </div>
+
       {/* Daily Rates Modal */}
       {isRatesModalOpen && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl w-full max-w-2xl overflow-hidden border border-slate-200 dark:border-slate-800">
-            <div className="p-6 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-slate-950">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden border border-slate-200 dark:border-slate-800">
+            <div className="p-6 border-b border-slate-100 dark:border-slate-800/50 flex justify-between items-center bg-slate-50/50 dark:bg-slate-900/50">
               <h2 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
                 <TrendingUp className="w-5 h-5 text-amber-500" />
                 Edit Daily Gold Rates
               </h2>
               <button 
                 onClick={() => setIsRatesModalOpen(false)}
-                className="text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 transition-colors"
+                className="text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 bg-white dark:bg-slate-800 shadow-sm rounded-full p-2 transition-all hover:scale-105"
               >
-                <X className="w-6 h-6" />
+                <X className="w-4 h-4" />
               </button>
             </div>
             
-            <div className="p-6 max-h-[70vh] overflow-y-auto">
+            <div className="p-6 max-h-[60vh] overflow-y-auto custom-scrollbar">
               {itemTypes.length === 0 ? (
-                <div className="text-center p-8 text-slate-500">
+                <div className="text-center p-8 text-slate-400">
                   No Item Types configured yet. Add them in Inventory settings.
                 </div>
               ) : (
-                <div className="space-y-4">
+                <div className="space-y-3">
                   {itemTypes.map((type) => (
-                    <div key={type.id} className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700">
-                      <span className="font-medium text-slate-900 dark:text-white">{type.name}</span>
-                      <div className="flex items-center gap-3">
+                    <div key={type.id} className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/30 rounded-2xl border border-slate-100 dark:border-slate-700/50 transition-colors focus-within:border-amber-500/50 focus-within:bg-amber-50/30 dark:focus-within:bg-amber-900/10">
+                      <span className="font-medium text-slate-700 dark:text-slate-200 ml-2">{type.name}</span>
+                      <div className="flex items-center gap-2">
                         <div className="relative">
-                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 font-medium text-sm">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-medium text-sm">
                             {currency}
                           </span>
                           <input
@@ -387,17 +298,16 @@ const Dashboard: React.FC = () => {
                             step="0.01"
                             value={editRates[type.name] === undefined ? '' : editRates[type.name]}
                             onChange={(e) => handleRateChange(type.name, e.target.value)}
-                            className="pl-12 pr-4 py-2 w-32 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-900 dark:text-white focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-all text-right"
+                            className="pl-10 pr-3 py-2 w-28 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-all text-right font-medium text-sm"
                             placeholder="0.00"
                           />
                         </div>
                         <button
                           onClick={() => handleSaveRate(type.name)}
                           disabled={savingRate === type.name || editRates[type.name] === undefined}
-                          className="flex items-center gap-2 bg-[#C28C46] hover:bg-[#A37436] text-white px-4 py-2 rounded-lg font-medium transition-colors disabled:opacity-50"
+                          className="flex items-center justify-center bg-slate-900 dark:bg-white text-white dark:text-slate-900 hover:bg-slate-800 dark:hover:bg-slate-200 px-4 py-2 rounded-xl text-sm font-semibold transition-all disabled:opacity-50"
                         >
-                          <Save className="w-4 h-4" />
-                          {savingRate === type.name ? 'Saving...' : 'Save'}
+                          {savingRate === type.name ? '...' : 'Save'}
                         </button>
                       </div>
                     </div>
@@ -408,6 +318,23 @@ const Dashboard: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Global CSS for custom scrollbar in Bento boxes */}
+      <style>{`
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background-color: #cbd5e1;
+          border-radius: 20px;
+        }
+        .dark .custom-scrollbar::-webkit-scrollbar-thumb {
+          background-color: #334155;
+        }
+      `}</style>
     </div>
   );
 };

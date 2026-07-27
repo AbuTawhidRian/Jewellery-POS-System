@@ -131,8 +131,8 @@ const BranchSettlement: React.FC = () => {
   const activeTransfers = activeTab === 'cash' ? cashTransfers : goldTransfers;
 
   return (
-    <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-8">
+    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 ease-out space-y-6 pb-10">
+      <header className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
         <div>
           <h1 className="text-3xl font-bold text-slate-900 dark:text-white flex items-center">
             <ArrowRightLeft className="w-8 h-8 mr-3 text-emerald-500" />
