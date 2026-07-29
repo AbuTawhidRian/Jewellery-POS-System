@@ -251,32 +251,38 @@ const BranchSettlement: React.FC = () => {
               New {activeTab === 'cash' ? 'Cash Payment' : 'Gold Transfer'}
             </h2>
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">From Branch</label>
-                <select
-                  value={formData.fromBranchId}
-                  onChange={(e) => setFormData({ ...formData, fromBranchId: e.target.value })}
-                  className="w-full rounded-lg border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-white focus:ring-[#C28C46] focus:border-[#C28C46]"
-                >
-                  <option value="">Select Branch</option>
-                  {branches.map(b => (
-                    <option key={b.id} value={b.id}>{b.name}</option>
-                  ))}
-                </select>
-              </div>
+              <div className="flex items-center gap-3">
+                <div className="flex-1">
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Transfer From</label>
+                  <select
+                    value={formData.fromBranchId}
+                    onChange={(e) => setFormData({ ...formData, fromBranchId: e.target.value })}
+                    className="w-full rounded-lg border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-white focus:ring-[#C28C46] focus:border-[#C28C46]"
+                  >
+                    <option value="">Select Branch</option>
+                    {branches.map(b => (
+                      <option key={b.id} value={b.id}>{b.name}</option>
+                    ))}
+                  </select>
+                </div>
+                
+                <div className="flex-none pt-6 flex justify-center text-slate-400">
+                  <ArrowRightLeft className="w-5 h-5" />
+                </div>
 
-              <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">To Branch</label>
-                <select
-                  value={formData.toBranchId}
-                  onChange={(e) => setFormData({ ...formData, toBranchId: e.target.value })}
-                  className="w-full rounded-lg border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-white focus:ring-[#C28C46] focus:border-[#C28C46]"
-                >
-                  <option value="">Select Branch</option>
-                  {branches.map(b => (
-                    <option key={b.id} value={b.id}>{b.name}</option>
-                  ))}
-                </select>
+                <div className="flex-1">
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Transfer To</label>
+                  <select
+                    value={formData.toBranchId}
+                    onChange={(e) => setFormData({ ...formData, toBranchId: e.target.value })}
+                    className="w-full rounded-lg border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-white focus:ring-[#C28C46] focus:border-[#C28C46]"
+                  >
+                    <option value="">Select Branch</option>
+                    {branches.map(b => (
+                      <option key={b.id} value={b.id}>{b.name}</option>
+                    ))}
+                  </select>
+                </div>
               </div>
 
               {activeTab === 'cash' ? (
@@ -436,6 +442,7 @@ const BranchSettlement: React.FC = () => {
                           ) : (
                             <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400">
                               Rejected
+
                             </span>
                           )}
                         </td>
