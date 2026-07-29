@@ -1252,7 +1252,12 @@ app.get('/api/inventory/barcode/:barcode', authenticateToken, requireActiveOrTri
       }
     }
     
-    if (item.status !== 'In Stock') return res.status(400).json({ error: `Item is ${item.status}` });
+    const mode = req.query.mode;
+    if (mode === 'return') {
+      if (item.status !== 'Sold') return res.status(400).json({ error: `Item is not sold (Status: ${item.status})` });
+    } else {
+      if (item.status !== 'In Stock') return res.status(400).json({ error: `Item is ${item.status}` });
+    }
 
     res.json(item);
   } catch (error) {

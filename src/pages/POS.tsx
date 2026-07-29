@@ -173,7 +173,7 @@ const POS: React.FC = () => {
     }
 
     try {
-      const res = await api.get(`/inventory/barcode/${code}`);
+      const res = await api.get(`/inventory/barcode/${code}?mode=${isReturnMode ? 'return' : 'sale'}`);
       const item = res.data;
       
       if (!isReturnMode && item.status === 'Sold') {
