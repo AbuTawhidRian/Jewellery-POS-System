@@ -18,9 +18,9 @@ const POS: React.FC = () => {
   const [isScanning, setIsScanning] = useState(false);
   const [isReturnMode, setIsReturnMode] = useState(false);
   const [isCashMode, setIsCashMode] = useState(false);
-  const [totalMakingCharge, setTotalMakingCharge] = useState<number | ''>('');
-  const [makingChargesPerModel, setMakingChargesPerModel] = useState<Record<string, number | ''>>({});
   const [dailyRates, setDailyRates] = useState<Record<string, number>>({});
+  
+  const totalMakingCharge = cart.reduce((acc, item) => acc + (Number(item.makingCharge) || 0), 0);
   
   // Payment Modal State
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
@@ -367,7 +367,6 @@ const POS: React.FC = () => {
             setCart([]);
             setSelectedBuyer('');
             setBuyerSearch('');
-            setTotalMakingCharge('');
           } else {
             showNotification('error', result.message);
           }
@@ -384,30 +383,6 @@ const POS: React.FC = () => {
   const totalWeight = cart.reduce((acc, item) => acc + Math.max(0, (Number(item.weight) || 0) - (Number(item.stone_weight) || 0)), 0);
 
   const uniqueModels = Array.from(new Set(cart.map(item => item.model || 'Unknown Model')));
-
-  useEffect(() => {
-    let calculatedTotal = 0;
-    let anyCalculated = false;
-    
-    cart.forEach(item => {
-      const model = item.model || 'Unknown Model';
-      const makingChargeRate = makingChargesPerModel[model];
-      const gw = Number(item.weight) || 0;
-      const goldRate = dailyRates[item.type] || 0;
-      
-      const goldValue = gw * goldRate;
-      const makingCharge = (typeof makingChargeRate === 'number') ? gw * makingChargeRate : 0;
-      
-      if (typeof makingChargeRate === 'number' || goldRate > 0) {
-        calculatedTotal += goldValue + makingCharge;
-        anyCalculated = true;
-      }
-    });
-
-    if (anyCalculated) {
-      setTotalMakingCharge(Number(calculatedTotal.toFixed(2)));
-    }
-  }, [makingChargesPerModel, cart, dailyRates]);
 
   const handleRecordPayment = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -474,7 +449,7 @@ const POS: React.FC = () => {
           {!user?.isReadOnly && (
             <>
               <button 
-                onClick={() => { setIsReturnMode(false); setIsCashMode(false); setIsGoldMode(false); setCart([]); setTotalMakingCharge(''); }}
+                onClick={() => { setIsReturnMode(false); setIsCashMode(false); setIsGoldMode(false); setCart([]); }}
                 className={clsx(
                   "px-6 py-2.5 rounded-lg text-sm font-bold transition-all", 
                   !isReturnMode && !isCashMode && !isGoldMode ? "bg-white dark:bg-slate-950 text-gold-500 shadow-sm" : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300"
@@ -483,7 +458,7 @@ const POS: React.FC = () => {
                 Sale Mode
               </button>
               <button 
-                onClick={() => { setIsReturnMode(true); setIsCashMode(false); setIsGoldMode(false); setCart([]); setTotalMakingCharge(''); }}
+                onClick={() => { setIsReturnMode(true); setIsCashMode(false); setIsGoldMode(false); setCart([]); }}
                 className={clsx(
                   "px-6 py-2.5 rounded-lg text-sm font-bold transition-all border-r border-slate-300 dark:border-slate-700 rounded-r-none", 
                   isReturnMode && !isCashMode && !isGoldMode ? "bg-white dark:bg-slate-950 text-orange-500 shadow-sm" : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300"
@@ -715,36 +690,11 @@ const POS: React.FC = () => {
               <span className="text-3xl font-bold text-gold-500">{totalWeight.toFixed(2)}<span className="text-xl ml-1">g</span></span>
             </div>
             
-            {!isReturnMode && (
+            {!isReturnMode && totalMakingCharge > 0 && (
               <div className="flex flex-col gap-4 mb-6 pt-4 border-t border-slate-200 dark:border-slate-800">
-                {uniqueModels.length > 0 && uniqueModels.map(model => (
-                  <div key={model} className="flex justify-between items-center">
-                    <span className="text-slate-600 dark:text-slate-400 font-medium text-lg">{model} - Making Charge / Gram</span>
-                    <input
-                      type="number"
-                      value={makingChargesPerModel[model] ?? ''}
-                      onChange={(e) => setMakingChargesPerModel(prev => ({...prev, [model]: e.target.value === '' ? '' : Number(e.target.value)}))}
-                      placeholder="Auto-calc"
-                      className="w-32 bg-slate-100 dark:bg-slate-800 border-2 border-slate-300 dark:border-slate-700 rounded-lg px-4 py-2 text-xl font-bold text-slate-900 dark:text-slate-100 text-right focus:outline-none focus:border-gold-500 transition-colors"
-                      min="0"
-                      step="0.01"
-                    />
-                  </div>
-                ))}
-                <div className="flex justify-between items-center pt-2 border-t border-slate-200 dark:border-slate-800">
+                <div className="flex justify-between items-center pt-2">
                   <span className="text-slate-600 dark:text-slate-400 font-bold text-xl">Total Making Charge ({user?.shopCurrency || 'AED'})</span>
-                <input
-                  type="number"
-                  value={totalMakingCharge}
-                  onChange={(e) => {
-                    setTotalMakingCharge(e.target.value === '' ? '' : Number(e.target.value));
-                    setMakingChargesPerModel({});
-                  }}
-                  placeholder="0"
-                  className="w-32 bg-white dark:bg-slate-950 border-2 border-slate-300 dark:border-slate-700 rounded-lg px-4 py-2 text-xl font-bold text-slate-900 dark:text-slate-100 text-right focus:outline-none focus:border-gold-500 transition-colors"
-                  min="0"
-                  step="0.01"
-                />
+                  <span className="text-xl font-bold text-slate-900 dark:text-slate-100 text-right">{totalMakingCharge.toFixed(2)}</span>
                 </div>
               </div>
             )}
