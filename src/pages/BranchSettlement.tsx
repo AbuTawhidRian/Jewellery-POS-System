@@ -168,6 +168,20 @@ const BranchSettlement: React.FC = () => {
     currentPage * itemsPerPage
   );
 
+  const getDateSuffix = () => {
+    if (startDate && endDate) return `_${startDate}_to_${endDate}`;
+    if (startDate) return `_from_${startDate}`;
+    if (endDate) return `_until_${endDate}`;
+    return '_all_time';
+  };
+
+  const getDateHeader = () => {
+    if (startDate && endDate) return `(${startDate} to ${endDate})`;
+    if (startDate) return `(From ${startDate})`;
+    if (endDate) return `(Until ${endDate})`;
+    return '(All Time)';
+  };
+
   const exportToExcel = () => {
     const data = filteredTransfers.map(t => ({
       Date: new Date(t.date).toLocaleString(),
@@ -181,12 +195,12 @@ const BranchSettlement: React.FC = () => {
     const ws = XLSX.utils.json_to_sheet(data);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Settlements");
-    XLSX.writeFile(wb, `${activeTab}_settlements.xlsx`);
+    XLSX.writeFile(wb, `${activeTab}_settlements${getDateSuffix()}.xlsx`);
   };
 
   const exportToPDF = () => {
     const doc = new jsPDF();
-    doc.text(`${activeTab === 'cash' ? 'Cash' : 'Gold'} Settlement History`, 14, 15);
+    doc.text(`${activeTab === 'cash' ? 'Cash' : 'Gold'} Settlement History ${getDateHeader()}`, 14, 15);
     
     const tableColumn = ["Date", "From", "To", activeTab === 'cash' ? "Amount" : "Weight (g)", "Status", "Notes"];
     const tableRows = filteredTransfers.map(t => [
@@ -206,7 +220,7 @@ const BranchSettlement: React.FC = () => {
       headStyles: { fillColor: [15, 23, 42] }
     });
     
-    doc.save(`${activeTab}_settlements.pdf`);
+    doc.save(`${activeTab}_settlements${getDateSuffix()}.pdf`);
   };
 
   return (
