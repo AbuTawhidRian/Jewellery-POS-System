@@ -1562,7 +1562,7 @@ app.post('/api/sales/bulk', authenticateToken, requireActiveOrTrial, requireAcce
     res.json({ success: true, count: result, message: `Successfully processed ${result} items` });
   } catch (error: any) {
     console.error("Bulk sale error:", error);
-    res.status(500).json({ error: 'Failed to process sale' });
+    res.status(500).json({ error: error.message || 'Failed to process sale' });
   }
 });
 

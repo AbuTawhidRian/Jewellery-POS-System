@@ -632,6 +632,7 @@ const POS: React.FC = () => {
                     <th className="py-3 px-4 font-medium text-right">Gr. Wt</th>
                     <th className="py-3 px-4 font-medium text-right">St. Wt</th>
                     <th className="py-3 px-4 font-medium text-right">Net Wt</th>
+                    <th className="py-3 px-4 font-medium text-right">Making</th>
                     <th className="py-3 px-4 font-medium text-center">Action</th>
                   </tr>
                 </thead>
@@ -647,6 +648,7 @@ const POS: React.FC = () => {
                         <td className="py-3 px-4 text-slate-700 dark:text-slate-300 font-medium text-right">{gw.toFixed(2)}g</td>
                         <td className="py-3 px-4 text-slate-600 dark:text-slate-400 text-right">{sw > 0 ? sw.toFixed(2) + 'g' : '-'}</td>
                         <td className="py-3 px-4 text-gold-400 font-medium text-right">{nw.toFixed(2)}g</td>
+                        <td className="py-3 px-4 text-slate-700 dark:text-slate-300 font-medium text-right">{Number(item.makingCharge || 0) > 0 ? Number(item.makingCharge).toFixed(2) : '-'}</td>
                         <td className="py-3 px-4 text-center">
                           <button 
                             onClick={() => removeFromCart(item.barcode)}

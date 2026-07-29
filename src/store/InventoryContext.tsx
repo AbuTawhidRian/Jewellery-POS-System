@@ -456,8 +456,8 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         return { success: true, message: result.message };
       }
       
-      toast.error(result.message || 'Failed to process sale');
-      return { success: false, message: result.message || 'Failed to process sale' };
+      toast.error(result.message || result.error || 'Failed to process sale');
+      return { success: false, message: result.message || result.error || 'Failed to process sale' };
     } catch (error: any) {
       console.error("Error processing bulk sale:", error);
       toast.error(error.message || "Failed to process sale");
