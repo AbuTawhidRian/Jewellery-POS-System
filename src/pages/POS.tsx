@@ -18,7 +18,6 @@ const POS: React.FC = () => {
   const [isScanning, setIsScanning] = useState(false);
   const [isReturnMode, setIsReturnMode] = useState(false);
   const [isCashMode, setIsCashMode] = useState(false);
-  const [dailyRates, setDailyRates] = useState<Record<string, number>>({});
   
   const totalMakingCharge = cart.reduce((acc, item) => acc + (Number(item.makingCharge) || 0), 0);
   
@@ -82,16 +81,6 @@ const POS: React.FC = () => {
   useEffect(() => {
     cartRef.current = cart;
   }, [cart]);
-
-  useEffect(() => {
-    api.get('/gold_rates').then(res => {
-      if (Array.isArray(res.data)) {
-        const rates: Record<string, number> = {};
-        res.data.forEach((r: any) => { rates[r.type] = r.rate; });
-        setDailyRates(rates);
-      }
-    }).catch(console.error);
-  }, []);
 
   // Keep input focused automatically
   useEffect(() => {
@@ -381,8 +370,6 @@ const POS: React.FC = () => {
   };
 
   const totalWeight = cart.reduce((acc, item) => acc + Math.max(0, (Number(item.weight) || 0) - (Number(item.stone_weight) || 0)), 0);
-
-  const uniqueModels = Array.from(new Set(cart.map(item => item.model || 'Unknown Model')));
 
   const handleRecordPayment = async (e: React.FormEvent) => {
     e.preventDefault();
