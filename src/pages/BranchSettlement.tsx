@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowRightLeft, AlertCircle, Save, CheckCircle, XCircle, ChevronLeft, ChevronRight, Download, FileText } from 'lucide-react';
+import { ArrowRightLeft, AlertCircle, Save, CheckCircle, XCircle, ChevronLeft, ChevronRight, Download, FileText, Banknote, Scale } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -287,29 +287,42 @@ const BranchSettlement: React.FC = () => {
 
               {activeTab === 'cash' ? (
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Amount (Cash)</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    required
-                    value={formData.amount}
-                    onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
-                    className="w-full rounded-lg border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-white focus:ring-[#C28C46] focus:border-[#C28C46]"
-                    placeholder="0.00"
-                  />
+                  <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Transfer Amount (Cash)</label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                      <Banknote className="h-6 w-6 text-emerald-500" />
+                    </div>
+                    <input
+                      type="number"
+                      step="0.01"
+                      required
+                      value={formData.amount}
+                      onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+                      className="w-full rounded-xl border-2 border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-white focus:ring-0 focus:border-emerald-500 pl-12 pr-4 py-3 text-2xl font-bold transition-colors shadow-sm"
+                      placeholder="0.00"
+                    />
+                  </div>
                 </div>
               ) : (
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Weight (g)</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    required
-                    value={formData.weight}
-                    onChange={(e) => setFormData({ ...formData, weight: e.target.value })}
-                    className="w-full rounded-lg border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-white focus:ring-[#C28C46] focus:border-[#C28C46]"
-                    placeholder="0.00"
-                  />
+                  <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Transfer Weight (Gold)</label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                      <Scale className="h-6 w-6 text-gold-500" />
+                    </div>
+                    <input
+                      type="number"
+                      step="0.01"
+                      required
+                      value={formData.weight}
+                      onChange={(e) => setFormData({ ...formData, weight: e.target.value })}
+                      className="w-full rounded-xl border-2 border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-white focus:ring-0 focus:border-gold-500 pl-12 pr-12 py-3 text-2xl font-bold transition-colors shadow-sm"
+                      placeholder="0.00"
+                    />
+                    <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
+                      <span className="text-slate-400 font-bold text-xl">g</span>
+                    </div>
+                  </div>
                 </div>
               )}
 
@@ -318,7 +331,7 @@ const BranchSettlement: React.FC = () => {
                 <textarea
                   value={formData.notes}
                   onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                  className="w-full rounded-lg border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-white focus:ring-[#C28C46] focus:border-[#C28C46]"
+                  className="w-full rounded-xl border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-white focus:ring-[#C28C46] focus:border-[#C28C46] resize-none"
                   rows={3}
                   placeholder={activeTab === 'cash' ? "e.g. Handed to Boss..." : "e.g. Wholesale 995 pure gold..."}
                 />
@@ -327,10 +340,14 @@ const BranchSettlement: React.FC = () => {
               <button
                 type="submit"
                 disabled={submitting}
-                className="w-full flex justify-center items-center py-2.5 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 disabled:opacity-50 transition-colors"
+                className={`w-full flex justify-center items-center mt-2 py-4 px-4 rounded-xl shadow-lg text-lg font-bold text-white transition-all transform active:scale-[0.98] disabled:opacity-50 disabled:active:scale-100 ${
+                  activeTab === 'cash' 
+                    ? 'bg-emerald-500 hover:bg-emerald-600 shadow-[0_0_15px_rgba(16,185,129,0.3)]' 
+                    : 'bg-gold-500 hover:bg-gold-600 shadow-[0_0_15px_rgba(212,175,55,0.3)]'
+                }`}
               >
-                <Save className="w-5 h-5 mr-2" />
-                {submitting ? 'Recording...' : `Record ${activeTab === 'cash' ? 'Payment' : 'Transfer'}`}
+                <Save className="w-6 h-6 mr-2" />
+                {submitting ? 'Processing...' : `Confirm ${activeTab === 'cash' ? 'Cash Payment' : 'Gold Transfer'}`}
               </button>
             </form>
           </div>

@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useInventory, type Sale } from '../store/InventoryContext';
-import { Download, FileText, Filter, Printer, ChevronDown, ChevronRight, Calendar, Trash2, Wallet, Scale, ArrowDownLeft, ArrowUpRight } from 'lucide-react';
+import { FileText, Filter, Printer, Download, ChevronDown, ChevronRight, Calendar, ArrowUpRight, ArrowDownLeft, Scale, Wallet, ShoppingCart, Diamond, Trash2 } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import Dialog from '../components/Dialog';
 import { useAuth } from '../contexts/AuthContext';
@@ -183,6 +183,23 @@ const Ledger: React.FC = () => {
       outstandingCash: totalCashCharged - totalCashPaid
     };
   }, [filterBuyerId, transactions, metalReceipts, payments]);
+
+  const globalSummary = useMemo(() => {
+    if (filterBuyerId !== 'all') return null;
+    let totalNet = 0;
+    let totalPure = 0;
+    
+    transactions.forEach(tx => {
+      totalNet += tx.totalNet;
+      totalPure += tx.totalPure;
+    });
+
+    return {
+      totalTransactions: transactions.length,
+      totalNet,
+      totalPure
+    };
+  }, [filterBuyerId, transactions]);
 
   const unifiedTimeline = useMemo(() => {
     if (filterBuyerId === 'all') return [];
@@ -520,6 +537,46 @@ const Ledger: React.FC = () => {
                 <p className="text-xs text-slate-500 dark:text-slate-400">Total Paid: <span className="font-semibold text-emerald-600 dark:text-emerald-400">AED {buyerSummary.totalCashPaid.toFixed(2)}</span></p>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {globalSummary && (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 animate-in slide-in-from-bottom-2 duration-300">
+          <div className="bg-gradient-to-br from-blue-500/10 to-blue-600/5 border border-blue-500/20 rounded-2xl p-6 shadow-sm flex flex-col relative overflow-hidden">
+            <div className="absolute top-0 right-0 p-4 opacity-10">
+              <ShoppingCart className="w-16 h-16 text-blue-600" />
+            </div>
+            <h3 className="text-sm font-bold text-blue-600 uppercase tracking-wider mb-2 flex items-center gap-2">
+              <ShoppingCart className="w-4 h-4" /> Total Transactions
+            </h3>
+            <p className="text-3xl font-black text-slate-900 dark:text-white mt-auto">
+              {globalSummary.totalTransactions}
+            </p>
+          </div>
+
+          <div className="bg-gradient-to-br from-purple-500/10 to-purple-600/5 border border-purple-500/20 rounded-2xl p-6 shadow-sm flex flex-col relative overflow-hidden">
+            <div className="absolute top-0 right-0 p-4 opacity-10">
+              <Scale className="w-16 h-16 text-purple-600" />
+            </div>
+            <h3 className="text-sm font-bold text-purple-600 uppercase tracking-wider mb-2 flex items-center gap-2">
+              <Scale className="w-4 h-4" /> Total Net Wt Sold
+            </h3>
+            <p className="text-3xl font-black text-slate-900 dark:text-white mt-auto">
+              {globalSummary.totalNet.toFixed(2)}<span className="text-lg text-purple-500 ml-1">g</span>
+            </p>
+          </div>
+
+          <div className="bg-gradient-to-br from-gold-500/10 to-gold-600/5 border border-gold-500/20 rounded-2xl p-6 shadow-sm flex flex-col relative overflow-hidden">
+            <div className="absolute top-0 right-0 p-4 opacity-10">
+              <Diamond className="w-16 h-16 text-gold-600" />
+            </div>
+            <h3 className="text-sm font-bold text-gold-600 uppercase tracking-wider mb-2 flex items-center gap-2">
+              <Diamond className="w-4 h-4" /> Total Pure Wt Sold
+            </h3>
+            <p className="text-3xl font-black text-slate-900 dark:text-white mt-auto">
+              {globalSummary.totalPure.toFixed(2)}<span className="text-lg text-gold-500 ml-1">g</span>
+            </p>
           </div>
         </div>
       )}

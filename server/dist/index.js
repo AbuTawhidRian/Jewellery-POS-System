@@ -1890,11 +1890,31 @@ app.post('/api/cash_transfers', authenticateToken, requireActiveOrTrial, async (
     try {
         const { fromBranchId, toBranchId, amount, notes } = req.body;
         const shopId = req.user.shopId;
-        // Create as PENDING
-        const transfer = await prisma.branchCashTransfer.create({
-            data: { shopId, fromBranchId, toBranchId, amount: parseFloat(amount), notes, status: 'PENDING' }
-        });
-        res.json(transfer);
+        const parsedAmount = parseFloat(amount);
+        const fromBranch = await prisma.branch.findUnique({ where: { id: fromBranchId } });
+        const isAutoApproved = !!fromBranch?.isMain;
+        if (isAutoApproved) {
+            const transfer = await prisma.$transaction(async (tx) => {
+                await tx.branch.update({
+                    where: { id: fromBranchId },
+                    data: { cashBalance: { decrement: parsedAmount } }
+                });
+                await tx.branch.update({
+                    where: { id: toBranchId },
+                    data: { cashBalance: { increment: parsedAmount } }
+                });
+                return await tx.branchCashTransfer.create({
+                    data: { shopId, fromBranchId, toBranchId, amount: parsedAmount, notes, status: 'ACCEPTED' }
+                });
+            });
+            return res.json(transfer);
+        }
+        else {
+            const transfer = await prisma.branchCashTransfer.create({
+                data: { shopId, fromBranchId, toBranchId, amount: parsedAmount, notes, status: 'PENDING' }
+            });
+            return res.json(transfer);
+        }
     }
     catch (error) {
         res.status(500).json({ error: 'Failed to create cash transfer' });
@@ -1966,11 +1986,31 @@ app.post('/api/gold_transfers', authenticateToken, requireActiveOrTrial, async (
     try {
         const { fromBranchId, toBranchId, weight, notes } = req.body;
         const shopId = req.user.shopId;
-        // Create as PENDING
-        const transfer = await prisma.branchGoldTransfer.create({
-            data: { shopId, fromBranchId, toBranchId, weight: parseFloat(weight), notes, status: 'PENDING' }
-        });
-        res.json(transfer);
+        const parsedWeight = parseFloat(weight);
+        const fromBranch = await prisma.branch.findUnique({ where: { id: fromBranchId } });
+        const isAutoApproved = !!fromBranch?.isMain;
+        if (isAutoApproved) {
+            const transfer = await prisma.$transaction(async (tx) => {
+                await tx.branch.update({
+                    where: { id: fromBranchId },
+                    data: { goldBalance: { decrement: parsedWeight } }
+                });
+                await tx.branch.update({
+                    where: { id: toBranchId },
+                    data: { goldBalance: { increment: parsedWeight } }
+                });
+                return await tx.branchGoldTransfer.create({
+                    data: { shopId, fromBranchId, toBranchId, weight: parsedWeight, notes, status: 'ACCEPTED' }
+                });
+            });
+            return res.json(transfer);
+        }
+        else {
+            const transfer = await prisma.branchGoldTransfer.create({
+                data: { shopId, fromBranchId, toBranchId, weight: parsedWeight, notes, status: 'PENDING' }
+            });
+            return res.json(transfer);
+        }
     }
     catch (error) {
         res.status(500).json({ error: 'Failed to create gold transfer' });
