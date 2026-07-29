@@ -1492,7 +1492,7 @@ app.post('/api/sales/bulk', authenticateToken, requireActiveOrTrial, requireAcce
     }
     catch (error) {
         console.error("Bulk sale error:", error);
-        res.status(500).json({ error: 'Failed to process sale' });
+        res.status(500).json({ error: error.message || 'Failed to process sale' });
     }
 });
 app.get('/api/payments', authenticateToken, requireActiveOrTrial, async (req, res) => {
@@ -1751,7 +1751,7 @@ app.post('/api/sales/void', authenticateToken, requireActiveOrTrial, requireAcce
     }
     catch (error) {
         console.error("Void sale error:", error);
-        res.status(500).json({ error: 'Failed to void transaction' });
+        res.status(500).json({ error: error.message || 'Failed to void transaction' });
     }
 });
 app.post('/api/sales/return', authenticateToken, requireActiveOrTrial, requireAccess([client_1.Role.OWNER, client_1.Role.MANAGER, client_1.Role.CASHIER], ['access_pos', 'delete_sale']), async (req, res) => {
@@ -1793,6 +1793,9 @@ app.post('/api/sales/return', authenticateToken, requireActiveOrTrial, requireAc
                         buyerId: sale.buyerId,
                         weight: -Math.abs(sale.weight),
                         makingCharge: -Math.abs(sale.makingCharge || 0),
+                        goldRate: sale.goldRate || 0,
+                        goldValue: -Math.abs(sale.goldValue || 0),
+                        totalAmount: -Math.abs(sale.totalAmount || 0),
                         branchId: req.user.branchId || undefined
                     });
                 }
@@ -1817,7 +1820,7 @@ app.post('/api/sales/return', authenticateToken, requireActiveOrTrial, requireAc
     }
     catch (error) {
         console.error("Return item error:", error);
-        res.status(500).json({ error: 'Failed to return items' });
+        res.status(500).json({ error: error.message || 'Failed to return items' });
     }
 });
 // --- Gold Rates ---

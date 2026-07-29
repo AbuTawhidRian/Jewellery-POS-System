@@ -1841,7 +1841,7 @@ app.post('/api/sales/void', authenticateToken, requireActiveOrTrial, requireAcce
     res.json({ success: true, count: result, message: `Successfully voided transaction and returned ${result} items to stock` });
   } catch (error: any) {
     console.error("Void sale error:", error);
-    res.status(500).json({ error: 'Failed to void transaction' });
+    res.status(500).json({ error: error.message || 'Failed to void transaction' });
   }
 });
 
@@ -1891,6 +1891,9 @@ app.post('/api/sales/return', authenticateToken, requireActiveOrTrial, requireAc
             buyerId: sale.buyerId,
             weight: -Math.abs(sale.weight),
             makingCharge: -Math.abs(sale.makingCharge || 0),
+            goldRate: sale.goldRate || 0,
+            goldValue: -Math.abs(sale.goldValue || 0),
+            totalAmount: -Math.abs(sale.totalAmount || 0),
             branchId: req.user!.branchId || undefined
           });
         }
@@ -1918,7 +1921,7 @@ app.post('/api/sales/return', authenticateToken, requireActiveOrTrial, requireAc
     res.json({ success: true, count: result, message: `Successfully returned ${result} items to stock` });
   } catch (error: any) {
     console.error("Return item error:", error);
-    res.status(500).json({ error: 'Failed to return items' });
+    res.status(500).json({ error: error.message || 'Failed to return items' });
   }
 });
 
