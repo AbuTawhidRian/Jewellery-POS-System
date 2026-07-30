@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowRightLeft, AlertCircle, Save, CheckCircle, XCircle, ChevronLeft, ChevronRight, Download, FileText, Banknote, Scale } from 'lucide-react';
+import { ArrowRightLeft, AlertCircle, Save, CheckCircle, XCircle, ChevronLeft, ChevronRight, Download, FileText, Banknote, Scale, Calendar, ChevronDown } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -17,12 +17,18 @@ const BranchSettlement: React.FC = () => {
   const [submitting, setSubmitting] = useState(false);
 
   const [currentPage, setCurrentPage] = useState(1);
+  const [dateFilterType, setDateFilterType] = useState<'all' | 'today' | '7days' | 'month' | 'custom'>('all');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const itemsPerPage = 7;
 
   useEffect(() => {
     setCurrentPage(1);
+  }, [dateFilterType]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+    setDateFilterType('all');
     setStartDate('');
     setEndDate('');
   }, [activeTab]);
@@ -146,18 +152,34 @@ const BranchSettlement: React.FC = () => {
     const activeTransfers = activeTab === 'cash' ? cashTransfers : goldTransfers;
 
   const filteredTransfers = activeTransfers.filter((t) => {
-    if (!startDate && !endDate) return true;
     const tDate = new Date(t.date);
     tDate.setHours(0, 0, 0, 0);
-    if (startDate) {
-      const sDate = new Date(startDate);
-      sDate.setHours(0, 0, 0, 0);
-      if (tDate < sDate) return false;
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    if (dateFilterType === 'today') {
+      return tDate.getTime() === today.getTime();
     }
-    if (endDate) {
-      const eDate = new Date(endDate);
-      eDate.setHours(0, 0, 0, 0);
-      if (tDate > eDate) return false;
+    if (dateFilterType === '7days') {
+      const sevenDaysAgo = new Date(today);
+      sevenDaysAgo.setDate(today.getDate() - 7);
+      return tDate >= sevenDaysAgo && tDate <= today;
+    }
+    if (dateFilterType === 'month') {
+      return tDate.getMonth() === today.getMonth() && tDate.getFullYear() === today.getFullYear();
+    }
+    if (dateFilterType === 'custom') {
+      if (startDate) {
+        const sDate = new Date(startDate);
+        sDate.setHours(0, 0, 0, 0);
+        if (tDate < sDate) return false;
+      }
+      if (endDate) {
+        const eDate = new Date(endDate);
+        eDate.setHours(0, 0, 0, 0);
+        if (tDate > eDate) return false;
+      }
     }
     return true;
   });
@@ -169,16 +191,26 @@ const BranchSettlement: React.FC = () => {
   );
 
   const getDateSuffix = () => {
-    if (startDate && endDate) return `_${startDate}_to_${endDate}`;
-    if (startDate) return `_from_${startDate}`;
-    if (endDate) return `_until_${endDate}`;
+    if (dateFilterType === 'today') return '_today';
+    if (dateFilterType === '7days') return '_last_7_days';
+    if (dateFilterType === 'month') return '_this_month';
+    if (dateFilterType === 'custom') {
+      if (startDate && endDate) return `_${startDate}_to_${endDate}`;
+      if (startDate) return `_from_${startDate}`;
+      if (endDate) return `_until_${endDate}`;
+    }
     return '_all_time';
   };
 
   const getDateHeader = () => {
-    if (startDate && endDate) return `(${startDate} to ${endDate})`;
-    if (startDate) return `(From ${startDate})`;
-    if (endDate) return `(Until ${endDate})`;
+    if (dateFilterType === 'today') return '(Today)';
+    if (dateFilterType === '7days') return '(Last 7 Days)';
+    if (dateFilterType === 'month') return '(This Month)';
+    if (dateFilterType === 'custom') {
+      if (startDate && endDate) return `(${startDate} to ${endDate})`;
+      if (startDate) return `(From ${startDate})`;
+      if (endDate) return `(Until ${endDate})`;
+    }
     return '(All Time)';
   };
 
@@ -378,25 +410,40 @@ const BranchSettlement: React.FC = () => {
 
             {/* Filter and Export Bar */}
             <div className="px-6 py-4 bg-slate-50 dark:bg-slate-900/50 border-b border-slate-200 dark:border-slate-800 flex flex-col md:flex-row gap-4 justify-between items-center">
-              <div className="flex items-center gap-3">
-                <div className="flex flex-col">
-                  <label className="text-xs text-slate-500 mb-1">Start Date</label>
-                  <input
-                    type="date"
-                    value={startDate}
-                    onChange={(e) => { setStartDate(e.target.value); setCurrentPage(1); }}
-                    className="text-sm rounded-lg border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-white px-3 py-1.5 focus:ring-[#C28C46] focus:border-[#C28C46]"
-                  />
+              <div className="flex flex-wrap items-center gap-3">
+                <div className="relative">
+                  <select
+                    value={dateFilterType}
+                    onChange={(e) => setDateFilterType(e.target.value as any)}
+                    className="appearance-none pl-10 pr-8 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 dark:text-white text-sm focus:ring-[#C28C46] focus:border-[#C28C46]"
+                  >
+                    <option value="all">All Time</option>
+                    <option value="today">Today</option>
+                    <option value="7days">Last 7 Days</option>
+                    <option value="month">This Month</option>
+                    <option value="custom">Custom Range</option>
+                  </select>
+                  <Calendar className="w-4 h-4 absolute left-3 top-2.5 text-slate-500" />
+                  <ChevronDown className="w-4 h-4 absolute right-3 top-2.5 text-slate-500 pointer-events-none" />
                 </div>
-                <div className="flex flex-col">
-                  <label className="text-xs text-slate-500 mb-1">End Date</label>
-                  <input
-                    type="date"
-                    value={endDate}
-                    onChange={(e) => { setEndDate(e.target.value); setCurrentPage(1); }}
-                    className="text-sm rounded-lg border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-white px-3 py-1.5 focus:ring-[#C28C46] focus:border-[#C28C46]"
-                  />
-                </div>
+                
+                {dateFilterType === 'custom' && (
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="date"
+                      value={startDate}
+                      onChange={(e) => { setStartDate(e.target.value); setCurrentPage(1); }}
+                      className="text-sm rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 dark:text-white px-3 py-2 focus:ring-[#C28C46] focus:border-[#C28C46]"
+                    />
+                    <span className="text-slate-500 text-sm font-medium">to</span>
+                    <input
+                      type="date"
+                      value={endDate}
+                      onChange={(e) => { setEndDate(e.target.value); setCurrentPage(1); }}
+                      className="text-sm rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 dark:text-white px-3 py-2 focus:ring-[#C28C46] focus:border-[#C28C46]"
+                    />
+                  </div>
+                )}
               </div>
               
               <div className="flex items-center gap-2">

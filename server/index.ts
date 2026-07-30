@@ -943,6 +943,7 @@ app.get('/api/dashboard/stats', authenticateToken, requireActiveOrTrial, async (
       const purity = itemTypes.find(t => t.name === item.type)?.purity ?? 1.0;
       return acc + (nw * purity);
     }, 0);
+    const totalMakingChargeInStock = activeStock.reduce((acc, item) => acc + (Number(item.makingCharge) || 0), 0);
 
     const now = new Date();
     const todayStr = now.toISOString().split('T')[0];
@@ -1016,6 +1017,7 @@ app.get('/api/dashboard/stats', authenticateToken, requireActiveOrTrial, async (
       totalGrossWeightInStock,
       totalStoneWeightInStock,
       totalPureWeightInStock,
+      totalMakingChargeInStock,
       totalSalesTodayItems,
       totalItemsSold,
       topStockModels,

@@ -188,6 +188,7 @@ const Dashboard: React.FC = () => {
         <StatCard label="Net Weight (g)" value={stats.totalWeightInStock?.toFixed(2) || '0.00'} icon={Scale} colorClass="text-slate-700 dark:text-slate-300" />
         <StatCard label="Gross Wt (g)" value={stats.totalGrossWeightInStock?.toFixed(2) || '0.00'} icon={Scale} colorClass="text-slate-700 dark:text-slate-300" />
         <StatCard label="Pure Wt (g)" value={stats.totalPureWeightInStock?.toFixed(2) || '0.00'} icon={Diamond} colorClass="text-slate-700 dark:text-slate-300" />
+        <StatCard label="Total Making Charge" value={`${currency}${stats.totalMakingChargeInStock?.toFixed(2) || '0.00'}`} icon={Star} colorClass="text-slate-700 dark:text-slate-300" />
         
         {/* Sales KPIs — hidden for main branch */}
         {!isMainBranch && (

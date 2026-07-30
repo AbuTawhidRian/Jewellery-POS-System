@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowRightLeft, Download, Upload, ScanLine, Package, CheckCircle2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ArrowRightLeft, Download, Upload, ScanLine, Package, CheckCircle2, ChevronLeft, ChevronRight, FileText, Calendar, ChevronDown } from 'lucide-react';
+import * as XLSX from 'xlsx';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 import api from '../lib/api';
 import toast from 'react-hot-toast';
-import { useAuth } from '../contexts/AuthContext';
 
 const Transfers: React.FC = () => {
   const { activeBranchId, user } = useAuth();
@@ -31,7 +33,14 @@ const Transfers: React.FC = () => {
   const [transfers, setTransfers] = useState<any[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  const [dateFilterType, setDateFilterType] = useState<'all' | 'today' | '7days' | 'month' | 'custom'>('all');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
   const itemsPerPage = 7;
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [dateFilterType]);
 
   useEffect(() => {
     fetchBranches();
@@ -148,13 +157,115 @@ const Transfers: React.FC = () => {
     receiveCount: successfulReceives.length,
     receiveWeight: successfulReceives.reduce((acc, t) => acc + (Number(t.item?.weight) || 0), 0),
   };
-  const sortedTransfers = [...transfers].sort((a, b) => {
+  const filteredTransfers = transfers.filter((t) => {
+    const tDate = new Date(t.createdAt);
+    tDate.setHours(0, 0, 0, 0);
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    if (dateFilterType === 'today') {
+      return tDate.getTime() === today.getTime();
+    }
+    if (dateFilterType === '7days') {
+      const sevenDaysAgo = new Date(today);
+      sevenDaysAgo.setDate(today.getDate() - 7);
+      return tDate >= sevenDaysAgo && tDate <= today;
+    }
+    if (dateFilterType === 'month') {
+      return tDate.getMonth() === today.getMonth() && tDate.getFullYear() === today.getFullYear();
+    }
+    if (dateFilterType === 'custom') {
+      if (startDate) {
+        const sDate = new Date(startDate);
+        sDate.setHours(0, 0, 0, 0);
+        if (tDate < sDate) return false;
+      }
+      if (endDate) {
+        const eDate = new Date(endDate);
+        eDate.setHours(0, 0, 0, 0);
+        if (tDate > eDate) return false;
+      }
+    }
+    return true;
+  });
+
+  const sortedTransfers = [...filteredTransfers].sort((a, b) => {
     if (a.status === 'PENDING' && b.status !== 'PENDING') return -1;
     if (b.status === 'PENDING' && a.status !== 'PENDING') return 1;
     return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
   });
   const totalPages = Math.ceil(sortedTransfers.length / itemsPerPage) || 1;
   const paginatedTransfers = sortedTransfers.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
+  const getDateSuffix = () => {
+    if (dateFilterType === 'today') return '_today';
+    if (dateFilterType === '7days') return '_last_7_days';
+    if (dateFilterType === 'month') return '_this_month';
+    if (dateFilterType === 'custom') {
+      if (startDate && endDate) return `_${startDate}_to_${endDate}`;
+      if (startDate) return `_from_${startDate}`;
+      if (endDate) return `_until_${endDate}`;
+    }
+    return '_all_time';
+  };
+
+  const getDateHeader = () => {
+    if (dateFilterType === 'today') return '(Today)';
+    if (dateFilterType === '7days') return '(Last 7 Days)';
+    if (dateFilterType === 'month') return '(This Month)';
+    if (dateFilterType === 'custom') {
+      if (startDate && endDate) return `(${startDate} to ${endDate})`;
+      if (startDate) return `(From ${startDate})`;
+      if (endDate) return `(Until ${endDate})`;
+    }
+    return '(All Time)';
+  };
+
+  const exportToExcel = () => {
+    const data = filteredTransfers.map(t => ({
+      Date: new Date(t.createdAt).toLocaleString(),
+      Item_Type: t.item?.type || 'Unknown',
+      Barcode: t.item?.barcode || 'N/A',
+      'Weight (g)': Number(t.item?.weight || 0).toFixed(2),
+      'Making Charge': Number(t.item?.makingCharge || 0).toFixed(2),
+      From: t.fromBranch?.name || 'Unknown',
+      To: t.toBranch?.name || 'Unknown',
+      Status: t.status
+    }));
+    
+    const ws = XLSX.utils.json_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Transfers");
+    XLSX.writeFile(wb, `transfer_history${getDateSuffix()}.xlsx`);
+  };
+
+  const exportToPDF = () => {
+    const doc = new jsPDF();
+    doc.text(`Branch Transfer History ${getDateHeader()}`, 14, 15);
+    
+    const tableColumn = ["Date", "Item", "Barcode", "Weight (g)", "Making", "From", "To", "Status"];
+    const tableRows = filteredTransfers.map(t => [
+      new Date(t.createdAt).toLocaleString(),
+      t.item?.type || 'Unknown',
+      t.item?.barcode || 'N/A',
+      Number(t.item?.weight || 0).toFixed(2),
+      Number(t.item?.makingCharge || 0).toFixed(2),
+      t.fromBranch?.name || 'Unknown',
+      t.toBranch?.name || 'Unknown',
+      t.status
+    ]);
+
+    autoTable(doc, {
+      head: [tableColumn],
+      body: tableRows,
+      startY: 20,
+      styles: { fontSize: 8 },
+      headStyles: { fillColor: [15, 23, 42] }
+    });
+    
+    doc.save(`transfer_history${getDateSuffix()}.pdf`);
+  };
 
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 ease-out space-y-6 pb-10">
@@ -455,11 +566,66 @@ const Transfers: React.FC = () => {
           )}
 
           {activeTab === 'history' && (
-            <div>
+            <div className="space-y-4">
+              <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center bg-slate-50 dark:bg-slate-900/50 p-4 rounded-xl border border-slate-200 dark:border-slate-800">
+                <div className="flex flex-wrap items-center gap-3">
+                  <div className="relative">
+                    <select
+                      value={dateFilterType}
+                      onChange={(e) => setDateFilterType(e.target.value as any)}
+                      className="appearance-none pl-10 pr-8 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 dark:text-white text-sm focus:ring-[#C28C46] focus:border-[#C28C46]"
+                    >
+                      <option value="all">All Time</option>
+                      <option value="today">Today</option>
+                      <option value="7days">Last 7 Days</option>
+                      <option value="month">This Month</option>
+                      <option value="custom">Custom Range</option>
+                    </select>
+                    <Calendar className="w-4 h-4 absolute left-3 top-2.5 text-slate-500" />
+                    <ChevronDown className="w-4 h-4 absolute right-3 top-2.5 text-slate-500 pointer-events-none" />
+                  </div>
+                  
+                  {dateFilterType === 'custom' && (
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="date"
+                        value={startDate}
+                        onChange={(e) => { setStartDate(e.target.value); setCurrentPage(1); }}
+                        className="text-sm rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 dark:text-white px-3 py-2 focus:ring-[#C28C46] focus:border-[#C28C46]"
+                      />
+                      <span className="text-slate-500 text-sm font-medium">to</span>
+                      <input
+                        type="date"
+                        value={endDate}
+                        onChange={(e) => { setEndDate(e.target.value); setCurrentPage(1); }}
+                        className="text-sm rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 dark:text-white px-3 py-2 focus:ring-[#C28C46] focus:border-[#C28C46]"
+                      />
+                    </div>
+                  )}
+                </div>
+                
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={exportToExcel}
+                    className="flex items-center gap-1.5 px-3 py-2 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400 rounded-lg text-sm font-medium transition-colors border border-emerald-200 dark:border-emerald-800"
+                  >
+                    <FileText className="w-4 h-4" />
+                    Excel
+                  </button>
+                  <button
+                    onClick={exportToPDF}
+                    className="flex items-center gap-1.5 px-3 py-2 bg-rose-50 text-rose-600 hover:bg-rose-100 dark:bg-rose-900/30 dark:text-rose-400 rounded-lg text-sm font-medium transition-colors border border-rose-200 dark:border-rose-800"
+                  >
+                    <Download className="w-4 h-4" />
+                    PDF
+                  </button>
+                </div>
+              </div>
+
               {loadingHistory ? (
                 <div className="p-8 text-center text-slate-500">Loading history...</div>
               ) : (
-                <div className="overflow-x-auto">
+                <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800">
                   <table className="w-full text-left text-sm whitespace-nowrap">
                     <thead>
                       <tr className="border-b border-slate-200 dark:border-slate-800">
@@ -511,10 +677,10 @@ const Transfers: React.FC = () => {
                   </table>
                 </div>
               )}
-              {activeTab === 'history' && transfers.length > 0 && !loadingHistory && (
-                <div className="flex items-center justify-between p-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/50">
+              {activeTab === 'history' && filteredTransfers.length > 0 && !loadingHistory && (
+                <div className="flex items-center justify-between p-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/50 rounded-b-xl">
                   <p className="text-sm text-slate-500 dark:text-slate-400">
-                    Showing <span className="font-medium text-slate-900 dark:text-white">{(currentPage - 1) * itemsPerPage + 1}</span> to <span className="font-medium text-slate-900 dark:text-white">{Math.min(currentPage * itemsPerPage, transfers.length)}</span> of <span className="font-medium text-slate-900 dark:text-white">{transfers.length}</span> results
+                    Showing <span className="font-medium text-slate-900 dark:text-white">{(currentPage - 1) * itemsPerPage + 1}</span> to <span className="font-medium text-slate-900 dark:text-white">{Math.min(currentPage * itemsPerPage, filteredTransfers.length)}</span> of <span className="font-medium text-slate-900 dark:text-white">{filteredTransfers.length}</span> results
                   </p>
                   <div className="flex items-center gap-2">
                     <button
