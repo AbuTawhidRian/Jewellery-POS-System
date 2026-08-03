@@ -6,6 +6,7 @@ import autoTable from 'jspdf-autotable';
 import api from '../lib/api';
 import toast from 'react-hot-toast';
 import { useAuth } from '../contexts/AuthContext';
+import Dialog from '../components/Dialog';
 
 const Transfers: React.FC = () => {
   const { activeBranchId, user } = useAuth();
@@ -38,6 +39,14 @@ const Transfers: React.FC = () => {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const itemsPerPage = 7;
+
+  const [dialogConfig, setDialogConfig] = useState<{
+    isOpen: boolean;
+    type: 'alert' | 'confirm';
+    title: string;
+    message: string;
+    onConfirm?: () => void;
+  }>({ isOpen: false, type: 'alert', title: '', message: '' });
 
   useEffect(() => {
     setCurrentPage(1);
@@ -89,19 +98,28 @@ const Transfers: React.FC = () => {
     }
   };
 
-  const handleConfirmReceive = async () => {
+  const handleConfirmReceive = () => {
     if (receiveItems.length === 0) return toast.error('Add items to receive');
-    setReceiving(true);
-    try {
-      const barcodes = receiveItems.map(i => i.barcode);
-      const res = await api.post('/transfers/receive/bulk', { barcodes });
-      toast.success(`Successfully received ${res.data.count} items`);
-      setReceiveItems([]);
-    } catch (err: any) {
-      toast.error(err.response?.data?.error || 'Failed to receive items');
-    } finally {
-      setReceiving(false);
-    }
+    
+    setDialogConfig({
+      isOpen: true,
+      type: 'confirm',
+      title: 'Confirm Receive',
+      message: `Are you sure you want to receive ${receiveItems.length} item(s)?`,
+      onConfirm: async () => {
+        setReceiving(true);
+        try {
+          const barcodes = receiveItems.map(i => i.barcode);
+          const res = await api.post('/transfers/receive/bulk', { barcodes });
+          toast.success(`Successfully received ${res.data.count} items`);
+          setReceiveItems([]);
+        } catch (err: any) {
+          toast.error(err.response?.data?.error || 'Failed to receive items');
+        } finally {
+          setReceiving(false);
+        }
+      }
+    });
   };
 
   const handleAddDispatchItem = async (e: React.FormEvent) => {
@@ -128,25 +146,33 @@ const Transfers: React.FC = () => {
     }
   };
 
-  const handleDispatch = async () => {
+  const handleDispatch = () => {
     if (!targetBranchId) return toast.error('Select a target branch');
     if (selectedItems.length === 0) return toast.error('Add items to dispatch');
 
-    setDispatching(true);
-    try {
-      await api.post('/transfers', {
-        toBranchId: targetBranchId,
-        itemIds: selectedItems
-      });
-      toast.success('Items dispatched successfully!');
-      setDispatchItems([]);
-      setSelectedItems([]);
-      setTargetBranchId('');
-    } catch (err: any) {
-      toast.error(err.response?.data?.error || 'Failed to dispatch items');
-    } finally {
-      setDispatching(false);
-    }
+    setDialogConfig({
+      isOpen: true,
+      type: 'confirm',
+      title: 'Confirm Dispatch',
+      message: `Are you sure you want to dispatch ${selectedItems.length} item(s)?`,
+      onConfirm: async () => {
+        setDispatching(true);
+        try {
+          await api.post('/transfers', {
+            toBranchId: targetBranchId,
+            itemIds: selectedItems
+          });
+          toast.success('Items dispatched successfully!');
+          setDispatchItems([]);
+          setSelectedItems([]);
+          setTargetBranchId('');
+        } catch (err: any) {
+          toast.error(err.response?.data?.error || 'Failed to dispatch items');
+        } finally {
+          setDispatching(false);
+        }
+      }
+    });
   };
 
   const successfulDispatches = transfers.filter(t => t.fromBranchId === activeBranchId && t.status === 'RECEIVED');
@@ -709,6 +735,18 @@ const Transfers: React.FC = () => {
 
         </div>
       </div>
+
+      <Dialog 
+        isOpen={dialogConfig.isOpen}
+        type={dialogConfig.type as any}
+        title={dialogConfig.title}
+        message={dialogConfig.message}
+        onConfirm={() => {
+          if (dialogConfig.onConfirm) dialogConfig.onConfirm();
+          setDialogConfig({ ...dialogConfig, isOpen: false });
+        }}
+        onCancel={() => setDialogConfig({ ...dialogConfig, isOpen: false })}
+      />
     </div>
   );
 };
