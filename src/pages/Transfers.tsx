@@ -117,6 +117,7 @@ const Transfers: React.FC = () => {
           const res = await api.post('/transfers/receive/bulk', { barcodes });
           toast.success(`Successfully received ${res.data.count} items`);
           setReceiveItems([]);
+          fetchHistory();
         } catch (err: any) {
           toast.error(err.response?.data?.error || 'Failed to receive items');
         } finally {
@@ -170,6 +171,7 @@ const Transfers: React.FC = () => {
           setDispatchItems([]);
           setSelectedItems([]);
           setTargetBranchId('');
+          fetchHistory();
         } catch (err: any) {
           toast.error(err.response?.data?.error || 'Failed to dispatch items');
         } finally {

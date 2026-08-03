@@ -925,10 +925,12 @@ app.get('/api/dashboard/stats', authenticateToken, requireActiveOrTrial, async (
     let whereClause: any = { shopId };
     if (branchId) whereClause.branchId = branchId;
 
-    const [items, sales, itemTypes] = await Promise.all([
+    const [items, sales, itemTypes, payments, metalReceipts] = await Promise.all([
       prisma.item.findMany({ where: whereClause }),
       prisma.sale.findMany({ where: whereClause, include: { item: true, buyer: true } }),
-      prisma.itemType.findMany({ where: { shopId } })
+      prisma.itemType.findMany({ where: { shopId } }),
+      prisma.payment.findMany({ where: whereClause }),
+      prisma.metalReceipt.findMany({ where: whereClause })
     ]);
 
     const activeStock = items.filter(i => i.status === 'In Stock');
@@ -1011,6 +1013,30 @@ app.get('/api/dashboard/stats', authenticateToken, requireActiveOrTrial, async (
       buyer_name: s.buyer?.name
     }));
 
+    // Calculate Cash Receivables
+    const totalCashSales = sales.reduce((acc, sale) => acc + (Number(sale.totalAmount) || 0), 0);
+    const totalCashPaid = payments.reduce((acc, payment) => acc + (Number(payment.amount) || 0), 0);
+    const totalCashReceivable = totalCashSales - totalCashPaid;
+
+    const totalMakingChargeBilled = sales.reduce((acc, sale) => acc + (Number(sale.makingCharge) || 0), 0);
+
+    // Calculate Gold Receivables
+    const totalPureGoldSales = sales.reduce((acc, sale) => {
+      const gw = Number(sale.weight) || 0;
+      const sw = Number(sale.item?.stone_weight) || 0;
+      const nw = Math.max(0, gw - sw);
+      const purity = itemTypes.find(t => t.name === sale.item?.type)?.purity ?? 1.0;
+      return acc + (nw * purity);
+    }, 0);
+    
+    const totalPureGoldReceived = metalReceipts.reduce((acc, receipt) => {
+      const w = Number(receipt.weight) || 0;
+      const p = Number(receipt.purity) || 0.995;
+      return acc + (w * p);
+    }, 0);
+    
+    const totalGoldReceivable = totalPureGoldSales - totalPureGoldReceived;
+
     res.json({
       totalItemsInStock,
       totalWeightInStock,
@@ -1026,7 +1052,12 @@ app.get('/api/dashboard/stats', authenticateToken, requireActiveOrTrial, async (
       topModels,
       totalSalesNetWeight,
       todaySalesNetWeight,
-      recentSales
+      recentSales,
+      totalCashReceivable,
+      totalGoldReceivable,
+      totalMakingChargeBilled,
+      totalCashSales,
+      totalCashPaid
     });
   } catch (error) {
     console.error("Error calculating dashboard stats:", error);

@@ -116,12 +116,13 @@ const Dashboard: React.FC = () => {
   const isMainBranch = effectiveBranch?.isMain === true;
 
   const StatCard = ({ label, value, icon: Icon, colorClass }: { label: string, value: string | number, icon: any, colorClass: string }) => (
-    <div className="bg-white dark:bg-slate-950 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 flex flex-col justify-between h-full">
-      <div className="flex items-center gap-2 mb-3">
+    <div className="bg-white dark:bg-slate-950 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 flex flex-col justify-between h-full hover:shadow-lg hover:border-slate-300 dark:hover:border-slate-700 transition-all duration-300 relative overflow-hidden group">
+      <div className={`absolute -right-6 -top-6 w-24 h-24 rounded-full opacity-10 group-hover:opacity-20 transition-opacity blur-2xl ${colorClass.replace('text-', 'bg-')}`}></div>
+      <div className="flex items-center gap-2 mb-3 relative z-10">
         <Icon className={`w-4 h-4 ${colorClass}`} />
         <span className="text-sm font-medium text-slate-500 dark:text-slate-400">{label}</span>
       </div>
-      <h3 className="text-2xl font-semibold text-slate-900 dark:text-white tracking-tight">{value}</h3>
+      <h3 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight relative z-10">{value}</h3>
     </div>
   );
 
@@ -129,7 +130,7 @@ const Dashboard: React.FC = () => {
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 ease-out pb-12 space-y-6 w-full">
       
       {/* Daily Rates Strip */}
-      <div className="w-full bg-slate-900 dark:bg-slate-950 text-white border border-slate-800 rounded-xl px-4 py-2.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-sm">
+      <div className="w-full bg-slate-900 dark:bg-slate-950 text-white border border-slate-800 rounded-xl px-4 py-2.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-sm shadow-md">
         <div className="flex items-center gap-2 text-amber-500 font-medium shrink-0">
           <TrendingUp className="w-4 h-4" />
           <span>Daily Rates</span>
@@ -160,16 +161,16 @@ const Dashboard: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-2">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">Dashboard</h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Overview of inventory and sales</p>
+          <h1 className="text-3xl font-extrabold text-slate-900 dark:text-slate-100 tracking-tight">Dashboard</h1>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Real-time overview of inventory and financials</p>
         </div>
         {(user?.role === 'OWNER' || !activeBranchId) && (
           <div className="flex items-center gap-2">
-            <span className="text-sm text-slate-500 dark:text-slate-400">Branch:</span>
+            <span className="text-sm text-slate-500 dark:text-slate-400 font-medium">Branch:</span>
             <select
               value={selectedBranchId}
               onChange={(e) => setSelectedBranchId(e.target.value)}
-              className="rounded-lg border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white px-3 py-2 text-sm focus:ring-[#C28C46] focus:border-[#C28C46]"
+              className="rounded-xl border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white px-4 py-2 text-sm focus:ring-[#C28C46] focus:border-[#C28C46] shadow-sm font-medium"
             >
               <option value="">All Branches</option>
               {branches.map(b => (
@@ -180,39 +181,72 @@ const Dashboard: React.FC = () => {
         )}
       </div>
 
+      {/* Financial Hero Section */}
+      {!isMainBranch && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-2">
+          {/* Cash Receivable Card */}
+          <div className="bg-gradient-to-br from-slate-900 to-slate-800 dark:from-slate-950 dark:to-slate-900 p-6 rounded-[2rem] border border-slate-700/50 relative overflow-hidden shadow-xl shadow-slate-900/10 group hover:shadow-2xl hover:-translate-y-1 transition-all duration-500">
+            <div className="absolute -right-20 -top-20 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl group-hover:bg-emerald-500/20 transition-all duration-500 ease-out"></div>
+            <h3 className="text-slate-400 font-medium flex items-center gap-2 mb-2 relative z-10">
+              <TrendingUp className="w-5 h-5 text-emerald-400"/> Outstanding Cash Receivable
+            </h3>
+            <div className="flex items-end gap-3 relative z-10">
+              <h2 className="text-5xl font-extrabold text-white tracking-tight">
+                {currency} {stats.totalCashReceivable?.toFixed(2) || '0.00'}
+              </h2>
+            </div>
+            <div className="mt-6 pt-5 border-t border-slate-700/50 flex justify-between items-center text-sm relative z-10">
+              <span className="text-slate-400">Making Charge Billed: <strong className="text-emerald-400">{currency} {stats.totalMakingChargeBilled?.toFixed(2) || '0.00'}</strong></span>
+              <span className="text-slate-500 bg-slate-800/50 px-3 py-1 rounded-full text-xs font-medium">Included in Cash Bal</span>
+            </div>
+          </div>
+
+          {/* Gold Receivable Card */}
+          <div className="bg-gradient-to-br from-slate-900 to-slate-800 dark:from-slate-950 dark:to-slate-900 p-6 rounded-[2rem] border border-slate-700/50 relative overflow-hidden shadow-xl shadow-slate-900/10 group hover:shadow-2xl hover:-translate-y-1 transition-all duration-500">
+            <div className="absolute -right-20 -top-20 w-64 h-64 bg-[#C28C46]/10 rounded-full blur-3xl group-hover:bg-[#C28C46]/20 transition-all duration-500 ease-out"></div>
+            <h3 className="text-slate-400 font-medium flex items-center gap-2 mb-2 relative z-10">
+              <Diamond className="w-5 h-5 text-[#C28C46]"/> Outstanding Gold Receivable
+            </h3>
+            <div className="flex items-end gap-3 relative z-10">
+              <h2 className="text-5xl font-extrabold text-white tracking-tight">
+                {stats.totalGoldReceivable?.toFixed(2) || '0.00'} <span className="text-2xl text-slate-400 font-medium ml-1">g</span>
+              </h2>
+            </div>
+            <div className="mt-6 pt-5 border-t border-slate-700/50 flex justify-between items-center text-sm relative z-10">
+              <span className="text-slate-400">Calculated as Pure Gold</span>
+              <span className="text-slate-500 bg-slate-800/50 px-3 py-1 rounded-full text-xs font-medium">Net Sales vs Receipts</span>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Main Bento Grid */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         
         {/* Inventory KPIs */}
-        <StatCard label="Items In Stock" value={stats.totalItemsInStock} icon={Package} colorClass="text-slate-700 dark:text-slate-300" />
-        <StatCard label="Net Weight (g)" value={stats.totalWeightInStock?.toFixed(2) || '0.00'} icon={Scale} colorClass="text-slate-700 dark:text-slate-300" />
-        <StatCard label="Gross Wt (g)" value={stats.totalGrossWeightInStock?.toFixed(2) || '0.00'} icon={Scale} colorClass="text-slate-700 dark:text-slate-300" />
-        <StatCard label="Pure Wt (g)" value={stats.totalPureWeightInStock?.toFixed(2) || '0.00'} icon={Diamond} colorClass="text-slate-700 dark:text-slate-300" />
-        <StatCard label="Total Making Charge" value={`${currency}${stats.totalMakingChargeInStock?.toFixed(2) || '0.00'}`} icon={Star} colorClass="text-slate-700 dark:text-slate-300" />
+        <StatCard label="Vault Pure Wt (g)" value={stats.totalPureWeightInStock?.toFixed(2) || '0.00'} icon={Diamond} colorClass="text-[#C28C46]" />
+        <StatCard label="Items In Stock" value={stats.totalItemsInStock} icon={Package} colorClass="text-blue-500" />
+        <StatCard label="Vault Gross Wt (g)" value={stats.totalGrossWeightInStock?.toFixed(2) || '0.00'} icon={Scale} colorClass="text-slate-500" />
         
-        {/* Sales KPIs — hidden for main branch */}
-        {!isMainBranch && (
-          <>
-            <StatCard label="Total Items Sold" value={stats.totalItemsSold} icon={ShoppingBag} colorClass="text-slate-700 dark:text-slate-300" />
-            <StatCard label="Total Sales Wt (g)" value={stats.totalSalesNetWeight?.toFixed(2) || '0.00'} icon={Scale} colorClass="text-slate-700 dark:text-slate-300" />
-            <StatCard label="Sales Today" value={stats.totalSalesTodayItems} icon={TrendingUp} colorClass="text-slate-700 dark:text-slate-300" />
-            <StatCard label="Today Sales Wt (g)" value={stats.todaySalesNetWeight?.toFixed(2) || '0.00'} icon={Scale} colorClass="text-slate-700 dark:text-slate-300" />
-          </>
+        {!isMainBranch ? (
+          <StatCard label="Sales Today" value={stats.totalSalesTodayItems} icon={ShoppingBag} colorClass="text-emerald-500" />
+        ) : (
+          <StatCard label="Total Making Charge" value={`${currency}${stats.totalMakingChargeInStock?.toFixed(2) || '0.00'}`} icon={Star} colorClass="text-[#C28C46]" />
         )}
 
         {/* Breakdown Blocks */}
         
         {/* Stock by Type */}
-        <div className="md:col-span-2 xl:col-span-1 bg-white dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 flex flex-col h-[280px]">
-          <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-4 flex items-center gap-2"><Diamond className="w-4 h-4"/> Stock by Type</h3>
+        <div className="md:col-span-2 xl:col-span-1 bg-white dark:bg-slate-950 rounded-3xl border border-slate-200 dark:border-slate-800/60 p-6 flex flex-col h-[280px] shadow-sm hover:shadow-md transition-shadow">
+          <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300 mb-4 flex items-center gap-2 uppercase tracking-wider"><Diamond className="w-4 h-4 text-[#C28C46]"/> Stock by Type</h3>
           <div className="flex-1 overflow-y-auto space-y-2 custom-scrollbar pr-2">
             {!stats.typeWiseStock || Object.keys(stats.typeWiseStock).length === 0 ? (
-              <p className="text-slate-400 text-xs">No data.</p>
+              <p className="text-slate-400 text-sm">No data available.</p>
             ) : (
               Object.entries(stats.typeWiseStock).map(([type, data]: any) => (
-                <div key={type} className="flex justify-between items-center text-sm">
-                  <span className="text-slate-700 dark:text-slate-200">{type}</span>
-                  <span className="font-medium text-slate-900 dark:text-white">{data.weight?.toFixed(2) || '0.00'}g</span>
+                <div key={type} className="flex justify-between items-center text-sm py-1 border-b border-slate-50 dark:border-slate-800/50 last:border-0">
+                  <span className="text-slate-600 dark:text-slate-400 font-medium">{type}</span>
+                  <span className="font-bold text-slate-900 dark:text-white">{data.weight?.toFixed(2) || '0.00'}g</span>
                 </div>
               ))
             )}
@@ -220,53 +254,48 @@ const Dashboard: React.FC = () => {
         </div>
 
         {/* Stock by Model */}
-        <div className="md:col-span-2 xl:col-span-1 bg-white dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 flex flex-col h-[280px]">
-          <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-4 flex items-center gap-2"><Package className="w-4 h-4"/> Stock by Model</h3>
+        <div className="md:col-span-2 xl:col-span-1 bg-white dark:bg-slate-950 rounded-3xl border border-slate-200 dark:border-slate-800/60 p-6 flex flex-col h-[280px] shadow-sm hover:shadow-md transition-shadow">
+          <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300 mb-4 flex items-center gap-2 uppercase tracking-wider"><Package className="w-4 h-4 text-blue-500"/> Stock by Model</h3>
           <div className="flex-1 overflow-y-auto space-y-2 custom-scrollbar pr-2">
             {!stats.topStockModels || stats.topStockModels.length === 0 ? (
-              <p className="text-slate-400 text-xs">No data.</p>
+              <p className="text-slate-400 text-sm">No data available.</p>
             ) : (
               stats.topStockModels.map(([model, data]: any) => (
-                <div key={model} className="flex justify-between items-center text-sm">
-                  <span className="text-slate-700 dark:text-slate-200 truncate pr-2">{model}</span>
-                  <span className="font-medium text-slate-900 dark:text-white shrink-0">{data.weight?.toFixed(2) || '0.00'}g</span>
+                <div key={model} className="flex justify-between items-center text-sm py-1 border-b border-slate-50 dark:border-slate-800/50 last:border-0">
+                  <span className="text-slate-600 dark:text-slate-400 font-medium truncate pr-2">{model}</span>
+                  <span className="font-bold text-slate-900 dark:text-white shrink-0">{data.weight?.toFixed(2) || '0.00'}g</span>
                 </div>
               ))
             )}
           </div>
         </div>
 
-        {/* Sales by Type, Top Models, Recent Sales — hidden for main branch */}
+        {/* Sales by Type, Recent Sales — hidden for main branch */}
         {!isMainBranch && (
           <>
             {/* Sales by Type */}
-            <div className="md:col-span-2 xl:col-span-1 bg-white dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 flex flex-col h-[280px]">
-              <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-4 flex items-center gap-2"><TrendingUp className="w-4 h-4"/> Sales by Type</h3>
-              <div className="flex-1 overflow-y-auto space-y-2 custom-scrollbar pr-2">
+            <div className="md:col-span-2 xl:col-span-2 bg-white dark:bg-slate-950 rounded-3xl border border-slate-200 dark:border-slate-800/60 p-6 flex flex-col h-[280px] shadow-sm hover:shadow-md transition-shadow">
+              <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300 mb-4 flex items-center gap-2 uppercase tracking-wider"><TrendingUp className="w-4 h-4 text-emerald-500"/> Sales Performance</h3>
+              <div className="flex-1 overflow-y-auto space-y-3 custom-scrollbar pr-2">
+                <div className="grid grid-cols-2 gap-4 mb-4">
+                  <div className="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-800 text-center">
+                    <p className="text-xs text-slate-500 uppercase tracking-wide font-semibold mb-1">Items Sold</p>
+                    <p className="text-2xl font-bold text-slate-900 dark:text-white">{stats.totalItemsSold}</p>
+                  </div>
+                  <div className="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-800 text-center">
+                    <p className="text-xs text-slate-500 uppercase tracking-wide font-semibold mb-1">Total Wt (g)</p>
+                    <p className="text-2xl font-bold text-slate-900 dark:text-white">{stats.totalSalesNetWeight?.toFixed(2) || '0.00'}</p>
+                  </div>
+                </div>
+                
+                <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">By Category</h4>
                 {!stats.typeWiseSales || Object.keys(stats.typeWiseSales).length === 0 ? (
-                  <p className="text-slate-400 text-xs">No data.</p>
+                  <p className="text-slate-400 text-sm">No sales data.</p>
                 ) : (
                   Object.entries(stats.typeWiseSales).map(([type, data]: any) => (
                     <div key={type} className="flex justify-between items-center text-sm">
-                      <span className="text-slate-700 dark:text-slate-200">{type}</span>
-                      <span className="font-medium text-slate-900 dark:text-white">{data.weight?.toFixed(2) || '0.00'}g</span>
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
-
-            {/* Top Selling Models */}
-            <div className="md:col-span-2 xl:col-span-1 bg-white dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 flex flex-col h-[280px]">
-              <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-4 flex items-center gap-2"><Star className="w-4 h-4"/> Top Models</h3>
-              <div className="flex-1 overflow-y-auto space-y-2 custom-scrollbar pr-2">
-                {!stats.topModels || stats.topModels.length === 0 ? (
-                  <p className="text-slate-400 text-xs">No data.</p>
-                ) : (
-                  stats.topModels.map(([model, data]: any) => (
-                    <div key={model} className="flex justify-between items-center text-sm">
-                      <span className="text-slate-700 dark:text-slate-200 truncate pr-2">{model}</span>
-                      <span className="font-medium text-slate-900 dark:text-white shrink-0">{data.weight?.toFixed(2) || '0.00'}g</span>
+                      <span className="text-slate-600 dark:text-slate-400 font-medium">{type}</span>
+                      <span className="font-bold text-slate-900 dark:text-white">{data.weight?.toFixed(2) || '0.00'}g</span>
                     </div>
                   ))
                 )}
@@ -274,31 +303,34 @@ const Dashboard: React.FC = () => {
             </div>
 
             {/* Recent Sales Activity Table */}
-            <div className="md:col-span-4 bg-white dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 flex flex-col h-[360px]">
-              <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-4 flex items-center gap-2"><Clock className="w-4 h-4"/> Recent Sales</h3>
+            <div className="md:col-span-4 bg-white dark:bg-slate-950 rounded-3xl border border-slate-200 dark:border-slate-800/60 p-6 flex flex-col h-[360px] shadow-sm hover:shadow-md transition-shadow">
+              <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300 mb-4 flex items-center gap-2 uppercase tracking-wider"><Clock className="w-4 h-4 text-purple-500"/> Recent Sales Activity</h3>
               <div className="flex-1 overflow-y-auto custom-scrollbar">
                 {(!stats.recentSales || stats.recentSales.length === 0) ? (
-                  <p className="text-slate-400 text-xs">No recent sales.</p>
+                  <div className="h-full flex flex-col items-center justify-center text-slate-400">
+                    <ShoppingBag className="w-8 h-8 mb-2 opacity-50" />
+                    <p className="text-sm font-medium">No recent sales.</p>
+                  </div>
                 ) : (
                   <table className="w-full text-left text-sm">
                     <thead className="sticky top-0 bg-white dark:bg-slate-950 z-10">
-                      <tr className="text-slate-400 text-xs font-medium border-b border-slate-200 dark:border-slate-800">
-                        <th className="pb-3 font-normal uppercase tracking-wider">Item Details</th>
-                        <th className="pb-3 font-normal uppercase tracking-wider text-right">Net Weight</th>
+                      <tr className="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider border-b border-slate-200 dark:border-slate-800">
+                        <th className="pb-3 pt-1">Item Details</th>
+                        <th className="pb-3 pt-1 text-right">Net Weight</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
                       {stats.recentSales.map((sale: any) => (
-                        <tr key={sale.id} className="hover:bg-slate-50 dark:hover:bg-slate-900/50 transition-colors">
-                          <td className="py-3">
-                            <div className="font-medium text-slate-900 dark:text-slate-200">
-                              {sale.type} {sale.model ? <span className="text-slate-500 font-normal">/ {sale.model}</span> : ''}
+                        <tr key={sale.id} className="hover:bg-slate-50 dark:hover:bg-slate-900/50 transition-colors group">
+                          <td className="py-4">
+                            <div className="font-bold text-slate-900 dark:text-slate-100 group-hover:text-[#C28C46] transition-colors">
+                              {sale.type} {sale.model ? <span className="text-slate-400 font-medium">/ {sale.model}</span> : ''}
                             </div>
-                            <div className="text-xs text-slate-400 mt-1">
-                              {sale.barcode} • {sale.buyer_name || 'Walk-in'}
+                            <div className="text-xs text-slate-500 dark:text-slate-500 mt-1 font-medium">
+                              {sale.barcode} <span className="mx-1">•</span> {sale.buyer_name || 'Walk-in'}
                             </div>
                           </td>
-                          <td className="py-3 text-right font-medium text-slate-900 dark:text-slate-100">
+                          <td className="py-4 text-right font-bold text-slate-900 dark:text-slate-100">
                             {(Number(sale.weight) - Number(sale.stone_weight || 0)).toFixed(2)}g
                           </td>
                         </tr>
@@ -310,7 +342,6 @@ const Dashboard: React.FC = () => {
             </div>
           </>
         )}
-
       </div>
 
       {/* Daily Rates Modal */}
