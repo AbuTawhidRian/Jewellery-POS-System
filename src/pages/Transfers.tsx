@@ -34,6 +34,7 @@ const Transfers: React.FC = () => {
   // History State
   const [transfers, setTransfers] = useState<any[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
+  const [isFiltering, setIsFiltering] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [dateFilterType, setDateFilterType] = useState<'all' | 'today' | '7days' | 'month' | 'custom'>('all');
   const [startDate, setStartDate] = useState('');
@@ -49,8 +50,11 @@ const Transfers: React.FC = () => {
   }>({ isOpen: false, type: 'alert', title: '', message: '' });
 
   useEffect(() => {
+    setIsFiltering(true);
     setCurrentPage(1);
-  }, [dateFilterType]);
+    const timer = setTimeout(() => setIsFiltering(false), 300);
+    return () => clearTimeout(timer);
+  }, [dateFilterType, startDate, endDate]);
 
   useEffect(() => {
     fetchBranches();
@@ -649,7 +653,7 @@ const Transfers: React.FC = () => {
                 </div>
               </div>
 
-              {loadingHistory ? (
+              {loadingHistory || isFiltering ? (
                 <div className="p-8 text-center text-slate-500">Loading history...</div>
               ) : (
                 <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800">

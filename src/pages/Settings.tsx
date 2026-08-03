@@ -140,8 +140,7 @@ const Settings: React.FC = () => {
   }>({ isOpen: false, type: 'alert', title: '', message: '' });
 
   // Company State
-  const [shopInfo, setShopInfo] = useState({ name: '', trn: '', address: '', email: '', phone: '', slogan: '', logoUrl: '', currency: 'AED' });
-  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [shopInfo, setShopInfo] = useState({ name: '', trn: '', address: '', email: '', phone: '', slogan: '', currency: 'AED' });
   const [loadingShop, setLoadingShop] = useState(true);
   const [savingShop, setSavingShop] = useState(false);
 
@@ -197,7 +196,6 @@ const Settings: React.FC = () => {
         email: res.data.email || '',
         phone: res.data.phone || '',
         slogan: res.data.slogan || '',
-        logoUrl: res.data.logoUrl || '',
         currency: res.data.currency || 'AED'
       });
     } catch (err) {
@@ -221,18 +219,7 @@ const Settings: React.FC = () => {
         shopCurrency: shopInfo.currency
       });
 
-      if (logoFile) {
-        const formData = new FormData();
-        formData.append('logo', logoFile);
-        const res = await api.post('/shop/logo', formData, {
-          headers: { 'Content-Type': 'multipart/form-data' }
-        });
-        setLogoFile(null);
-        await fetchShopInfo();
-        if (res.data.logoUrl) {
-          updateUser({ shopLogo: res.data.logoUrl });
-        }
-      }
+
 
       showNotification('success', 'Company information updated successfully!');
     } catch (err) {
@@ -242,21 +229,6 @@ const Settings: React.FC = () => {
     }
   };
 
-  const handleRemoveLogo = async () => {
-    try {
-      setSavingShop(true);
-      await api.delete('/shop/logo');
-      setLogoFile(null);
-      setShopInfo({ ...shopInfo, logoUrl: '' });
-      updateUser({ shopLogo: undefined });
-      showNotification('success', 'Logo removed successfully!');
-      fetchShopInfo();
-    } catch (err) {
-      showNotification('error', 'Failed to remove logo');
-    } finally {
-      setSavingShop(false);
-    }
-  };
 
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -434,49 +406,6 @@ const Settings: React.FC = () => {
                 </h4>
                 
                 <div className="space-y-5">
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Company Logo</label>
-                    <div className="flex items-center gap-4">
-                      <div className="relative group">
-                        {shopInfo.logoUrl && !logoFile ? (
-                          <img src={shopInfo.logoUrl} alt="Shop Logo" className="w-20 h-20 object-contain border-2 border-slate-200 dark:border-slate-700 rounded-xl p-2 bg-white dark:bg-slate-900 shadow-sm" onError={(e) => e.currentTarget.style.display = 'none'} />
-                        ) : logoFile ? (
-                          <img src={URL.createObjectURL(logoFile)} alt="New Logo" className="w-20 h-20 object-contain border-2 border-slate-200 dark:border-slate-700 rounded-xl p-2 bg-white dark:bg-slate-900 shadow-sm" />
-                        ) : (
-                          <div className="w-20 h-20 flex items-center justify-center border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-xl bg-slate-100 dark:bg-slate-900/50 text-slate-400 text-xs text-center p-2">
-                            No Logo
-                          </div>
-                        )}
-                      </div>
-                      <div className="flex flex-col gap-2 flex-1">
-                        <label className="cursor-pointer inline-flex items-center justify-center px-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors shadow-sm self-start">
-                          <span>Choose new image</span>
-                          <input 
-                            type="file" 
-                            accept="image/*" 
-                            className="hidden"
-                            onChange={(e) => {
-                              const file = e.target.files?.[0];
-                              if (file) {
-                                if (file.size > 2 * 1024 * 1024) {
-                                  showNotification('error', 'Image size must be less than 2MB');
-                                  e.target.value = ''; // Reset input
-                                  return;
-                                }
-                                setLogoFile(file);
-                              }
-                            }} 
-                          />
-                        </label>
-                        {(shopInfo.logoUrl || logoFile) && (
-                          <button type="button" onClick={logoFile ? () => setLogoFile(null) : handleRemoveLogo} disabled={savingShop} className="text-xs text-red-500 hover:text-red-600 font-medium self-start px-1">
-                            {logoFile ? 'Cancel selection' : 'Remove current logo'}
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                     <div>
                       <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Company / Barcode Print Name</label>

@@ -14,6 +14,7 @@ const BranchSettlement: React.FC = () => {
   const [cashTransfers, setCashTransfers] = useState<any[]>([]);
   const [goldTransfers, setGoldTransfers] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [isFiltering, setIsFiltering] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   const [currentPage, setCurrentPage] = useState(1);
@@ -23,8 +24,11 @@ const BranchSettlement: React.FC = () => {
   const itemsPerPage = 7;
 
   useEffect(() => {
+    setIsFiltering(true);
     setCurrentPage(1);
-  }, [dateFilterType]);
+    const timer = setTimeout(() => setIsFiltering(false), 300);
+    return () => clearTimeout(timer);
+  }, [dateFilterType, startDate, endDate]);
 
   useEffect(() => {
     setCurrentPage(1);
@@ -481,7 +485,7 @@ const BranchSettlement: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody className="bg-white dark:bg-slate-900 divide-y divide-slate-200 dark:divide-slate-800">
-                  {loading ? (
+                  {loading || isFiltering ? (
                     <tr>
                       <td colSpan={showActionsColumn ? 6 : 5} className="px-6 py-8 text-center text-slate-500">Loading history...</td>
                     </tr>

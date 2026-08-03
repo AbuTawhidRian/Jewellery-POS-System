@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { Store } from 'lucide-react';
 import { useInventory } from '../store/InventoryContext';
 import { format } from 'date-fns';
 import { useAuth } from '../contexts/AuthContext';
@@ -35,11 +36,11 @@ const PaymentPrintLayout: React.FC = () => {
           
           {/* Header */}
           <div className="flex flex-col items-center text-center border-b-2 border-slate-200 pb-6 mb-6">
-            {user?.shopLogo ? (
-              <img src={user.shopLogo} alt="Shop Logo" className="w-16 h-16 object-contain mb-4" />
-            ) : (
-              <img src="/logo.jpg" alt="Logo" className="w-20 h-20 object-contain rounded-[22%] mb-4" />
-            )}
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-12 h-12 bg-slate-900 rounded-lg flex items-center justify-center">
+                <Store className="w-6 h-6 text-white" />
+              </div>
+            </div>
             <h1 className="text-3xl font-bold tracking-tight text-slate-900 mb-1">{activeBranchName || user?.shopName || 'Jewellery Shop'}</h1>
             <p className="text-sm text-slate-500">{user?.shopSlogan || 'Wholesale & Retail Trading'}</p>
           </div>

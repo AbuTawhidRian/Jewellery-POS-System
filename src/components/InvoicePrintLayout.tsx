@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { Store } from 'lucide-react';
 import { useInventory } from '../store/InventoryContext';
 import { format } from 'date-fns';
 import api from '../lib/api';
@@ -37,11 +38,9 @@ const InvoicePrintLayout: React.FC = () => {
         {/* Header */}
         <div className="flex justify-between items-start border-b-2 border-slate-200 pb-4 mb-4">
           <div className="flex items-center gap-3">
-            {user?.shopLogo ? (
-              <img src={user.shopLogo} alt="Shop Logo" className="w-12 h-12 object-contain" />
-            ) : (
-              <img src="/logo.jpg" alt="Logo" className="w-16 h-16 object-contain rounded-[22%] scale-[1.02]" />
-            )}
+              <div className="w-12 h-12 bg-slate-900 rounded-lg flex items-center justify-center">
+                <Store className="w-6 h-6 text-white" />
+              </div>
             <div>
               <h1 className="text-3xl font-bold tracking-tight text-slate-900">{activeBranchName || user?.shopName || 'Jewellery Shop'}</h1>
               <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{user?.shopSlogan || 'Wholesale & Retail Trading'}</p>
