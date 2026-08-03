@@ -23,7 +23,7 @@ const POS: React.FC = () => {
   const totalMakingCharge = cart.reduce((acc, item) => acc + (Number(item.makingCharge) || 0), 0);
   const [customTotalCharge, setCustomTotalCharge] = useState<string>('');
   const [dailyRates, setDailyRates] = useState<Record<string, number>>({});
-  const [includeGoldValue, setIncludeGoldValue] = useState(false);
+  const [goldValueMode, setGoldValueMode] = useState<'none' | 'gross' | 'net'>('none');
 
   useEffect(() => {
     const fetchRates = async () => {
@@ -41,7 +41,13 @@ const POS: React.FC = () => {
     fetchRates();
   }, []);
 
-  const totalGoldValue = cart.reduce((acc, item) => {
+  const totalGoldValueGross = cart.reduce((acc, item) => {
+    const gw = Number(item.weight) || 0;
+    const rate = dailyRates[item.type] || 0;
+    return acc + (gw * rate);
+  }, 0);
+
+  const totalGoldValueNet = cart.reduce((acc, item) => {
     const sw = Number(item.stone_weight) || 0;
     const gw = Number(item.weight) || 0;
     const nw = Math.max(0, gw - sw);
@@ -49,14 +55,16 @@ const POS: React.FC = () => {
     return acc + (nw * rate);
   }, 0);
 
+  const activeGoldValue = goldValueMode === 'gross' ? totalGoldValueGross : (goldValueMode === 'net' ? totalGoldValueNet : 0);
+
   useEffect(() => {
     if (cart.length === 0) {
       setCustomTotalCharge('');
     } else {
-      const calculatedTotal = totalMakingCharge + (includeGoldValue ? totalGoldValue : 0);
+      const calculatedTotal = totalMakingCharge + activeGoldValue;
       setCustomTotalCharge(calculatedTotal > 0 ? calculatedTotal.toFixed(2) : '');
     }
-  }, [totalMakingCharge, totalGoldValue, includeGoldValue, cart.length]);
+  }, [totalMakingCharge, activeGoldValue, cart.length]);
   
   // Payment Modal State
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
@@ -734,21 +742,39 @@ const POS: React.FC = () => {
             
             {!isReturnMode && cart.length > 0 && (
               <div className="flex flex-col gap-4 mb-6 pt-4 border-t border-slate-200 dark:border-slate-800">
-                <div className="flex justify-between items-center">
-                  <label className="flex items-center gap-2 cursor-pointer text-slate-700 dark:text-slate-300 font-medium">
-                    <input 
-                      type="checkbox" 
-                      checked={includeGoldValue}
-                      onChange={(e) => setIncludeGoldValue(e.target.checked)}
-                      className="w-5 h-5 rounded border-slate-300 text-gold-500 focus:ring-gold-500"
-                    />
-                    Include Gold Value
-                  </label>
-                  {includeGoldValue && (
-                    <span className="text-sm font-bold text-slate-500 dark:text-slate-400">
-                      + {totalGoldValue.toFixed(2)} {user?.shopCurrency || 'AED'}
-                    </span>
-                  )}
+                <div className="flex flex-col gap-3">
+                  <div className="flex justify-between items-center">
+                    <label className="flex items-center gap-2 cursor-pointer text-slate-700 dark:text-slate-300 font-medium">
+                      <input 
+                        type="checkbox" 
+                        checked={goldValueMode === 'gross'}
+                        onChange={(e) => setGoldValueMode(e.target.checked ? 'gross' : 'none')}
+                        className="w-5 h-5 rounded border-slate-300 text-gold-500 focus:ring-gold-500"
+                      />
+                      Include Gold Value (Gross Weight)
+                    </label>
+                    {goldValueMode === 'gross' && (
+                      <span className="text-sm font-bold text-slate-500 dark:text-slate-400">
+                        + {totalGoldValueGross.toFixed(2)} {user?.shopCurrency || 'AED'}
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <label className="flex items-center gap-2 cursor-pointer text-slate-700 dark:text-slate-300 font-medium">
+                      <input 
+                        type="checkbox" 
+                        checked={goldValueMode === 'net'}
+                        onChange={(e) => setGoldValueMode(e.target.checked ? 'net' : 'none')}
+                        className="w-5 h-5 rounded border-slate-300 text-gold-500 focus:ring-gold-500"
+                      />
+                      Include Gold Value (Net Weight)
+                    </label>
+                    {goldValueMode === 'net' && (
+                      <span className="text-sm font-bold text-slate-500 dark:text-slate-400">
+                        + {totalGoldValueNet.toFixed(2)} {user?.shopCurrency || 'AED'}
+                      </span>
+                    )}
+                  </div>
                 </div>
                 <div className="flex justify-between items-center pt-2">
                   <span className="text-slate-600 dark:text-slate-400 font-bold text-xl">Total Cash to Bill ({user?.shopCurrency || 'AED'})</span>

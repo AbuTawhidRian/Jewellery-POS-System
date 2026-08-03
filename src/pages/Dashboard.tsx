@@ -4,6 +4,7 @@ import api from '../lib/api';
 import toast from 'react-hot-toast';
 import { useAuth } from '../contexts/AuthContext';
 import { useInventory } from '../store/InventoryContext';
+import OwnerOverview from '../components/OwnerOverview';
 
 const Dashboard: React.FC = () => {
   const { user, hasPermission, activeBranchId } = useAuth();
@@ -11,6 +12,7 @@ const Dashboard: React.FC = () => {
   const currency = user?.shopCurrency || 'AED';
 
   const [stats, setStats] = useState<any>(null);
+  const [ownerStats, setOwnerStats] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedBranchId, setSelectedBranchId] = useState<string>('');
   const [branches, setBranches] = useState<any[]>([]);
@@ -32,14 +34,21 @@ const Dashboard: React.FC = () => {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        let url = '/dashboard/stats';
-        // Priority: explicit dropdown selection > active branch from context
-        const branchToFilter = selectedBranchId || activeBranchId;
-        if (branchToFilter) {
-          url += `?branchId=${branchToFilter}`;
+        setIsLoading(true);
+        if (user?.role === 'OWNER' && !selectedBranchId) {
+          const res = await api.get('/dashboard/owner-stats');
+          setOwnerStats(res.data);
+          setStats(null);
+        } else {
+          let url = '/dashboard/stats';
+          const branchToFilter = selectedBranchId || activeBranchId;
+          if (branchToFilter) {
+            url += `?branchId=${branchToFilter}`;
+          }
+          const res = await api.get(url);
+          setStats(res.data);
+          setOwnerStats(null);
         }
-        const res = await api.get(url);
-        setStats(res.data);
       } catch (error: any) {
         toast.error(error.response?.data?.error || 'Failed to load dashboard stats');
       } finally {
@@ -96,7 +105,7 @@ const Dashboard: React.FC = () => {
     }
   };
 
-  if (isLoading || !stats) {
+  if (isLoading || (!stats && !ownerStats)) {
     return (
       <div className="flex-1 flex items-center justify-center min-h-[60vh]">
         <div className="relative w-12 h-12">
@@ -181,6 +190,10 @@ const Dashboard: React.FC = () => {
         )}
       </div>
 
+      {ownerStats ? (
+        <OwnerOverview stats={ownerStats} />
+      ) : (
+        <>
       {/* Financial Hero Section */}
       {!isMainBranch && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-2">
@@ -401,6 +414,9 @@ const Dashboard: React.FC = () => {
             </div>
           </div>
         </div>
+      )}
+
+        </>
       )}
 
       {/* Global CSS for custom scrollbar in Bento boxes */}

@@ -931,6 +931,54 @@ app.patch('/api/admin/subscriptions/:shopId', authenticateToken, requireSuperAdm
 });
 
 // --- Dashboard Routes ---
+app.get('/api/dashboard/owner-stats', authenticateToken, requireActiveOrTrial, async (req: AuthRequest, res) => {
+  try {
+    if (req.user?.role !== 'OWNER') {
+      return res.status(403).json({ error: 'Only owners can access global stats' });
+    }
+    const shopId = req.user!.shopId!;
+
+    const [branches, items, sales] = await Promise.all([
+      prisma.branch.findMany({ where: { shopId } }),
+      prisma.item.findMany({ where: { shopId, status: 'In Stock' } }),
+      prisma.sale.findMany({ where: { shopId } })
+    ]);
+
+    const mainBranchIds = branches.filter(b => b.isMain).map(b => b.id);
+    
+    // Main Branch Metrics
+    const mainItems = items.filter(i => i.branchId && mainBranchIds.includes(i.branchId));
+    const mainStockWeight = mainItems.reduce((acc, i) => acc + Math.max(0, (Number(i.weight) || 0) - (Number(i.stone_weight) || 0)), 0);
+    const mainStockMakingCharge = mainItems.reduce((acc, i) => acc + (Number(i.makingCharge) || 0), 0);
+    const mainCashBalance = branches.filter(b => b.isMain).reduce((acc, b) => acc + (Number(b.cashBalance) || 0), 0);
+    
+    // Normal Branch Metrics
+    const normalItems = items.filter(i => i.branchId && !mainBranchIds.includes(i.branchId));
+    const normalStockWeight = normalItems.reduce((acc, i) => acc + Math.max(0, (Number(i.weight) || 0) - (Number(i.stone_weight) || 0)), 0);
+    const normalStockMakingCharge = normalItems.reduce((acc, i) => acc + (Number(i.makingCharge) || 0), 0);
+    
+    const normalSales = sales.filter(s => s.branchId && !mainBranchIds.includes(s.branchId));
+    const normalMakingCollected = normalSales.reduce((acc, s) => acc + (Number(s.makingCharge) || 0), 0);
+    const normalCashBalance = branches.filter(b => !b.isMain).reduce((acc, b) => acc + (Number(b.cashBalance) || 0), 0);
+
+    // Global Metrics
+    const totalMakingCollected = sales.reduce((acc, s) => acc + (Number(s.makingCharge) || 0), 0);
+
+    res.json({
+      mainStockWeight,
+      mainStockMakingCharge,
+      mainCashBalance,
+      normalStockWeight,
+      normalStockMakingCharge,
+      normalMakingCollected,
+      normalCashBalance,
+      totalMakingCollected
+    });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || 'Internal Server Error' });
+  }
+});
+
 app.get('/api/dashboard/stats', authenticateToken, requireActiveOrTrial, async (req: AuthRequest, res) => {
   try {
     const shopId = req.user!.shopId!;
