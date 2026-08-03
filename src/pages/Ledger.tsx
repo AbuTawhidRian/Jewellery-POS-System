@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useInventory, type Sale } from '../store/InventoryContext';
-import { FileText, Filter, Printer, Download, ChevronDown, ChevronRight, Calendar, ArrowUpRight, ArrowDownLeft, Scale, Wallet, ShoppingCart, Diamond, Trash2 } from 'lucide-react';
+import { FileText, Filter, Printer, Download, ChevronDown, ChevronRight, Calendar, ArrowUpRight, ArrowDownLeft, Scale, Wallet, ShoppingCart, Diamond, Trash2, Package } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import Dialog from '../components/Dialog';
 import { useAuth } from '../contexts/AuthContext';
@@ -183,14 +183,17 @@ const Ledger: React.FC = () => {
     if (filterBuyerId !== 'all') return null;
     let totalNet = 0;
     let totalPure = 0;
+    let totalGross = 0;
     
     transactions.forEach(tx => {
       totalNet += tx.totalNet;
       totalPure += tx.totalPure;
+      totalGross += tx.totalGross;
     });
 
     return {
       totalTransactions: transactions.length,
+      totalGross,
       totalNet,
       totalPure
     };
@@ -524,7 +527,7 @@ const Ledger: React.FC = () => {
       )}
 
       {globalSummary && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 animate-in slide-in-from-bottom-2 duration-300">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6 animate-in slide-in-from-bottom-2 duration-300">
           <div className="bg-gradient-to-br from-blue-500/10 to-blue-600/5 border border-blue-500/20 rounded-2xl p-6 shadow-sm flex flex-col relative overflow-hidden">
             <div className="absolute top-0 right-0 p-4 opacity-10">
               <ShoppingCart className="w-16 h-16 text-blue-600" />
@@ -534,6 +537,18 @@ const Ledger: React.FC = () => {
             </h3>
             <p className="text-3xl font-black text-slate-900 dark:text-white mt-auto">
               {globalSummary.totalTransactions}
+            </p>
+          </div>
+
+          <div className="bg-gradient-to-br from-slate-500/10 to-slate-600/5 border border-slate-500/20 rounded-2xl p-6 shadow-sm flex flex-col relative overflow-hidden">
+            <div className="absolute top-0 right-0 p-4 opacity-10">
+              <Package className="w-16 h-16 text-slate-600" />
+            </div>
+            <h3 className="text-sm font-bold text-slate-600 uppercase tracking-wider mb-2 flex items-center gap-2">
+              <Package className="w-4 h-4" /> Total Gross Wt Sold
+            </h3>
+            <p className="text-3xl font-black text-slate-900 dark:text-white mt-auto">
+              {globalSummary.totalGross.toFixed(2)}<span className="text-lg text-slate-500 ml-1">g</span>
             </p>
           </div>
 

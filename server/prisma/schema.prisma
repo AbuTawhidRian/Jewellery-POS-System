@@ -244,7 +244,8 @@ model BranchCashTransfer {
   id           String   @id @default(uuid())
   shopId       String
   fromBranchId String
-  toBranchId   String
+  toBranchId   String?
+  isOwnerPayment Boolean @default(false)
   amount       Float
   date         DateTime @default(now())
   status       String   @default("PENDING") // PENDING, ACCEPTED, REJECTED
@@ -252,14 +253,15 @@ model BranchCashTransfer {
 
   shop         Shop   @relation(fields: [shopId], references: [id], onDelete: Cascade)
   fromBranch   Branch @relation("CashTransfersOut", fields: [fromBranchId], references: [id])
-  toBranch     Branch @relation("CashTransfersIn", fields: [toBranchId], references: [id])
+  toBranch     Branch? @relation("CashTransfersIn", fields: [toBranchId], references: [id])
 }
 
 model BranchGoldTransfer {
   id           String   @id @default(uuid())
   shopId       String
   fromBranchId String
-  toBranchId   String
+  toBranchId   String?
+  isOwnerPayment Boolean @default(false)
   weight       Float
   date         DateTime @default(now())
   status       String   @default("PENDING") // PENDING, ACCEPTED, REJECTED
@@ -267,5 +269,5 @@ model BranchGoldTransfer {
 
   shop         Shop   @relation(fields: [shopId], references: [id], onDelete: Cascade)
   fromBranch   Branch @relation("GoldTransfersOut", fields: [fromBranchId], references: [id])
-  toBranch     Branch @relation("GoldTransfersIn", fields: [toBranchId], references: [id])
+  toBranch     Branch? @relation("GoldTransfersIn", fields: [toBranchId], references: [id])
 }

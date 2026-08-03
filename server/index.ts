@@ -949,13 +949,29 @@ app.get('/api/dashboard/owner-stats', authenticateToken, requireActiveOrTrial, a
     // Main Branch Metrics
     const mainItems = items.filter(i => i.branchId && mainBranchIds.includes(i.branchId));
     const mainStockWeight = mainItems.reduce((acc, i) => acc + Math.max(0, (Number(i.weight) || 0) - (Number(i.stone_weight) || 0)), 0);
+    const mainStockGrossWeight = mainItems.reduce((acc, i) => acc + (Number(i.weight) || 0), 0);
     const mainStockMakingCharge = mainItems.reduce((acc, i) => acc + (Number(i.makingCharge) || 0), 0);
     const mainCashBalance = branches.filter(b => b.isMain).reduce((acc, b) => acc + (Number(b.cashBalance) || 0), 0);
+    const mainStockByType = mainItems.reduce((acc: any, item) => {
+      const type = item.type || 'Other';
+      if (!acc[type]) acc[type] = { weight: 0, pureWeight: 0 };
+      acc[type].weight += (Number(item.weight) || 0);
+      acc[type].pureWeight += Math.max(0, (Number(item.weight) || 0) - (Number(item.stone_weight) || 0));
+      return acc;
+    }, {});
     
     // Normal Branch Metrics
     const normalItems = items.filter(i => i.branchId && !mainBranchIds.includes(i.branchId));
     const normalStockWeight = normalItems.reduce((acc, i) => acc + Math.max(0, (Number(i.weight) || 0) - (Number(i.stone_weight) || 0)), 0);
+    const normalStockGrossWeight = normalItems.reduce((acc, i) => acc + (Number(i.weight) || 0), 0);
     const normalStockMakingCharge = normalItems.reduce((acc, i) => acc + (Number(i.makingCharge) || 0), 0);
+    const normalStockByType = normalItems.reduce((acc: any, item) => {
+      const type = item.type || 'Other';
+      if (!acc[type]) acc[type] = { weight: 0, pureWeight: 0 };
+      acc[type].weight += (Number(item.weight) || 0);
+      acc[type].pureWeight += Math.max(0, (Number(item.weight) || 0) - (Number(item.stone_weight) || 0));
+      return acc;
+    }, {});
     
     const normalSales = sales.filter(s => s.branchId && !mainBranchIds.includes(s.branchId));
     const normalMakingCollected = normalSales.reduce((acc, s) => acc + (Number(s.makingCharge) || 0), 0);
@@ -966,12 +982,16 @@ app.get('/api/dashboard/owner-stats', authenticateToken, requireActiveOrTrial, a
 
     res.json({
       mainStockWeight,
+      mainStockGrossWeight,
       mainStockMakingCharge,
       mainCashBalance,
+      mainStockByType,
       normalStockWeight,
+      normalStockGrossWeight,
       normalStockMakingCharge,
       normalMakingCollected,
       normalCashBalance,
+      normalStockByType,
       totalMakingCollected
     });
   } catch (error: any) {
@@ -2090,12 +2110,26 @@ app.get('/api/cash_transfers', authenticateToken, requireActiveOrTrial, async (r
 
 app.post('/api/cash_transfers', authenticateToken, requireActiveOrTrial, async (req: AuthRequest, res) => {
   try {
-    const { fromBranchId, toBranchId, amount, notes } = req.body;
+    const { fromBranchId, toBranchId, amount, notes, isOwnerPayment } = req.body;
     const shopId = req.user!.shopId!;
     const parsedAmount = parseFloat(amount);
     
     const fromBranch = await prisma.branch.findUnique({ where: { id: fromBranchId } });
     const isAutoApproved = !!fromBranch?.isMain;
+
+    if (isOwnerPayment) {
+      if (!fromBranch?.isMain) return res.status(403).json({ error: 'Only the main branch can make owner payments.' });
+      const transfer = await prisma.$transaction(async (tx) => {
+        await tx.branch.update({
+          where: { id: fromBranchId },
+          data: { cashBalance: { decrement: parsedAmount } }
+        });
+        return await tx.branchCashTransfer.create({
+          data: { shopId, fromBranchId, isOwnerPayment: true, amount: parsedAmount, notes, status: 'ACCEPTED' }
+        });
+      });
+      return res.json(transfer);
+    }
 
     if (isAutoApproved) {
       const transfer = await prisma.$transaction(async (tx) => {
@@ -2147,10 +2181,12 @@ app.put('/api/cash_transfers/:id/status', authenticateToken, requireActiveOrTria
         });
         
         // Increment for receiver
-        await tx.branch.update({
-          where: { id: transfer.toBranchId },
-          data: { cashBalance: { increment: transfer.amount } }
-        });
+        if (transfer.toBranchId) {
+          await tx.branch.update({
+            where: { id: transfer.toBranchId },
+            data: { cashBalance: { increment: transfer.amount } }
+          });
+        }
 
         // Update transfer status
         return await tx.branchCashTransfer.update({
@@ -2192,12 +2228,26 @@ app.get('/api/gold_transfers', authenticateToken, requireActiveOrTrial, async (r
 
 app.post('/api/gold_transfers', authenticateToken, requireActiveOrTrial, async (req: AuthRequest, res) => {
   try {
-    const { fromBranchId, toBranchId, weight, notes } = req.body;
+    const { fromBranchId, toBranchId, weight, notes, isOwnerPayment } = req.body;
     const shopId = req.user!.shopId!;
     const parsedWeight = parseFloat(weight);
     
     const fromBranch = await prisma.branch.findUnique({ where: { id: fromBranchId } });
     const isAutoApproved = !!fromBranch?.isMain;
+
+    if (isOwnerPayment) {
+      if (!fromBranch?.isMain) return res.status(403).json({ error: 'Only the main branch can make owner payments.' });
+      const transfer = await prisma.$transaction(async (tx) => {
+        await tx.branch.update({
+          where: { id: fromBranchId },
+          data: { goldBalance: { decrement: parsedWeight } }
+        });
+        return await tx.branchGoldTransfer.create({
+          data: { shopId, fromBranchId, isOwnerPayment: true, weight: parsedWeight, notes, status: 'ACCEPTED' }
+        });
+      });
+      return res.json(transfer);
+    }
 
     if (isAutoApproved) {
       const transfer = await prisma.$transaction(async (tx) => {
@@ -2249,10 +2299,12 @@ app.put('/api/gold_transfers/:id/status', authenticateToken, requireActiveOrTria
         });
         
         // Increment for receiver
-        await tx.branch.update({
-          where: { id: transfer.toBranchId },
-          data: { goldBalance: { increment: transfer.weight } }
-        });
+        if (transfer.toBranchId) {
+          await tx.branch.update({
+            where: { id: transfer.toBranchId },
+            data: { goldBalance: { increment: transfer.weight } }
+          });
+        }
 
         // Update transfer status
         return await tx.branchGoldTransfer.update({

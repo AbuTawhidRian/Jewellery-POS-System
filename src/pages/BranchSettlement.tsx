@@ -89,34 +89,32 @@ const BranchSettlement: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.fromBranchId || !formData.toBranchId) {
-      return toast.error('Please select both branches');
+      return toast.error('Please select both source and destination');
     }
     
     if (activeTab === 'cash' && !formData.amount) return toast.error('Please enter cash amount');
     if (activeTab === 'gold' && !formData.weight) return toast.error('Please enter gold weight');
 
     if (formData.fromBranchId === formData.toBranchId) {
-      return toast.error('Source and Destination branches cannot be the same');
+      return toast.error('Source and Destination cannot be the same');
     }
+
+    const isOwnerPayment = formData.toBranchId === 'OWNER';
+    const payload = {
+      fromBranchId: formData.fromBranchId,
+      toBranchId: isOwnerPayment ? undefined : formData.toBranchId,
+      isOwnerPayment: isOwnerPayment,
+      notes: formData.notes
+    };
 
     setSubmitting(true);
     try {
       if (activeTab === 'cash') {
-        await api.post('/cash_transfers', {
-          fromBranchId: formData.fromBranchId,
-          toBranchId: formData.toBranchId,
-          amount: formData.amount,
-          notes: formData.notes
-        });
+        await api.post('/cash_transfers', { ...payload, amount: formData.amount });
         toast.success('Cash payment recorded successfully');
         fetchCashTransfers();
       } else {
-        await api.post('/gold_transfers', {
-          fromBranchId: formData.fromBranchId,
-          toBranchId: formData.toBranchId,
-          weight: formData.weight,
-          notes: formData.notes
-        });
+        await api.post('/gold_transfers', { ...payload, weight: formData.weight });
         toast.success('Gold transfer recorded successfully');
         fetchGoldTransfers();
       }
@@ -222,7 +220,7 @@ const BranchSettlement: React.FC = () => {
     const data = filteredTransfers.map(t => ({
       Date: new Date(t.date).toLocaleString(),
       From: t.fromBranch?.name || 'Unknown',
-      To: t.toBranch?.name || 'Unknown',
+      To: t.isOwnerPayment ? 'Owner (Withdrawal)' : (t.toBranch?.name || 'Unknown'),
       [activeTab === 'cash' ? 'Amount' : 'Weight (g)']: activeTab === 'cash' ? Number(t.amount).toFixed(2) : Number(t.weight).toFixed(2),
       Status: t.status,
       Notes: t.notes || ''
@@ -242,7 +240,7 @@ const BranchSettlement: React.FC = () => {
     const tableRows = filteredTransfers.map(t => [
       new Date(t.date).toLocaleString(),
       t.fromBranch?.name || 'Unknown',
-      t.toBranch?.name || 'Unknown',
+      t.isOwnerPayment ? 'Owner (Withdrawal)' : (t.toBranch?.name || 'Unknown'),
       activeTab === 'cash' ? Number(t.amount).toFixed(2) : Number(t.weight).toFixed(2),
       t.status,
       t.notes || ''
@@ -331,6 +329,9 @@ const BranchSettlement: React.FC = () => {
                     {branches.map(b => (
                       <option key={b.id} value={b.id}>{b.name}</option>
                     ))}
+                    {branches.find(b => b.id === formData.fromBranchId)?.isMain && (
+                      <option value="OWNER">👤 Owner (Withdrawal)</option>
+                    )}
                   </select>
                 </div>
               </div>
@@ -503,7 +504,11 @@ const BranchSettlement: React.FC = () => {
                           {t.fromBranch?.name || 'Unknown'}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900 dark:text-white">
-                          {t.toBranch?.name || 'Unknown'}
+                          {t.isOwnerPayment ? (
+                            <span className="text-purple-600 dark:text-purple-400 font-bold">Owner (Withdrawal)</span>
+                          ) : (
+                            t.toBranch?.name || 'Unknown'
+                          )}
                           <div className="text-xs text-slate-500 font-normal mt-1 max-w-[200px] truncate" title={t.notes}>{t.notes}</div>
                         </td>
                         <td className={`px-6 py-4 whitespace-nowrap text-sm font-bold text-right ${activeTab === 'cash' ? 'text-emerald-600 dark:text-emerald-500' : 'text-[#C28C46]'}`}>
