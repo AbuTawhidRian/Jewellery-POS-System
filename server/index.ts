@@ -938,10 +938,13 @@ app.get('/api/dashboard/owner-stats', authenticateToken, requireActiveOrTrial, a
     }
     const shopId = req.user!.shopId!;
 
-    const [branches, items, sales] = await Promise.all([
+    const [branches, items, sales, payments, metalReceipts, itemTypes] = await Promise.all([
       prisma.branch.findMany({ where: { shopId } }),
       prisma.item.findMany({ where: { shopId, status: 'In Stock' } }),
-      prisma.sale.findMany({ where: { shopId } })
+      prisma.sale.findMany({ where: { shopId }, include: { item: true } }),
+      prisma.payment.findMany({ where: { shopId } }),
+      prisma.metalReceipt.findMany({ where: { shopId } }),
+      prisma.itemType.findMany({ where: { shopId } })
     ]);
 
     const mainBranchIds = branches.filter(b => b.isMain).map(b => b.id);
@@ -980,6 +983,44 @@ app.get('/api/dashboard/owner-stats', authenticateToken, requireActiveOrTrial, a
     // Global Metrics
     const totalMakingCollected = sales.reduce((acc, s) => acc + (Number(s.makingCharge) || 0), 0);
 
+    // Branch Performance Leaderboard
+    const branchPerformance = branches.map(b => {
+      const bSales = sales.filter(s => s.branchId === b.id);
+      const bPayments = payments.filter(p => p.branchId === b.id);
+      const bMetalReceipts = metalReceipts.filter(m => m.branchId === b.id);
+
+      const totalSalesCount = bSales.length;
+      const totalSalesValue = bSales.reduce((acc, s) => acc + (Number(s.totalAmount) || 0), 0);
+      const totalPaid = bPayments.reduce((acc, p) => acc + (Number(p.amount) || 0), 0);
+      const totalCashReceivable = totalSalesValue - totalPaid;
+
+      const totalPureGoldSales = bSales.reduce((acc, sale) => {
+        const gw = Number(sale.weight) || 0;
+        const sw = Number(sale.item?.stone_weight) || 0;
+        const nw = Math.max(0, gw - sw);
+        const purity = itemTypes.find(t => t.name === sale.item?.type)?.purity ?? 1.0;
+        return acc + (nw * purity);
+      }, 0);
+
+      const totalPureGoldReceived = bMetalReceipts.reduce((acc, receipt) => {
+        const w = Number(receipt.weight) || 0;
+        const p = Number(receipt.purity) || 0.995;
+        return acc + (w * p);
+      }, 0);
+
+      const totalGoldReceivable = totalPureGoldSales - totalPureGoldReceived;
+
+      return {
+        id: b.id,
+        name: b.name,
+        isMain: b.isMain,
+        totalSalesCount,
+        totalSalesValue,
+        totalCashReceivable,
+        totalGoldReceivable
+      };
+    }).sort((a, b) => b.totalSalesValue - a.totalSalesValue); // Sort by highest sales value
+
     res.json({
       mainStockWeight,
       mainStockGrossWeight,
@@ -992,7 +1033,8 @@ app.get('/api/dashboard/owner-stats', authenticateToken, requireActiveOrTrial, a
       normalMakingCollected,
       normalCashBalance,
       normalStockByType,
-      totalMakingCollected
+      totalMakingCollected,
+      branchPerformance
     });
   } catch (error: any) {
     res.status(500).json({ error: error.message || 'Internal Server Error' });
@@ -1124,6 +1166,15 @@ app.get('/api/dashboard/stats', authenticateToken, requireActiveOrTrial, async (
     
     const totalGoldReceivable = totalPureGoldSales - totalPureGoldReceived;
 
+    const ninetyDaysAgo = new Date();
+    ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+    const agingStockCount = activeStock.filter(i => new Date(i.dateAdded) < ninetyDaysAgo).length;
+
+    const topCategories = Object.entries(typeWiseSales)
+      .map(([name, data]) => ({ name, value: data.count }))
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 5);
+
     res.json({
       totalItemsInStock,
       totalWeightInStock,
@@ -1144,7 +1195,9 @@ app.get('/api/dashboard/stats', authenticateToken, requireActiveOrTrial, async (
       totalGoldReceivable,
       totalMakingChargeBilled,
       totalCashSales,
-      totalCashPaid
+      totalCashPaid,
+      agingStockCount,
+      topCategories
     });
   } catch (error) {
     console.error("Error calculating dashboard stats:", error);

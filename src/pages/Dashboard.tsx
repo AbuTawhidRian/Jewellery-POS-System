@@ -5,6 +5,9 @@ import toast from 'react-hot-toast';
 import { useAuth } from '../contexts/AuthContext';
 import { useInventory } from '../store/InventoryContext';
 import OwnerOverview from '../components/OwnerOverview';
+import { PieChart, Pie, Cell, Tooltip as RechartsTooltip, Legend, ResponsiveContainer } from 'recharts';
+
+const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6'];
 
 const Dashboard: React.FC = () => {
   const { user, hasPermission, activeBranchId } = useAuth();
@@ -233,6 +236,21 @@ const Dashboard: React.FC = () => {
         </div>
       )}
 
+      {/* Aging Stock Alert */}
+      {stats.agingStockCount > 0 && (
+        <div className="bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900 rounded-3xl p-6 flex items-center justify-between shadow-sm hover:shadow-md transition-shadow">
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-rose-100 dark:bg-rose-900 rounded-xl text-rose-600 dark:text-rose-400">
+              <Clock className="w-6 h-6" />
+            </div>
+            <div>
+              <h4 className="text-base font-bold text-rose-800 dark:text-rose-300">Aging Stock Alert</h4>
+              <p className="text-sm text-rose-600 dark:text-rose-400 font-medium">You have {stats.agingStockCount} items in the vault sitting for more than 90 days.</p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Main Bento Grid */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         
@@ -301,16 +319,33 @@ const Dashboard: React.FC = () => {
                   </div>
                 </div>
                 
-                <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">By Category</h4>
-                {!stats.typeWiseSales || Object.keys(stats.typeWiseSales).length === 0 ? (
+                <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Top Selling Categories</h4>
+                {(!stats.topCategories || stats.topCategories.length === 0) ? (
                   <p className="text-slate-400 text-sm">No sales data.</p>
                 ) : (
-                  Object.entries(stats.typeWiseSales).map(([type, data]: any) => (
-                    <div key={type} className="flex justify-between items-center text-sm">
-                      <span className="text-slate-600 dark:text-slate-400 font-medium">{type}</span>
-                      <span className="font-bold text-slate-900 dark:text-white">{data.weight?.toFixed(2) || '0.00'}g</span>
-                    </div>
-                  ))
+                  <div className="h-40 w-full relative">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={stats.topCategories}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={40}
+                          outerRadius={60}
+                          paddingAngle={2}
+                          dataKey="value"
+                        >
+                          {stats.topCategories.map((_: any, index: number) => (
+                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                          ))}
+                        </Pie>
+                        <RechartsTooltip 
+                          contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                        />
+                        <Legend verticalAlign="middle" align="right" layout="vertical" iconType="circle" wrapperStyle={{ fontSize: '12px' }}/>
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
                 )}
               </div>
             </div>

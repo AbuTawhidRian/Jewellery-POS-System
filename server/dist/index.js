@@ -237,8 +237,17 @@ app.post('/api/auth/register', authLimiter, async (req, res) => {
                     }
                 }
             },
-            include: { users: true }
+            include: { users: true, branches: true }
         });
+        if (newShop.branches && newShop.branches.length > 0) {
+            await prisma.buyer.create({
+                data: {
+                    shopId: newShop.id,
+                    branchId: newShop.branches[0].id,
+                    name: 'Cash Customer'
+                }
+            });
+        }
         const user = newShop.users[0];
         const token = jsonwebtoken_1.default.sign({ id: user.id, shopId: newShop.id, email: user.email, role: user.role }, JWT_SECRET, { expiresIn: '7d' });
         res.json({ token, user: { id: user.id, name: user.name, email: user.email, shopId: newShop.id, shopName: newShop.name, role: user.role } });
@@ -549,6 +558,13 @@ app.post('/api/branches', authenticateToken, requireRole(client_1.Role.OWNER), a
                 shopId: req.user.shopId,
                 name,
                 isMain: isMain || false
+            }
+        });
+        await prisma.buyer.create({
+            data: {
+                shopId: req.user.shopId,
+                branchId: branch.id,
+                name: 'Cash Customer'
             }
         });
         res.json(branch);
@@ -871,6 +887,105 @@ app.patch('/api/admin/subscriptions/:shopId', authenticateToken, requireSuperAdm
     }
 });
 // --- Dashboard Routes ---
+app.get('/api/dashboard/owner-stats', authenticateToken, requireActiveOrTrial, async (req, res) => {
+    try {
+        if (req.user?.role !== 'OWNER') {
+            return res.status(403).json({ error: 'Only owners can access global stats' });
+        }
+        const shopId = req.user.shopId;
+        const [branches, items, sales, payments, metalReceipts, itemTypes] = await Promise.all([
+            prisma.branch.findMany({ where: { shopId } }),
+            prisma.item.findMany({ where: { shopId, status: 'In Stock' } }),
+            prisma.sale.findMany({ where: { shopId }, include: { item: true } }),
+            prisma.payment.findMany({ where: { shopId } }),
+            prisma.metalReceipt.findMany({ where: { shopId } }),
+            prisma.itemType.findMany({ where: { shopId } })
+        ]);
+        const mainBranchIds = branches.filter(b => b.isMain).map(b => b.id);
+        // Main Branch Metrics
+        const mainItems = items.filter(i => i.branchId && mainBranchIds.includes(i.branchId));
+        const mainStockWeight = mainItems.reduce((acc, i) => acc + Math.max(0, (Number(i.weight) || 0) - (Number(i.stone_weight) || 0)), 0);
+        const mainStockGrossWeight = mainItems.reduce((acc, i) => acc + (Number(i.weight) || 0), 0);
+        const mainStockMakingCharge = mainItems.reduce((acc, i) => acc + (Number(i.makingCharge) || 0), 0);
+        const mainCashBalance = branches.filter(b => b.isMain).reduce((acc, b) => acc + (Number(b.cashBalance) || 0), 0);
+        const mainStockByType = mainItems.reduce((acc, item) => {
+            const type = item.type || 'Other';
+            if (!acc[type])
+                acc[type] = { weight: 0, pureWeight: 0 };
+            acc[type].weight += (Number(item.weight) || 0);
+            acc[type].pureWeight += Math.max(0, (Number(item.weight) || 0) - (Number(item.stone_weight) || 0));
+            return acc;
+        }, {});
+        // Normal Branch Metrics
+        const normalItems = items.filter(i => i.branchId && !mainBranchIds.includes(i.branchId));
+        const normalStockWeight = normalItems.reduce((acc, i) => acc + Math.max(0, (Number(i.weight) || 0) - (Number(i.stone_weight) || 0)), 0);
+        const normalStockGrossWeight = normalItems.reduce((acc, i) => acc + (Number(i.weight) || 0), 0);
+        const normalStockMakingCharge = normalItems.reduce((acc, i) => acc + (Number(i.makingCharge) || 0), 0);
+        const normalStockByType = normalItems.reduce((acc, item) => {
+            const type = item.type || 'Other';
+            if (!acc[type])
+                acc[type] = { weight: 0, pureWeight: 0 };
+            acc[type].weight += (Number(item.weight) || 0);
+            acc[type].pureWeight += Math.max(0, (Number(item.weight) || 0) - (Number(item.stone_weight) || 0));
+            return acc;
+        }, {});
+        const normalSales = sales.filter(s => s.branchId && !mainBranchIds.includes(s.branchId));
+        const normalMakingCollected = normalSales.reduce((acc, s) => acc + (Number(s.makingCharge) || 0), 0);
+        const normalCashBalance = branches.filter(b => !b.isMain).reduce((acc, b) => acc + (Number(b.cashBalance) || 0), 0);
+        // Global Metrics
+        const totalMakingCollected = sales.reduce((acc, s) => acc + (Number(s.makingCharge) || 0), 0);
+        // Branch Performance Leaderboard
+        const branchPerformance = branches.map(b => {
+            const bSales = sales.filter(s => s.branchId === b.id);
+            const bPayments = payments.filter(p => p.branchId === b.id);
+            const bMetalReceipts = metalReceipts.filter(m => m.branchId === b.id);
+            const totalSalesCount = bSales.length;
+            const totalSalesValue = bSales.reduce((acc, s) => acc + (Number(s.totalAmount) || 0), 0);
+            const totalPaid = bPayments.reduce((acc, p) => acc + (Number(p.amount) || 0), 0);
+            const totalCashReceivable = totalSalesValue - totalPaid;
+            const totalPureGoldSales = bSales.reduce((acc, sale) => {
+                const gw = Number(sale.weight) || 0;
+                const sw = Number(sale.item?.stone_weight) || 0;
+                const nw = Math.max(0, gw - sw);
+                const purity = itemTypes.find(t => t.name === sale.item?.type)?.purity ?? 1.0;
+                return acc + (nw * purity);
+            }, 0);
+            const totalPureGoldReceived = bMetalReceipts.reduce((acc, receipt) => {
+                const w = Number(receipt.weight) || 0;
+                const p = Number(receipt.purity) || 0.995;
+                return acc + (w * p);
+            }, 0);
+            const totalGoldReceivable = totalPureGoldSales - totalPureGoldReceived;
+            return {
+                id: b.id,
+                name: b.name,
+                isMain: b.isMain,
+                totalSalesCount,
+                totalSalesValue,
+                totalCashReceivable,
+                totalGoldReceivable
+            };
+        }).sort((a, b) => b.totalSalesValue - a.totalSalesValue); // Sort by highest sales value
+        res.json({
+            mainStockWeight,
+            mainStockGrossWeight,
+            mainStockMakingCharge,
+            mainCashBalance,
+            mainStockByType,
+            normalStockWeight,
+            normalStockGrossWeight,
+            normalStockMakingCharge,
+            normalMakingCollected,
+            normalCashBalance,
+            normalStockByType,
+            totalMakingCollected,
+            branchPerformance
+        });
+    }
+    catch (error) {
+        res.status(500).json({ error: error.message || 'Internal Server Error' });
+    }
+});
 app.get('/api/dashboard/stats', authenticateToken, requireActiveOrTrial, async (req, res) => {
     try {
         const shopId = req.user.shopId;
@@ -882,10 +997,12 @@ app.get('/api/dashboard/stats', authenticateToken, requireActiveOrTrial, async (
         let whereClause = { shopId };
         if (branchId)
             whereClause.branchId = branchId;
-        const [items, sales, itemTypes] = await Promise.all([
+        const [items, sales, itemTypes, payments, metalReceipts] = await Promise.all([
             prisma.item.findMany({ where: whereClause }),
             prisma.sale.findMany({ where: whereClause, include: { item: true, buyer: true } }),
-            prisma.itemType.findMany({ where: { shopId } })
+            prisma.itemType.findMany({ where: { shopId } }),
+            prisma.payment.findMany({ where: whereClause }),
+            prisma.metalReceipt.findMany({ where: whereClause })
         ]);
         const activeStock = items.filter(i => i.status === 'In Stock');
         const totalItemsInStock = activeStock.length;
@@ -899,6 +1016,7 @@ app.get('/api/dashboard/stats', authenticateToken, requireActiveOrTrial, async (
             const purity = itemTypes.find(t => t.name === item.type)?.purity ?? 1.0;
             return acc + (nw * purity);
         }, 0);
+        const totalMakingChargeInStock = activeStock.reduce((acc, item) => acc + (Number(item.makingCharge) || 0), 0);
         const now = new Date();
         const todayStr = now.toISOString().split('T')[0];
         const todaySales = sales.filter(s => {
@@ -963,12 +1081,39 @@ app.get('/api/dashboard/stats', authenticateToken, requireActiveOrTrial, async (
             stone_weight: s.item?.stone_weight,
             buyer_name: s.buyer?.name
         }));
+        // Calculate Cash Receivables
+        const totalCashSales = sales.reduce((acc, sale) => acc + (Number(sale.totalAmount) || 0), 0);
+        const totalCashPaid = payments.reduce((acc, payment) => acc + (Number(payment.amount) || 0), 0);
+        const totalCashReceivable = totalCashSales - totalCashPaid;
+        const totalMakingChargeBilled = sales.reduce((acc, sale) => acc + (Number(sale.makingCharge) || 0), 0);
+        // Calculate Gold Receivables
+        const totalPureGoldSales = sales.reduce((acc, sale) => {
+            const gw = Number(sale.weight) || 0;
+            const sw = Number(sale.item?.stone_weight) || 0;
+            const nw = Math.max(0, gw - sw);
+            const purity = itemTypes.find(t => t.name === sale.item?.type)?.purity ?? 1.0;
+            return acc + (nw * purity);
+        }, 0);
+        const totalPureGoldReceived = metalReceipts.reduce((acc, receipt) => {
+            const w = Number(receipt.weight) || 0;
+            const p = Number(receipt.purity) || 0.995;
+            return acc + (w * p);
+        }, 0);
+        const totalGoldReceivable = totalPureGoldSales - totalPureGoldReceived;
+        const ninetyDaysAgo = new Date();
+        ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+        const agingStockCount = activeStock.filter(i => new Date(i.dateAdded) < ninetyDaysAgo).length;
+        const topCategories = Object.entries(typeWiseSales)
+            .map(([name, data]) => ({ name, value: data.count }))
+            .sort((a, b) => b.value - a.value)
+            .slice(0, 5);
         res.json({
             totalItemsInStock,
             totalWeightInStock,
             totalGrossWeightInStock,
             totalStoneWeightInStock,
             totalPureWeightInStock,
+            totalMakingChargeInStock,
             totalSalesTodayItems,
             totalItemsSold,
             topStockModels,
@@ -977,7 +1122,14 @@ app.get('/api/dashboard/stats', authenticateToken, requireActiveOrTrial, async (
             topModels,
             totalSalesNetWeight,
             todaySalesNetWeight,
-            recentSales
+            recentSales,
+            totalCashReceivable,
+            totalGoldReceivable,
+            totalMakingChargeBilled,
+            totalCashSales,
+            totalCashPaid,
+            agingStockCount,
+            topCategories
         });
     }
     catch (error) {
@@ -1888,11 +2040,25 @@ app.get('/api/cash_transfers', authenticateToken, requireActiveOrTrial, async (r
 });
 app.post('/api/cash_transfers', authenticateToken, requireActiveOrTrial, async (req, res) => {
     try {
-        const { fromBranchId, toBranchId, amount, notes } = req.body;
+        const { fromBranchId, toBranchId, amount, notes, isOwnerPayment } = req.body;
         const shopId = req.user.shopId;
         const parsedAmount = parseFloat(amount);
         const fromBranch = await prisma.branch.findUnique({ where: { id: fromBranchId } });
         const isAutoApproved = !!fromBranch?.isMain;
+        if (isOwnerPayment) {
+            if (!fromBranch?.isMain)
+                return res.status(403).json({ error: 'Only the main branch can make owner payments.' });
+            const transfer = await prisma.$transaction(async (tx) => {
+                await tx.branch.update({
+                    where: { id: fromBranchId },
+                    data: { cashBalance: { decrement: parsedAmount } }
+                });
+                return await tx.branchCashTransfer.create({
+                    data: { shopId, fromBranchId, isOwnerPayment: true, amount: parsedAmount, notes, status: 'ACCEPTED' }
+                });
+            });
+            return res.json(transfer);
+        }
         if (isAutoApproved) {
             const transfer = await prisma.$transaction(async (tx) => {
                 await tx.branch.update({
@@ -1941,10 +2107,12 @@ app.put('/api/cash_transfers/:id/status', authenticateToken, requireActiveOrTria
                     data: { cashBalance: { decrement: transfer.amount } }
                 });
                 // Increment for receiver
-                await tx.branch.update({
-                    where: { id: transfer.toBranchId },
-                    data: { cashBalance: { increment: transfer.amount } }
-                });
+                if (transfer.toBranchId) {
+                    await tx.branch.update({
+                        where: { id: transfer.toBranchId },
+                        data: { cashBalance: { increment: transfer.amount } }
+                    });
+                }
                 // Update transfer status
                 return await tx.branchCashTransfer.update({
                     where: { id },
@@ -1984,11 +2152,25 @@ app.get('/api/gold_transfers', authenticateToken, requireActiveOrTrial, async (r
 });
 app.post('/api/gold_transfers', authenticateToken, requireActiveOrTrial, async (req, res) => {
     try {
-        const { fromBranchId, toBranchId, weight, notes } = req.body;
+        const { fromBranchId, toBranchId, weight, notes, isOwnerPayment } = req.body;
         const shopId = req.user.shopId;
         const parsedWeight = parseFloat(weight);
         const fromBranch = await prisma.branch.findUnique({ where: { id: fromBranchId } });
         const isAutoApproved = !!fromBranch?.isMain;
+        if (isOwnerPayment) {
+            if (!fromBranch?.isMain)
+                return res.status(403).json({ error: 'Only the main branch can make owner payments.' });
+            const transfer = await prisma.$transaction(async (tx) => {
+                await tx.branch.update({
+                    where: { id: fromBranchId },
+                    data: { goldBalance: { decrement: parsedWeight } }
+                });
+                return await tx.branchGoldTransfer.create({
+                    data: { shopId, fromBranchId, isOwnerPayment: true, weight: parsedWeight, notes, status: 'ACCEPTED' }
+                });
+            });
+            return res.json(transfer);
+        }
         if (isAutoApproved) {
             const transfer = await prisma.$transaction(async (tx) => {
                 await tx.branch.update({
@@ -2037,10 +2219,12 @@ app.put('/api/gold_transfers/:id/status', authenticateToken, requireActiveOrTria
                     data: { goldBalance: { decrement: transfer.weight } }
                 });
                 // Increment for receiver
-                await tx.branch.update({
-                    where: { id: transfer.toBranchId },
-                    data: { goldBalance: { increment: transfer.weight } }
-                });
+                if (transfer.toBranchId) {
+                    await tx.branch.update({
+                        where: { id: transfer.toBranchId },
+                        data: { goldBalance: { increment: transfer.weight } }
+                    });
+                }
                 // Update transfer status
                 return await tx.branchGoldTransfer.update({
                     where: { id },

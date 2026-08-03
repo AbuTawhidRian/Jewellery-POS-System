@@ -15,6 +15,15 @@ interface OwnerStats {
   normalCashBalance: number;
   normalStockByType?: any;
   totalMakingCollected: number;
+  branchPerformance?: {
+    id: string;
+    name: string;
+    isMain: boolean;
+    totalSalesCount: number;
+    totalSalesValue: number;
+    totalCashReceivable: number;
+    totalGoldReceivable: number;
+  }[];
 }
 
 interface OwnerOverviewProps {
@@ -158,6 +167,73 @@ const OwnerOverview: React.FC<OwnerOverviewProps> = ({ stats }) => {
           </h2>
         </div>
       </div>
+
+      {stats.branchPerformance && stats.branchPerformance.length > 0 && (
+        <div className="bg-white dark:bg-slate-950 rounded-3xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm">
+          <div className="p-6 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50">
+            <h3 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+              <Building2 className="w-5 h-5 text-[#C28C46]" />
+              Branch Performance Leaderboard
+            </h3>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Ranked by total sales value</p>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm whitespace-nowrap">
+              <thead className="bg-slate-50 dark:bg-slate-900/30 text-slate-500 dark:text-slate-400 font-medium border-b border-slate-200 dark:border-slate-800">
+                <tr>
+                  <th className="px-6 py-4">Rank</th>
+                  <th className="px-6 py-4">Branch Name</th>
+                  <th className="px-6 py-4 text-right">Total Sales Count</th>
+                  <th className="px-6 py-4 text-right">Total Sales Value</th>
+                  <th className="px-6 py-4 text-right">Cash Receivable</th>
+                  <th className="px-6 py-4 text-right">Gold Receivable</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
+                {stats.branchPerformance.map((branch, index) => (
+                  <tr key={branch.id} className="hover:bg-slate-50 dark:hover:bg-slate-900/50 transition-colors group">
+                    <td className="px-6 py-4">
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
+                        index === 0 ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-500' :
+                        index === 1 ? 'bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-400' :
+                        index === 2 ? 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-500' :
+                        'bg-slate-100 text-slate-500 dark:bg-slate-900 dark:text-slate-500'
+                      }`}>
+                        #{index + 1}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                        {branch.name}
+                        {branch.isMain && <span className="text-[10px] uppercase tracking-wider bg-slate-100 dark:bg-slate-800 text-slate-500 px-2 py-0.5 rounded-full">Main</span>}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 text-right font-medium text-slate-700 dark:text-slate-300">
+                      {branch.totalSalesCount.toLocaleString()}
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      <div className="font-bold text-slate-900 dark:text-white">
+                        <span className="text-slate-400 font-normal mr-1">{currency}</span>
+                        {branch.totalSalesValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      <div className={`font-medium ${branch.totalCashReceivable > 0 ? 'text-rose-500' : 'text-slate-500'}`}>
+                        {branch.totalCashReceivable > 0 ? '+' : ''}{branch.totalCashReceivable.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      <div className={`font-medium ${branch.totalGoldReceivable > 0 ? 'text-amber-500' : 'text-slate-500'}`}>
+                        {branch.totalGoldReceivable > 0 ? '+' : ''}{branch.totalGoldReceivable.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}g
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
     </div>
   );
