@@ -37,7 +37,7 @@ export const useScale = () => {
   const readLoop = async (port: any) => {
     while (port.readable && keepReadingRef.current) {
       const decoder = new TextDecoderStream();
-      const inputDone = port.readable.pipeTo(decoder.writable);
+      port.readable.pipeTo(decoder.writable).catch(console.error);
       const inputStream = decoder.readable;
       const reader = inputStream.getReader();
       readerRef.current = reader;
