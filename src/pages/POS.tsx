@@ -11,6 +11,7 @@ const POS: React.FC = () => {
   const { hasPermission, user } = useAuth();
   const { buyers, sales, payments, metalReceipts, processBulkSale, returnItems, addBuyer, editBuyer, deleteBuyer, addPayment, editPayment, deletePayment, addMetalReceipt, editMetalReceipt, deleteMetalReceipt, setPrintInvoiceData, setPrintItem, setPrintStatementData, setPrintPaymentData } = useInventory();
   const [selectedBuyer, setSelectedBuyer] = useState('');
+  const [walkInName, setWalkInName] = useState('');
   const [barcode, setBarcode] = useState('');
   const [notification, setNotification] = useState<{ type: 'success' | 'error', message: string } | null>(null);
   const [cart, setCart] = useState<Item[]>([]);
@@ -20,6 +21,42 @@ const POS: React.FC = () => {
   const [isCashMode, setIsCashMode] = useState(false);
   
   const totalMakingCharge = cart.reduce((acc, item) => acc + (Number(item.makingCharge) || 0), 0);
+  const [customTotalCharge, setCustomTotalCharge] = useState<string>('');
+  const [dailyRates, setDailyRates] = useState<Record<string, number>>({});
+  const [includeGoldValue, setIncludeGoldValue] = useState(false);
+
+  useEffect(() => {
+    const fetchRates = async () => {
+      try {
+        const res = await api.get('/gold_rates');
+        if (res.data) {
+          const newRates: Record<string, number> = {};
+          res.data.forEach((r: any) => { newRates[r.type] = r.rate; });
+          setDailyRates(newRates);
+        }
+      } catch (err) {
+        console.error("Failed to fetch rates", err);
+      }
+    };
+    fetchRates();
+  }, []);
+
+  const totalGoldValue = cart.reduce((acc, item) => {
+    const sw = Number(item.stone_weight) || 0;
+    const gw = Number(item.weight) || 0;
+    const nw = Math.max(0, gw - sw);
+    const rate = dailyRates[item.type] || 0;
+    return acc + (nw * rate);
+  }, 0);
+
+  useEffect(() => {
+    if (cart.length === 0) {
+      setCustomTotalCharge('');
+    } else {
+      const calculatedTotal = totalMakingCharge + (includeGoldValue ? totalGoldValue : 0);
+      setCustomTotalCharge(calculatedTotal > 0 ? calculatedTotal.toFixed(2) : '');
+    }
+  }, [totalMakingCharge, totalGoldValue, includeGoldValue, cart.length]);
   
   // Payment Modal State
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
@@ -327,35 +364,38 @@ const POS: React.FC = () => {
         }
       });
     } else {
-      const buyerName = buyers.find(b => b.id === selectedBuyer)?.name || 'Unknown Buyer';
+      const defaultBuyerName = buyers.find(b => b.id === selectedBuyer)?.name || 'Unknown Buyer';
+      const finalBuyerName = walkInName.trim() ? walkInName.trim() : defaultBuyerName;
       setDialogConfig({
         isOpen: true,
         type: 'confirm',
         title: 'Confirm Sale',
-        message: `Are you sure you want to complete this sale of ${completedCart.length} items to ${buyerName}?`,
+        message: `Are you sure you want to complete this sale of ${completedCart.length} items to ${finalBuyerName}?`,
         confirmText: 'Yes, Complete Sale',
         cancelText: 'Cancel',
         onConfirm: async () => {
           setDialogConfig(prev => ({ ...prev, isOpen: false }));
           
+          const finalCharge = Number(customTotalCharge) || 0;
           const barcodes = completedCart.map(c => c.barcode);
-          const result = await processBulkSale(barcodes, selectedBuyer, Number(totalMakingCharge) || 0);
+          const result = await processBulkSale(barcodes, selectedBuyer, finalCharge);
           
           if (result.success) {
             setPrintItem(null); // Clear any pending barcode
             setPrintStatementData(null); // Clear any pending statement
             setPrintInvoiceData({
-              buyerName,
+              buyerName: finalBuyerName,
               items: completedCart,
               date: new Date().toISOString(),
               totalWeight: weight,
-              totalMakingCharge: Number(totalMakingCharge) || 0
+              totalMakingCharge: finalCharge
             });
             showNotification('success', 'Sale completed successfully!');
             setTimeout(() => window.print(), 100);
             setCart([]);
             setSelectedBuyer('');
             setBuyerSearch('');
+            setWalkInName('');
           } else {
             showNotification('error', result.message);
           }
@@ -543,6 +583,19 @@ const POS: React.FC = () => {
                 </button>
               )}
             </div>
+
+            {selectedBuyer && (
+              <div className="mt-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                <input
+                  type="text"
+                  value={walkInName}
+                  onChange={(e) => setWalkInName(e.target.value)}
+                  className="w-full bg-slate-50 dark:bg-slate-900 border-2 border-slate-300 dark:border-slate-700 rounded-xl px-5 py-3 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:border-gold-500 transition-colors"
+                  placeholder="Optional: Enter Customer Name for Invoice"
+                  autoComplete="off"
+                />
+              </div>
+            )}
           </div>
           )}
 
@@ -679,11 +732,35 @@ const POS: React.FC = () => {
               <span className="text-3xl font-bold text-gold-500">{totalWeight.toFixed(2)}<span className="text-xl ml-1">g</span></span>
             </div>
             
-            {!isReturnMode && totalMakingCharge > 0 && (
+            {!isReturnMode && cart.length > 0 && (
               <div className="flex flex-col gap-4 mb-6 pt-4 border-t border-slate-200 dark:border-slate-800">
+                <div className="flex justify-between items-center">
+                  <label className="flex items-center gap-2 cursor-pointer text-slate-700 dark:text-slate-300 font-medium">
+                    <input 
+                      type="checkbox" 
+                      checked={includeGoldValue}
+                      onChange={(e) => setIncludeGoldValue(e.target.checked)}
+                      className="w-5 h-5 rounded border-slate-300 text-gold-500 focus:ring-gold-500"
+                    />
+                    Include Gold Value
+                  </label>
+                  {includeGoldValue && (
+                    <span className="text-sm font-bold text-slate-500 dark:text-slate-400">
+                      + {totalGoldValue.toFixed(2)} {user?.shopCurrency || 'AED'}
+                    </span>
+                  )}
+                </div>
                 <div className="flex justify-between items-center pt-2">
-                  <span className="text-slate-600 dark:text-slate-400 font-bold text-xl">Total Making Charge ({user?.shopCurrency || 'AED'})</span>
-                  <span className="text-xl font-bold text-slate-900 dark:text-slate-100 text-right">{totalMakingCharge.toFixed(2)}</span>
+                  <span className="text-slate-600 dark:text-slate-400 font-bold text-xl">Total Cash to Bill ({user?.shopCurrency || 'AED'})</span>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={customTotalCharge}
+                    onChange={(e) => setCustomTotalCharge(e.target.value)}
+                    className="w-40 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 text-xl font-bold text-slate-900 dark:text-slate-100 text-right focus:outline-none focus:border-gold-500 focus:ring-1 focus:ring-gold-500 transition-colors"
+                    placeholder="0.00"
+                  />
                 </div>
               </div>
             )}

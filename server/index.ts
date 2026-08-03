@@ -257,8 +257,18 @@ app.post('/api/auth/register', authLimiter, async (req, res) => {
           }
         }
       },
-      include: { users: true }
+      include: { users: true, branches: true }
     });
+
+    if (newShop.branches && newShop.branches.length > 0) {
+      await prisma.buyer.create({
+        data: {
+          shopId: newShop.id,
+          branchId: newShop.branches[0].id,
+          name: 'Cash Customer'
+        }
+      });
+    }
 
     const user = newShop.users[0];
     const token = jwt.sign({ id: user.id, shopId: newShop.id, email: user.email, role: user.role }, JWT_SECRET, { expiresIn: '7d' });
@@ -582,6 +592,15 @@ app.post('/api/branches', authenticateToken, requireRole(Role.OWNER), async (req
         isMain: isMain || false
       }
     });
+
+    await prisma.buyer.create({
+      data: {
+        shopId: req.user!.shopId!,
+        branchId: branch.id,
+        name: 'Cash Customer'
+      }
+    });
+
     res.json(branch);
   } catch (error: any) {
     res.status(500).json({ error: error.message || 'Internal Server Error' });

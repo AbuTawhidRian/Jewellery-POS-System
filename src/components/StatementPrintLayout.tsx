@@ -203,7 +203,7 @@ const StatementPrintLayout: React.FC = () => {
                     if (tx.makingCharge && tx.makingCharge !== 0) {
                       cashEntries.push({ 
                         date: tx.date, 
-                        type: tx.makingCharge > 0 ? 'Making Charge' : 'Making Charge (Refund)', 
+                        type: tx.makingCharge > 0 ? 'Sale Billed Amount' : 'Sale Billed Amount (Refund)', 
                         details: `${tx.totalItems} items`, 
                         charge: tx.makingCharge, 
                         payment: 0 

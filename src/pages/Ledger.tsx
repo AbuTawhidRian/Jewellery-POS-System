@@ -848,9 +848,10 @@ const Ledger: React.FC = () => {
           </div>
         </div>
         
-        <div className="bg-slate-50 dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 p-4 text-sm text-slate-500 dark:text-slate-400 flex justify-between">
+        <div className="bg-slate-50 dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 p-4 text-sm text-slate-500 dark:text-slate-400 flex flex-wrap gap-y-2 justify-between">
           <span>Total Transactions: <strong className="text-slate-700 dark:text-slate-300">{transactions.length}</strong></span>
           <div className="flex gap-4">
+            <span>Total Gross Weight Sold: <strong className="text-slate-700 dark:text-slate-300">{transactions.reduce((acc, tx) => acc + (tx.totalGross > 0 ? tx.totalGross : 0), 0).toFixed(2)}g</strong></span>
             <span>Total Net Weight Sold: <strong className="text-slate-700 dark:text-slate-300">{transactions.reduce((acc, tx) => acc + (tx.totalNet > 0 ? tx.totalNet : 0), 0).toFixed(2)}g</strong></span>
             <span>Total Pure Weight Sold: <strong className="text-gold-500">{transactions.reduce((acc, tx) => acc + (tx.totalPure > 0 ? tx.totalPure : 0), 0).toFixed(2)}g</strong></span>
           </div>
