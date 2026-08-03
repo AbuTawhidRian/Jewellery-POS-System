@@ -4,6 +4,7 @@ import { Plus, Search, XCircle, Trash2, Printer, Settings, CheckCircle, MoreVert
 import Dialog from '../components/Dialog';
 import { useAuth } from '../contexts/AuthContext';
 import api from '../lib/api';
+import { useScale } from '../hooks/useScale';
 
 const Vault: React.FC = () => {
   const { hasPermission, activeBranchId } = useAuth();
@@ -45,6 +46,8 @@ const Vault: React.FC = () => {
   const isRetailBranch = Boolean(currentBranch && currentBranch.isMain === false);
   const canEditVault = hasPermission('edit_vault');
   
+  const scale = useScale();
+  
   // Form State
   const [type, setType] = useState('');
   const [model, setModel] = useState('');
@@ -53,13 +56,19 @@ const Vault: React.FC = () => {
   const [makingPerGram, setMakingPerGram] = useState('');
   const [totalMaking, setTotalMaking] = useState('');
 
-  const handleWeightChange = (val: string) => {
+  const handleWeightChange = useCallback((val: string) => {
     setWeight(val);
     const gw = parseFloat(val) || 0;
     if (makingPerGram) {
       setTotalMaking(gw > 0 ? (parseFloat(makingPerGram) * gw).toFixed(2) : '');
     }
-  };
+  }, [makingPerGram]);
+
+  useEffect(() => {
+    if (scale.isConnected && scale.weight) {
+      handleWeightChange(scale.weight);
+    }
+  }, [scale.weight, scale.isConnected, handleWeightChange]);
 
   const handleStoneWeightChange = (val: string) => {
     setStoneWeight(val);
@@ -69,7 +78,7 @@ const Vault: React.FC = () => {
     }
   };
 
-  const handleMakingPerGramChange = (val: string) => {
+  const handleMakingPerGramChange = useCallback((val: string) => {
     setMakingPerGram(val);
     const gw = parseFloat(weight) || 0;
     if (val && gw > 0) {
@@ -77,7 +86,7 @@ const Vault: React.FC = () => {
     } else if (!val) {
       setTotalMaking('');
     }
-  };
+  }, [weight]);
 
   const handleTotalMakingChange = (val: string) => {
     setTotalMaking(val);
@@ -488,7 +497,20 @@ const Vault: React.FC = () => {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">Gross Wt (g)</label>
+                  <div className="flex justify-between items-center mb-1">
+                    <label className="block text-sm font-medium text-slate-600 dark:text-slate-400">Gross Wt (g)</label>
+                    <button
+                      type="button"
+                      onClick={scale.isConnected ? scale.disconnect : scale.connect}
+                      className={`text-[10px] px-2 py-0.5 rounded flex items-center gap-1 font-medium transition-colors ${
+                        scale.isConnected
+                          ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800'
+                          : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700'
+                      }`}
+                    >
+                      {scale.isConnected ? '🟢 Connected' : '🔌 Connect Scale'}
+                    </button>
+                  </div>
                   <input 
                     type="number"
                     required

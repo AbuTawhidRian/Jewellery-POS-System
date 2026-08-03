@@ -6,6 +6,7 @@ import { Html5QrcodeScanner } from 'html5-qrcode';
 import Dialog from '../components/Dialog';
 import { useAuth } from '../contexts/AuthContext';
 import api from '../lib/api';
+import { useScale } from '../hooks/useScale';
 
 const POS: React.FC = () => {
   const { hasPermission, user } = useAuth();
@@ -19,6 +20,8 @@ const POS: React.FC = () => {
   const [isScanning, setIsScanning] = useState(false);
   const [isReturnMode, setIsReturnMode] = useState(false);
   const [isCashMode, setIsCashMode] = useState(false);
+  
+  const scale = useScale();
   
   const totalMakingCharge = cart.reduce((acc, item) => acc + (Number(item.makingCharge) || 0), 0);
   const [customTotalCharge, setCustomTotalCharge] = useState<string>('');
@@ -85,6 +88,13 @@ const POS: React.FC = () => {
   const [isAddingBuyer, setIsAddingBuyer] = useState(false);
   const [editingBuyerId, setEditingBuyerId] = useState<string | null>(null);
   const [editingBuyerName, setEditingBuyerName] = useState('');
+
+  // Update metal form weight when scale is connected and reads a new weight
+  useEffect(() => {
+    if (isMetalModalOpen && scale.isConnected && scale.weight) {
+      setMetalFormData(prev => ({ ...prev, weight: scale.weight }));
+    }
+  }, [scale.weight, scale.isConnected, isMetalModalOpen]);
 
   // Searchable Dropdown State
   const [buyerSearch, setBuyerSearch] = useState('');
@@ -1497,7 +1507,20 @@ const POS: React.FC = () => {
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Weight (g)</label>
+                    <div className="flex justify-between items-center mb-1">
+                      <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">Weight (g)</label>
+                      <button
+                        type="button"
+                        onClick={scale.isConnected ? scale.disconnect : scale.connect}
+                        className={`text-xs px-2 py-0.5 rounded flex items-center gap-1 font-medium transition-colors ${
+                          scale.isConnected
+                            ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800'
+                            : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700'
+                        }`}
+                      >
+                        {scale.isConnected ? '🟢 Connected' : '🔌 Connect Scale'}
+                      </button>
+                    </div>
                     <input
                       type="number"
                       required
