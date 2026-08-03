@@ -5,6 +5,7 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import api from '../lib/api';
 import toast from 'react-hot-toast';
+import { useAuth } from '../contexts/AuthContext';
 
 const Transfers: React.FC = () => {
   const { activeBranchId, user } = useAuth();

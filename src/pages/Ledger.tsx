@@ -6,8 +6,8 @@ import Dialog from '../components/Dialog';
 import { useAuth } from '../contexts/AuthContext';
 
 const Ledger: React.FC = () => {
-  const { hasPermission, user } = useAuth();
-  const { sales, buyers, itemTypes, payments, metalReceipts, setPrintInvoiceData, setPrintStatementData, setPrintItem, voidTransaction, addPayment } = useInventory();
+  const { hasPermission } = useAuth();
+  const { sales, buyers, itemTypes, payments, metalReceipts, setPrintInvoiceData, setPrintStatementData, setPrintItem, voidTransaction } = useInventory();
   const [filterBuyerId, setFilterBuyerId] = useState<string>('all');
   const [filterDateRange, setFilterDateRange] = useState<string>('all');
   const [customStartDate, setCustomStartDate] = useState<string>('');
