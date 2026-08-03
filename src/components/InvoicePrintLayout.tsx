@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import { Store } from 'lucide-react';
 import { useInventory } from '../store/InventoryContext';
 import { format } from 'date-fns';
 import api from '../lib/api';
