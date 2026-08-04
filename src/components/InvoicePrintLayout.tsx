@@ -82,7 +82,10 @@ const InvoicePrintLayout: React.FC = () => {
               <th className="py-3 px-2 font-bold text-[10px] uppercase tracking-wider text-center border-r border-slate-200">Qty</th>
               <th className="py-3 px-2 font-bold text-[10px] uppercase tracking-wider text-right border-r border-slate-200">Gross Wt</th>
               <th className="py-3 px-2 font-bold text-[10px] uppercase tracking-wider text-right border-r border-slate-200">Stone Wt</th>
-              <th className="py-3 px-2 font-bold text-[10px] uppercase tracking-wider text-right">Net Wt (g)</th>
+              <th className="py-3 px-2 font-bold text-[10px] uppercase tracking-wider text-right border-r border-slate-200">Net Wt (g)</th>
+              <th className="py-3 px-2 font-bold text-[10px] uppercase tracking-wider text-right border-r border-slate-200">Gold Rate</th>
+              <th className="py-3 px-2 font-bold text-[10px] uppercase tracking-wider text-right border-r border-slate-200">Making</th>
+              <th className="py-3 px-2 font-bold text-[10px] uppercase tracking-wider text-right">Amount</th>
             </tr>
           </thead>
           <tbody className="text-xs">
@@ -95,16 +98,24 @@ const InvoicePrintLayout: React.FC = () => {
                   qty: 0,
                   weight: 0,
                   stone_weight: 0,
+                  makingCharge: 0,
                 };
               }
               acc[key].qty += 1;
               acc[key].weight += Number(item.weight) || 0;
               acc[key].stone_weight += Number(item.stone_weight) || 0;
+              acc[key].makingCharge += Number(item.makingCharge) || 0;
               return acc;
-            }, {} as Record<string, { model: string, type: string, qty: number, weight: number, stone_weight: number }>)).map((group, idx) => {
+            }, {} as Record<string, { model: string, type: string, qty: number, weight: number, stone_weight: number, makingCharge: number }>)).map((group, idx) => {
               const sw = group.stone_weight;
               const gw = group.weight;
               const nw = gw > 0 ? Math.max(0, gw - sw) : Math.min(0, gw + sw);
+              const goldRate = printInvoiceData.goldRates?.[group.type] || 0;
+              let goldValue = 0;
+              if (printInvoiceData.goldValueMode === 'gross') goldValue = gw * goldRate;
+              else if (printInvoiceData.goldValueMode === 'net') goldValue = nw * goldRate;
+              const amount = group.makingCharge + goldValue;
+              
               return (
               <tr key={`${group.model}-${group.type}`} className="border-b border-slate-200 print-stripe">
                 <td className="py-3 px-2 text-center text-slate-500 font-medium border-r border-slate-200">{idx + 1}</td>
@@ -115,7 +126,10 @@ const InvoicePrintLayout: React.FC = () => {
                 <td className="py-3 px-2 font-bold text-center text-slate-700 border-r border-slate-200">{group.qty}</td>
                 <td className="py-3 px-2 font-medium text-right text-slate-600 border-r border-slate-200">{gw.toFixed(2)}</td>
                 <td className="py-3 px-2 text-right text-slate-500 border-r border-slate-200">{sw > 0 ? sw.toFixed(2) : '-'}</td>
-                <td className="py-3 px-2 font-bold text-right text-slate-900">{nw.toFixed(2)}</td>
+                <td className="py-3 px-2 font-bold text-right text-slate-900 border-r border-slate-200">{nw.toFixed(2)}</td>
+                <td className="py-3 px-2 font-medium text-right text-slate-600 border-r border-slate-200">{goldRate > 0 ? goldRate.toFixed(2) : '-'}</td>
+                <td className="py-3 px-2 font-medium text-right text-slate-600 border-r border-slate-200">{group.makingCharge > 0 ? group.makingCharge.toFixed(2) : '-'}</td>
+                <td className="py-3 px-2 font-bold text-right text-slate-900">{amount > 0 ? amount.toFixed(2) : '-'}</td>
               </tr>
               );
             })}
@@ -129,9 +143,8 @@ const InvoicePrintLayout: React.FC = () => {
           <div className="w-1/2 pr-4 text-slate-500">
             <h4 className="font-bold text-slate-800 mb-2 uppercase text-[10px] tracking-wider">Terms & Conditions</h4>
             <p className="leading-relaxed text-[10px]">
-              1. Goods once sold cannot be returned but can be exchanged as per company policy.<br/>
-              2. Please bring this invoice for any future references or exchanges.<br/>
-              3. The purity of the gold is guaranteed as stated in the invoice.
+              1. Please bring this invoice for any future references or exchanges.<br/>
+              2. The purity of the gold is guaranteed as stated in the invoice.
             </p>
           </div>
 

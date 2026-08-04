@@ -72,6 +72,8 @@ export interface InvoiceData {
   items: Item[];
   totalWeight: number;
   totalMakingCharge?: number;
+  goldRates?: Record<string, number>;
+  goldValueMode?: 'none' | 'gross' | 'net';
 }
 
 export interface PaymentPrintData {

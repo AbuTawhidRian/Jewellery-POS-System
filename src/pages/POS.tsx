@@ -406,7 +406,9 @@ const POS: React.FC = () => {
               items: completedCart,
               date: new Date().toISOString(),
               totalWeight: weight,
-              totalMakingCharge: finalCharge
+              totalMakingCharge: finalCharge,
+              goldRates: dailyRates,
+              goldValueMode: goldValueMode
             });
             showNotification('success', 'Sale completed successfully!');
             setTimeout(() => window.print(), 100);

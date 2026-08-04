@@ -69,7 +69,11 @@ const Dashboard: React.FC = () => {
   useEffect(() => {
     const fetchRates = async () => {
       try {
-        const res = await api.get('/gold_rates');
+        let url = '/gold_rates';
+        if (effectiveBranchId) {
+          url += `?branchId=${effectiveBranchId}`;
+        }
+        const res = await api.get(url);
         if (Array.isArray(res.data)) {
           const newRates: Record<string, number> = {};
           res.data.forEach((r: any) => { newRates[r.type] = r.rate; });
@@ -80,7 +84,7 @@ const Dashboard: React.FC = () => {
       }
     };
     fetchRates();
-  }, []);
+  }, [effectiveBranchId]);
 
   const openRatesModal = () => {
     setEditRates({ ...dailyRates });
@@ -98,7 +102,9 @@ const Dashboard: React.FC = () => {
   const handleSaveRate = async (type: string) => {
     setSavingRate(type);
     try {
-      await api.post('/gold_rates', { type, rate: editRates[type] || 0 });
+      const payload: any = { type, rate: editRates[type] || 0 };
+      if (effectiveBranchId) payload.branchId = effectiveBranchId;
+      await api.post('/gold_rates', payload);
       toast.success(`Rate for ${type} updated!`);
       setDailyRates(prev => ({ ...prev, [type]: editRates[type] || 0 }));
     } catch (err: any) {
