@@ -353,6 +353,9 @@ const POS: React.FC = () => {
 
     const completedCart = [...cart];
     const weight = totalWeight;
+    const finalMakingChargeToUse = customTotalCharge !== '' 
+      ? (Number(customTotalCharge) - activeGoldValue) 
+      : totalMakingCharge;
 
     if (isReturnMode) {
       setDialogConfig({
@@ -394,9 +397,8 @@ const POS: React.FC = () => {
         onConfirm: async () => {
           setDialogConfig(prev => ({ ...prev, isOpen: false }));
           
-          const finalCharge = Number(customTotalCharge) || 0;
           const barcodes = completedCart.map(c => c.barcode);
-          const result = await processBulkSale(barcodes, selectedBuyer, finalCharge);
+          const result = await processBulkSale(barcodes, selectedBuyer, finalMakingChargeToUse, goldValueMode);
           
           if (result.success) {
             setPrintItem(null); // Clear any pending barcode
@@ -406,7 +408,7 @@ const POS: React.FC = () => {
               items: completedCart,
               date: new Date().toISOString(),
               totalWeight: weight,
-              totalMakingCharge: finalCharge,
+              totalMakingCharge: finalMakingChargeToUse,
               goldRates: dailyRates,
               goldValueMode: goldValueMode
             });

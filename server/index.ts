@@ -938,13 +938,15 @@ app.get('/api/dashboard/owner-stats', authenticateToken, requireActiveOrTrial, a
     }
     const shopId = req.user!.shopId!;
 
-    const [branches, items, sales, payments, metalReceipts, itemTypes] = await Promise.all([
+    const [branches, items, sales, payments, metalReceipts, itemTypes, branchCashTransfers, branchGoldTransfers] = await Promise.all([
       prisma.branch.findMany({ where: { shopId } }),
       prisma.item.findMany({ where: { shopId, status: 'In Stock' } }),
       prisma.sale.findMany({ where: { shopId }, include: { item: true } }),
       prisma.payment.findMany({ where: { shopId } }),
       prisma.metalReceipt.findMany({ where: { shopId } }),
-      prisma.itemType.findMany({ where: { shopId } })
+      prisma.itemType.findMany({ where: { shopId } }),
+      prisma.branchCashTransfer.findMany({ where: { shopId, status: 'ACCEPTED' } }),
+      prisma.branchGoldTransfer.findMany({ where: { shopId, status: 'ACCEPTED' } })
     ]);
 
     const mainBranchIds = branches.filter(b => b.isMain).map(b => b.id);
@@ -989,10 +991,18 @@ app.get('/api/dashboard/owner-stats', authenticateToken, requireActiveOrTrial, a
       const bPayments = payments.filter(p => p.branchId === b.id);
       const bMetalReceipts = metalReceipts.filter(m => m.branchId === b.id);
 
+      const bCashTransfersOut = branchCashTransfers.filter(t => t.fromBranchId === b.id);
+      const bCashTransfersIn = branchCashTransfers.filter(t => t.toBranchId === b.id);
+      const bGoldTransfersOut = branchGoldTransfers.filter(t => t.fromBranchId === b.id);
+      const bGoldTransfersIn = branchGoldTransfers.filter(t => t.toBranchId === b.id);
+
+      const makingCollected = bSales.reduce((acc, s) => acc + (Number(s.makingCharge) || 0), 0);
       const totalSalesCount = bSales.length;
       const totalSalesValue = bSales.reduce((acc, s) => acc + (Number(s.totalAmount) || 0), 0);
       const totalPaid = bPayments.reduce((acc, p) => acc + (Number(p.amount) || 0), 0);
-      const totalCashReceivable = totalSalesValue - totalPaid;
+      const totalCashTransferredOut = bCashTransfersOut.reduce((acc, t) => acc + (Number(t.amount) || 0), 0);
+      const totalCashTransferredIn = bCashTransfersIn.reduce((acc, t) => acc + (Number(t.amount) || 0), 0);
+      const totalCashReceivable = totalSalesValue - totalPaid - totalCashTransferredOut + totalCashTransferredIn;
 
       const totalPureGoldSales = bSales.reduce((acc, sale) => {
         const gw = Number(sale.weight) || 0;
@@ -1008,7 +1018,10 @@ app.get('/api/dashboard/owner-stats', authenticateToken, requireActiveOrTrial, a
         return acc + (w * p);
       }, 0);
 
-      const totalGoldReceivable = totalPureGoldSales - totalPureGoldReceived;
+      const totalGoldTransferredOut = bGoldTransfersOut.reduce((acc, t) => acc + (Number(t.weight) || 0), 0);
+      const totalGoldTransferredIn = bGoldTransfersIn.reduce((acc, t) => acc + (Number(t.weight) || 0), 0);
+
+      const totalGoldReceivable = totalPureGoldSales - totalPureGoldReceived - totalGoldTransferredOut + totalGoldTransferredIn;
 
       return {
         id: b.id,
@@ -1017,7 +1030,8 @@ app.get('/api/dashboard/owner-stats', authenticateToken, requireActiveOrTrial, a
         totalSalesCount,
         totalSalesValue,
         totalCashReceivable,
-        totalGoldReceivable
+        totalGoldReceivable,
+        makingCollected
       };
     }).sort((a, b) => b.totalSalesValue - a.totalSalesValue); // Sort by highest sales value
 
@@ -1664,7 +1678,7 @@ app.get('/api/sales', authenticateToken, requireActiveOrTrial, async (req: AuthR
 
 app.post('/api/sales/bulk', authenticateToken, requireActiveOrTrial, requireAccess([Role.OWNER, Role.MANAGER, Role.CASHIER], ['access_pos', 'delete_sale']), async (req: AuthRequest, res) => {
   try {
-    const { barcodes, buyerId } = req.body;
+    const { barcodes, buyerId, goldValueMode, totalMakingCharge } = req.body;
     const shopId = req.user!.shopId!;
     
     let actualBuyerId = buyerId;
@@ -1715,10 +1729,27 @@ app.post('/api/sales/bulk', authenticateToken, requireActiveOrTrial, requireAcce
         data: { status: 'Sold' }
       });
 
+      let totalItemWeight = 0;
+      itemsToSell.forEach((i: any) => totalItemWeight += i.weight);
+
       const saleData = itemsToSell.map((item: any) => {
         const rate = Number(rateMap.get(item.type) || 0);
-        const goldValue = item.weight * rate;
-        const makingCharge = item.makingCharge || 0;
+        
+        let goldValue = 0;
+        if (goldValueMode === 'gross') {
+          goldValue = item.weight * rate;
+        } else if (goldValueMode === 'net') {
+          goldValue = Math.max(0, item.weight - (item.stone_weight || 0)) * rate;
+        } else if (!goldValueMode) {
+          // Default to gross if not provided for backward compatibility
+          goldValue = item.weight * rate;
+        }
+
+        let makingCharge = Number(item.makingCharge) || 0;
+        if (totalMakingCharge !== undefined && totalItemWeight > 0) {
+           makingCharge = (item.weight / totalItemWeight) * Number(totalMakingCharge);
+        }
+
         return {
           shopId,
           itemId: item.id,

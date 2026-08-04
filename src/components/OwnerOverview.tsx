@@ -34,6 +34,11 @@ const OwnerOverview: React.FC<OwnerOverviewProps> = ({ stats }) => {
   const { user } = useAuth();
   const currency = user?.shopCurrency || 'AED';
 
+  const normalBranches = stats.branchPerformance?.filter((b: any) => !b.isMain) || [];
+  const normalBranchesLabel = normalBranches.length > 0 
+    ? normalBranches.map((b: any) => b.name).join(', ') 
+    : 'Normal Branches';
+
   const Card = ({ title, mainValue, normalValue, grossMainValue, grossNormalValue, mainByType, normalByType, icon: Icon, isCurrency = false, isWeight = false }: any) => (
     <div className="bg-white dark:bg-slate-950 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 hover:shadow-lg transition-all duration-300 relative overflow-hidden group">
       <div className="flex items-center gap-3 mb-6">
@@ -54,7 +59,7 @@ const OwnerOverview: React.FC<OwnerOverviewProps> = ({ stats }) => {
               {isCurrency && <span className="text-sm text-slate-400 mr-1">{currency}</span>}
               {mainValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               {isWeight && <span className="text-sm text-slate-400 ml-1">g</span>}
-              {isWeight && <span className="text-xs text-slate-500 ml-2 font-normal">(Pure)</span>}
+              {isWeight && <span className="text-xs text-slate-500 ml-2 font-normal">(Net)</span>}
             </div>
             {grossMainValue !== undefined && (
               <div className="text-lg font-bold text-slate-700 dark:text-slate-300 tracking-tight">
@@ -79,14 +84,14 @@ const OwnerOverview: React.FC<OwnerOverviewProps> = ({ stats }) => {
         <div className="p-4 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border border-slate-100 dark:border-slate-800">
           <div className="flex items-center gap-2 mb-2">
             <Store className="w-4 h-4 text-blue-500" />
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Normal Branches</span>
+            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider line-clamp-1" title={normalBranchesLabel}>{normalBranchesLabel}</span>
           </div>
           <div className="flex flex-col gap-1">
             <div className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">
               {isCurrency && <span className="text-sm text-slate-400 mr-1">{currency}</span>}
               {normalValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               {isWeight && <span className="text-sm text-slate-400 ml-1">g</span>}
-              {isWeight && <span className="text-xs text-slate-500 ml-2 font-normal">(Pure)</span>}
+              {isWeight && <span className="text-xs text-slate-500 ml-2 font-normal">(Net)</span>}
             </div>
             {grossNormalValue !== undefined && (
               <div className="text-lg font-bold text-slate-700 dark:text-slate-300 tracking-tight">
@@ -148,12 +153,35 @@ const OwnerOverview: React.FC<OwnerOverviewProps> = ({ stats }) => {
         <div className="bg-gradient-to-br from-slate-900 to-slate-800 dark:from-slate-950 dark:to-slate-900 p-8 rounded-3xl border border-slate-700/50 relative overflow-hidden shadow-xl">
           <div className="absolute -right-20 -top-20 w-64 h-64 bg-[#C28C46]/10 rounded-full blur-3xl"></div>
           <h3 className="text-slate-400 font-medium flex items-center gap-2 mb-4 relative z-10">
-            <DollarSign className="w-5 h-5 text-[#C28C46]"/> Making Collected (Normal Branches)
+            <DollarSign className="w-5 h-5 text-[#C28C46]"/> Making Collected ({normalBranchesLabel})
           </h3>
-          <h2 className="text-5xl font-extrabold text-white tracking-tight relative z-10">
-            <span className="text-2xl text-slate-500 font-medium mr-2">{currency}</span>
-            {stats.normalMakingCollected.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-          </h2>
+          <div className="relative z-10">
+            {normalBranches.length > 1 ? (
+              <div className="space-y-3 mt-4">
+                {normalBranches.map((branch: any) => (
+                  <div key={branch.id} className="flex justify-between items-end border-b border-slate-700/50 pb-2 last:border-0 last:pb-0">
+                    <span className="text-slate-300 font-medium">{branch.name}</span>
+                    <div className="text-2xl font-bold text-white tracking-tight">
+                      <span className="text-sm text-slate-500 font-medium mr-1">{currency}</span>
+                      {branch.makingCollected?.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}
+                    </div>
+                  </div>
+                ))}
+                <div className="flex justify-between items-end pt-3 mt-3 border-t border-slate-600">
+                  <span className="text-slate-400 font-bold uppercase text-xs tracking-wider">Total</span>
+                  <div className="text-3xl font-extrabold text-[#C28C46] tracking-tight">
+                    <span className="text-lg text-slate-500 font-medium mr-1">{currency}</span>
+                    {stats.normalMakingCollected.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <h2 className="text-5xl font-extrabold text-white tracking-tight">
+                <span className="text-2xl text-slate-500 font-medium mr-2">{currency}</span>
+                {stats.normalMakingCollected.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </h2>
+            )}
+          </div>
         </div>
         
         <div className="bg-gradient-to-br from-slate-900 to-slate-800 dark:from-slate-950 dark:to-slate-900 p-8 rounded-3xl border border-slate-700/50 relative overflow-hidden shadow-xl">
