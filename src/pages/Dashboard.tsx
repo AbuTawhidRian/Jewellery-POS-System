@@ -20,6 +20,8 @@ const Dashboard: React.FC = () => {
   const [selectedBranchId, setSelectedBranchId] = useState<string>('');
   const [branches, setBranches] = useState<any[]>([]);
 
+  const effectiveBranchId = selectedBranchId || activeBranchId;
+
   useEffect(() => {
     if (user?.role === 'OWNER') {
       const fetchBranches = async () => {
@@ -128,7 +130,6 @@ const Dashboard: React.FC = () => {
   }
 
   // Determine the effective branch being viewed (explicit dropdown > active context)
-  const effectiveBranchId = selectedBranchId || activeBranchId;
   const effectiveBranch = branches.find(b => b.id === effectiveBranchId);
   // Main branch: hide all sales sections — they only do stock/transfers, not retail sales
   const isMainBranch = effectiveBranch?.isMain === true;

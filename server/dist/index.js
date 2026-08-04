@@ -990,8 +990,8 @@ app.get('/api/dashboard/stats', authenticateToken, requireActiveOrTrial, async (
     try {
         const shopId = req.user.shopId;
         let branchId = req.user.branchId;
-        // Allow OWNER (who has no fixed branchId) to filter by a specific branch
-        if (!branchId && req.query.branchId) {
+        // Allow OWNER to filter by a specific branch, overriding the active branch header
+        if (req.user.role === 'OWNER' && req.query.branchId) {
             branchId = String(req.query.branchId);
         }
         let whereClause = { shopId };
@@ -1987,6 +1987,9 @@ app.get('/api/gold_rates', authenticateToken, requireActiveOrTrial, async (req, 
     try {
         const shopId = req.user.shopId;
         let branchId = req.user.branchId;
+        if (req.user.role === 'OWNER' && req.query.branchId) {
+            branchId = String(req.query.branchId);
+        }
         if (!branchId) {
             const branches = await prisma.branch.findMany({ where: { shopId } });
             if (branches.length > 0)
@@ -2007,15 +2010,31 @@ app.post('/api/gold_rates', authenticateToken, requireActiveOrTrial, requireAcce
     try {
         const { type, rate } = req.body;
         const shopId = req.user.shopId;
-        const branchId = req.user.branchId;
-        if (!branchId)
-            return res.status(400).json({ error: 'Must be assigned to a branch to set rates' });
+        let branchId = req.user.branchId;
+        if (req.user.role === 'OWNER' && req.body.branchId) {
+            branchId = String(req.body.branchId);
+        }
+        const parsedRate = parseFloat(rate);
+        if (!branchId) {
+            // If no branchId is specified (e.g. Owner on All Branches), apply the rate update to all branches
+            const branches = await prisma.branch.findMany({ where: { shopId } });
+            const results = [];
+            for (const b of branches) {
+                const upsertRate = await prisma.goldRate.upsert({
+                    where: { branchId_type: { branchId: b.id, type } },
+                    update: { rate: parsedRate },
+                    create: { shopId, branchId: b.id, type, rate: parsedRate }
+                });
+                results.push(upsertRate);
+            }
+            return res.json(results);
+        }
         const upsertRate = await prisma.goldRate.upsert({
             where: {
                 branchId_type: { branchId, type }
             },
-            update: { rate: parseFloat(rate) },
-            create: { shopId, branchId, type, rate: parseFloat(rate) }
+            update: { rate: parsedRate },
+            create: { shopId, branchId, type, rate: parsedRate }
         });
         res.json(upsertRate);
     }
