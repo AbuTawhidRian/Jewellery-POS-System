@@ -106,7 +106,7 @@ const Ledger: React.FC = () => {
   };
 
   const transactions = useMemo(() => {
-    const txMap = new Map<string, { date: string, buyerId: string, buyerName: string, items: Sale[], totalItems: number, totalStone: number, totalNet: number, totalGross: number, totalPure: number, totalMakingCharge: number }>();
+    const txMap = new Map<string, { date: string, buyerId: string, buyerName: string, items: Sale[], totalItems: number, totalStone: number, totalNet: number, totalGross: number, totalPure: number, totalCash: number, totalGoldValue: number, actualMakingCharge: number }>();
     
     filteredSales.forEach(sale => {
       const key = sale.date;
@@ -122,7 +122,9 @@ const Ledger: React.FC = () => {
           totalNet: 0,
           totalGross: 0,
           totalPure: 0,
-          totalMakingCharge: 0
+          totalCash: 0,
+          totalGoldValue: 0,
+          actualMakingCharge: 0
         });
       }
       
@@ -140,7 +142,9 @@ const Ledger: React.FC = () => {
       tx.totalGross += gw;
       tx.totalNet += nw;
       tx.totalPure += pureWeight;
-      tx.totalMakingCharge += Number(sale.makingCharge) || 0;
+      tx.totalCash += Number(sale.makingCharge) || 0;
+      tx.totalGoldValue += Number(sale.goldValue) || 0;
+      tx.actualMakingCharge += (Number(sale.makingCharge) || 0) - (Number(sale.goldValue) || 0);
     });
     
     return Array.from(txMap.values()).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
@@ -156,7 +160,7 @@ const Ledger: React.FC = () => {
 
     transactions.forEach(tx => {
       totalPurePurchased += tx.totalPure;
-      totalCashCharged += tx.totalMakingCharge;
+      totalCashCharged += tx.totalCash;
     });
 
     const buyerMetal = metalReceipts.filter(m => m.buyerId === filterBuyerId);
@@ -184,18 +188,24 @@ const Ledger: React.FC = () => {
     let totalNet = 0;
     let totalPure = 0;
     let totalGross = 0;
+    let totalCash = 0;
+    let totalMaking = 0;
     
     transactions.forEach(tx => {
       totalNet += tx.totalNet;
       totalPure += tx.totalPure;
       totalGross += tx.totalGross;
+      totalCash += tx.totalCash;
+      totalMaking += tx.actualMakingCharge;
     });
 
     return {
       totalTransactions: transactions.length,
       totalGross,
       totalNet,
-      totalPure
+      totalPure,
+      totalCash,
+      totalMaking
     };
   }, [filterBuyerId, transactions]);
 
@@ -221,7 +231,7 @@ const Ledger: React.FC = () => {
         type: tx.totalNet < 0 ? 'Return' : 'Sale',
         description: `${tx.totalItems} Items`,
         pureWeightChange: tx.totalPure, 
-        cashChange: tx.totalMakingCharge,
+        cashChange: tx.totalCash,
         ref: tx
       });
     });
@@ -305,7 +315,7 @@ const Ledger: React.FC = () => {
       stoneWeight: tx.totalStone,
       netWeight: tx.totalNet,
       pureWeight: tx.totalPure,
-      makingCharge: tx.totalMakingCharge,
+      makingCharge: tx.totalCash,
       items: tx.items
     }));
 
@@ -527,7 +537,7 @@ const Ledger: React.FC = () => {
       )}
 
       {globalSummary && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6 animate-in slide-in-from-bottom-2 duration-300">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-6 animate-in slide-in-from-bottom-2 duration-300">
           <div className="bg-gradient-to-br from-blue-500/10 to-blue-600/5 border border-blue-500/20 rounded-2xl p-6 shadow-sm flex flex-col relative overflow-hidden">
             <div className="absolute top-0 right-0 p-4 opacity-10">
               <ShoppingCart className="w-16 h-16 text-blue-600" />
@@ -575,6 +585,30 @@ const Ledger: React.FC = () => {
               {globalSummary.totalPure.toFixed(2)}<span className="text-lg text-gold-500 ml-1">g</span>
             </p>
           </div>
+
+          <div className="bg-gradient-to-br from-emerald-500/10 to-emerald-600/5 border border-emerald-500/20 rounded-2xl p-6 shadow-sm flex flex-col relative overflow-hidden">
+            <div className="absolute top-0 right-0 p-4 opacity-10">
+              <Wallet className="w-16 h-16 text-emerald-600" />
+            </div>
+            <h3 className="text-sm font-bold text-emerald-600 uppercase tracking-wider mb-2 flex items-center gap-2">
+              <Wallet className="w-4 h-4" /> Total Cash Billed
+            </h3>
+            <p className="text-3xl font-black text-slate-900 dark:text-white mt-auto">
+              {globalSummary.totalCash.toFixed(2)}
+            </p>
+          </div>
+
+          <div className="bg-gradient-to-br from-indigo-500/10 to-indigo-600/5 border border-indigo-500/20 rounded-2xl p-6 shadow-sm flex flex-col relative overflow-hidden">
+            <div className="absolute top-0 right-0 p-4 opacity-10">
+              <Wallet className="w-16 h-16 text-indigo-600" />
+            </div>
+            <h3 className="text-sm font-bold text-indigo-600 uppercase tracking-wider mb-2 flex items-center gap-2">
+              <Wallet className="w-4 h-4" /> Total Making Charge
+            </h3>
+            <p className="text-3xl font-black text-slate-900 dark:text-white mt-auto">
+              {globalSummary.totalMaking.toFixed(2)}
+            </p>
+          </div>
         </div>
       )}
 
@@ -592,6 +626,8 @@ const Ledger: React.FC = () => {
                 <th className="pb-3 px-4 font-medium text-right">Total Gross Wt</th>
                 <th className="pb-3 px-4 font-medium text-right">Total Net Wt</th>
                 <th className="pb-3 px-4 font-medium text-right">Total Pure Wt</th>
+                <th className="pb-3 px-4 font-medium text-right">Making</th>
+                <th className="pb-3 px-4 font-medium text-right">Total Billed</th>
                 <th className="pb-3 px-4 font-medium text-right">Action</th>
               </tr>
             </thead>
@@ -626,6 +662,8 @@ const Ledger: React.FC = () => {
                         <td className={`py-4 px-4 font-bold text-right ${isReturn ? 'text-red-500' : 'text-slate-700 dark:text-slate-300'}`}>{tx.totalGross.toFixed(2)}g</td>
                         <td className={`py-4 px-4 font-bold text-right ${isReturn ? 'text-red-500' : 'text-slate-700 dark:text-slate-300'}`}>{tx.totalNet.toFixed(2)}g</td>
                         <td className={`py-4 px-4 font-bold text-right ${isReturn ? 'text-red-500' : 'text-gold-400'}`}>{tx.totalPure.toFixed(2)}g</td>
+                        <td className={`py-4 px-4 font-medium text-right ${isReturn ? 'text-red-500' : 'text-slate-700 dark:text-slate-300'}`}>{tx.actualMakingCharge.toFixed(2)}</td>
+                        <td className={`py-4 px-4 font-bold text-right ${isReturn ? 'text-red-500' : 'text-emerald-600 dark:text-emerald-400'}`}>{tx.totalCash.toFixed(2)}</td>
                         <td className="py-4 px-4 text-right">
                           <div className="flex justify-end gap-2">
                             <button 
@@ -651,7 +689,7 @@ const Ledger: React.FC = () => {
                       </tr>
                       {isExpanded && (
                         <tr className="bg-slate-50 dark:bg-slate-900/30">
-                          <td colSpan={7} className="p-0 border-b-4 border-slate-100 dark:border-slate-900">
+                          <td colSpan={9} className="p-0 border-b-4 border-slate-100 dark:border-slate-900">
                             <div className="bg-slate-50 dark:bg-slate-900/50 p-6 animate-in slide-in-from-top-2 duration-200">
                               <h4 className={`text-xs font-bold uppercase tracking-wider mb-2 ${isReturn ? 'text-red-500' : 'text-slate-500 dark:text-slate-400'}`}>
                                 {isReturn ? 'Returned Items' : 'Transaction Details'}
@@ -666,6 +704,8 @@ const Ledger: React.FC = () => {
                                     <th className="pb-2 px-2 font-medium text-right">St. Wt</th>
                                     <th className="pb-2 px-2 font-medium text-right">Net Wt</th>
                                     <th className="pb-2 px-2 font-medium text-right">Pure Wt</th>
+                                    <th className="pb-2 px-2 font-medium text-right">Making</th>
+                                    <th className="pb-2 px-2 font-medium text-right">Amount</th>
                                   </tr>
                                 </thead>
                                 <tbody>
@@ -679,6 +719,9 @@ const Ledger: React.FC = () => {
                                         weight: 0,
                                         stone_weight: 0,
                                         pure_weight: 0,
+                                        makingCharge: 0,
+                                        goldValue: 0,
+                                        totalAmount: 0
                                       };
                                     }
                                     acc[key].qty += 1;
@@ -689,6 +732,13 @@ const Ledger: React.FC = () => {
                                     const purity = itemTypes.find(t => t.name === item.type)?.purity ?? 1.0;
                                     const itemNw = itemGw > 0 ? Math.max(0, itemGw - itemSw) : Math.min(0, itemGw + itemSw);
                                     acc[key].pure_weight += itemNw * purity;
+                                    
+                                    const goldVal = Number(item.goldValue) || 0;
+                                    const making = (Number(item.makingCharge) || 0) - goldVal;
+                                    acc[key].goldValue += goldVal;
+                                    acc[key].makingCharge += making;
+                                    acc[key].totalAmount += (Number(item.makingCharge) || 0); // sale.makingCharge is total cash billed
+                                    
                                     return acc;
                                   }, {})).map((group: any) => {
                                     const sw = Math.abs(group.stone_weight);
@@ -703,6 +753,8 @@ const Ledger: React.FC = () => {
                                         <td className="py-2 px-2 text-right text-slate-500 dark:text-slate-400">{sw > 0 ? sw.toFixed(2) + 'g' : '-'}</td>
                                         <td className="py-2 px-2 text-right font-medium text-slate-700 dark:text-slate-300">{nw.toFixed(2)}g</td>
                                         <td className="py-2 px-2 text-right font-medium text-gold-500">{group.pure_weight.toFixed(2)}g</td>
+                                        <td className="py-2 px-2 text-right font-medium text-slate-700 dark:text-slate-300">{group.makingCharge > 0 ? group.makingCharge.toFixed(2) : '-'}</td>
+                                        <td className="py-2 px-2 text-right font-medium text-emerald-600 dark:text-emerald-400">{group.totalAmount > 0 ? group.totalAmount.toFixed(2) : '-'}</td>
                                       </tr>
                                     );
                                   })}
@@ -792,7 +844,7 @@ const Ledger: React.FC = () => {
                           </tr>
                           {isExpanded && (isSale || isReturn) && (
                             <tr className="bg-slate-50 dark:bg-slate-900/30">
-                              <td colSpan={7} className="p-0 border-b-4 border-slate-100 dark:border-slate-900">
+                              <td colSpan={9} className="p-0 border-b-4 border-slate-100 dark:border-slate-900">
                                 <div className="bg-slate-50 dark:bg-slate-900/50 p-6 animate-in slide-in-from-top-2 duration-200">
                                   <h4 className={`text-xs font-bold uppercase tracking-wider mb-2 ${isReturn ? 'text-red-500' : 'text-slate-500 dark:text-slate-400'}`}>
                                     {isReturn ? 'Returned Items' : 'Transaction Details'}
@@ -807,6 +859,8 @@ const Ledger: React.FC = () => {
                                         <th className="pb-2 px-2 font-medium text-right">St. Wt</th>
                                         <th className="pb-2 px-2 font-medium text-right">Net Wt</th>
                                         <th className="pb-2 px-2 font-medium text-right">Pure Wt</th>
+                                        <th className="pb-2 px-2 font-medium text-right">Making</th>
+                                        <th className="pb-2 px-2 font-medium text-right">Amount</th>
                                       </tr>
                                     </thead>
                                     <tbody>
@@ -820,6 +874,9 @@ const Ledger: React.FC = () => {
                                             weight: 0,
                                             stone_weight: 0,
                                             pure_weight: 0,
+                                            makingCharge: 0,
+                                            goldValue: 0,
+                                            totalAmount: 0
                                           };
                                         }
                                         acc[key].qty += 1;
@@ -830,6 +887,13 @@ const Ledger: React.FC = () => {
                                         const purity = itemTypes.find(t => t.name === item.type)?.purity ?? 1.0;
                                         const itemNw = itemGw > 0 ? Math.max(0, itemGw - itemSw) : Math.min(0, itemGw + itemSw);
                                         acc[key].pure_weight += itemNw * purity;
+                                        
+                                        const goldVal = Number(item.goldValue) || 0;
+                                        const making = (Number(item.makingCharge) || 0) - goldVal;
+                                        acc[key].goldValue += goldVal;
+                                        acc[key].makingCharge += making;
+                                        acc[key].totalAmount += (Number(item.makingCharge) || 0); // sale.makingCharge is total cash billed
+                                        
                                         return acc;
                                       }, {})).map((group: any) => {
                                         const sw = Math.abs(group.stone_weight);
@@ -844,6 +908,8 @@ const Ledger: React.FC = () => {
                                             <td className="py-2 px-2 text-right text-slate-500 dark:text-slate-400">{sw > 0 ? sw.toFixed(2) + 'g' : '-'}</td>
                                             <td className="py-2 px-2 text-right font-medium text-slate-700 dark:text-slate-300">{nw.toFixed(2)}g</td>
                                             <td className="py-2 px-2 text-right font-medium text-gold-500">{group.pure_weight.toFixed(2)}g</td>
+                                            <td className="py-2 px-2 text-right font-medium text-slate-700 dark:text-slate-300">{group.makingCharge > 0 ? group.makingCharge.toFixed(2) : '-'}</td>
+                                            <td className="py-2 px-2 text-right font-medium text-emerald-600 dark:text-emerald-400">{group.totalAmount > 0 ? group.totalAmount.toFixed(2) : '-'}</td>
                                           </tr>
                                         );
                                       })}

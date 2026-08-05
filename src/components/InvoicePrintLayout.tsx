@@ -22,58 +22,71 @@ const InvoicePrintLayout: React.FC = () => {
 
   const currency = user?.shopCurrency || 'AED';
 
-  // Build grouped rows for the table
+  // ── Build grouped rows ──────────────────────────────────────────────────
   type GroupedItem = {
     model: string;
     type: string;
     qty: number;
-    weight: number;
-    stone_weight: number;
-    makingCharge: number;
-    goldRate: number;
+    grossWeight: number;    // sum of item.weight
+    stoneWeight: number;    // sum of item.stone_weight
+    netWeight: number;      // sum of (weight - stone_weight)
+    goldRate: number;       // gold rate for this type
   };
 
-  const groupedItems: GroupedItem[] = Object.values(
+  const groups: GroupedItem[] = Object.values(
     printInvoiceData.items.reduce((acc, item) => {
       const key = `${item.model || 'Unknown'}-${item.type}`;
       const goldRate = printInvoiceData.goldRates?.[item.type] || 0;
+      const gw = Number(item.weight) || 0;
+      const sw = Number(item.stone_weight) || 0;
+      const nw = Math.max(0, gw - sw);
       if (!acc[key]) {
-        acc[key] = {
-          model: item.model || 'Unknown',
-          type: item.type,
-          qty: 0,
-          weight: 0,
-          stone_weight: 0,
-          makingCharge: 0,
-          goldRate,
-        };
+        acc[key] = { model: item.model || 'Unknown', type: item.type, qty: 0, grossWeight: 0, stoneWeight: 0, netWeight: 0, goldRate };
       }
       acc[key].qty += 1;
-      acc[key].weight += Number(item.weight) || 0;
-      acc[key].stone_weight += Number(item.stone_weight) || 0;
-      acc[key].makingCharge += Number(item.makingCharge) || 0;
+      acc[key].grossWeight += gw;
+      acc[key].stoneWeight += sw;
+      acc[key].netWeight += nw;
       return acc;
     }, {} as Record<string, GroupedItem>)
   );
 
-  const totalGrossWeight = printInvoiceData.items.reduce(
-    (sum, item) => sum + (Number(item.weight) || 0),
-    0
-  );
+  // ── Totals ──────────────────────────────────────────────────────────────
+  const totalGrossWeight = groups.reduce((s, g) => s + g.grossWeight, 0);
+  const totalNetWeight = printInvoiceData.totalWeight;
 
-  const totalAmount = groupedItems.reduce((sum, group) => {
-    const gw = group.weight;
-    const nw = Math.max(0, gw - group.stone_weight);
-    let goldValue = 0;
-    if (printInvoiceData.goldValueMode === 'gross') goldValue = gw * group.goldRate;
-    else if (printInvoiceData.goldValueMode === 'net') goldValue = nw * group.goldRate;
-    return sum + group.makingCharge + goldValue;
-  }, 0);
+  // Gold value per group (based on goldValueMode)
+  const goldValueForGroup = (g: GroupedItem): number => {
+    if (printInvoiceData.goldValueMode === 'gross') return g.grossWeight * g.goldRate;
+    if (printInvoiceData.goldValueMode === 'net')   return g.netWeight   * g.goldRate;
+    // If 'none' or missing but rates exist, show gross gold value for transparency
+    if (g.goldRate > 0)                              return g.grossWeight * g.goldRate;
+    return 0;
+  };
 
-  const invoiceNo = printInvoiceData.invoiceNumber || `INV-${format(new Date(printInvoiceData.date), 'yyyyMMddHHmm')}`;
+  const totalGoldValue = groups.reduce((s, g) => s + goldValueForGroup(g), 0);
+
+  // The actual billed amount is `totalMakingCharge` (which in POS represents
+  // total cash = making + gold when goldValueMode is set, or just the custom total).
+  // If we have gold value calculated, making portion = billed - goldValue.
+  // If goldValueMode is 'none' and no rates → the billed total IS the making charge.
+  const billedTotal = printInvoiceData.totalMakingCharge ?? totalGoldValue;
+  const makingTotal = billedTotal - totalGoldValue;
+
+  // Per-group making charge: prorate by netWeight share
+  const makingForGroup = (g: GroupedItem): number => {
+    if (totalNetWeight <= 0) return 0;
+    return (g.netWeight / totalNetWeight) * makingTotal;
+  };
+
+  // Per-group final amount
+  const amountForGroup = (g: GroupedItem): number => goldValueForGroup(g) + makingForGroup(g);
+
+  const grandTotal = groups.reduce((s, g) => s + amountForGroup(g), 0);
+
+  const invoiceNo    = printInvoiceData.invoiceNumber || `INV-${format(new Date(printInvoiceData.date), 'yyyyMMddHHmm')}`;
   const salesmanName = printInvoiceData.salesmanName || user?.name || user?.email || 'Staff';
 
-  // Collect unique gold rates for the sub-header
   const rateEntries = Object.entries(printInvoiceData.goldRates || {}).filter(([, r]) => r > 0);
 
   return (
@@ -85,10 +98,7 @@ const InvoicePrintLayout: React.FC = () => {
           #invoice-print-area, #invoice-print-area * { visibility: visible; }
           #invoice-print-area { position: absolute; left: 0; top: 0; width: 100%; }
           .print-bg-header { background-color: #f1f5f9 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-          .print-bg-subheader { background-color: #e2e8f0 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
           .print-stripe:nth-child(even) { background-color: #f8fafc !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-          .print-gold { color: #b45309 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-          .print-border-b { border-bottom: 1.5px solid #cbd5e1 !important; }
         `}
       </style>
 
@@ -96,8 +106,7 @@ const InvoicePrintLayout: React.FC = () => {
         <div className="max-w-[14.8cm] w-full mx-auto p-3 bg-white">
 
           {/* ── TOP HEADER ── */}
-          <div className="flex justify-between items-start print-border-b pb-3 mb-3">
-            {/* Left: Shop name */}
+          <div className="flex justify-between items-start border-b-2 border-slate-300 pb-3 mb-3">
             <div>
               <h1 className="text-[22px] font-black tracking-tight text-slate-900 uppercase leading-tight">
                 {activeBranchName || user?.shopName || 'Jewellery Shop'}
@@ -113,12 +122,8 @@ const InvoicePrintLayout: React.FC = () => {
                 </p>
               )}
             </div>
-
-            {/* Right: INVOICE label + metadata table */}
             <div className="text-right">
-              <h2 className="text-[20px] font-black text-slate-300 tracking-[0.2em] uppercase mb-1">
-                INVOICE
-              </h2>
+              <h2 className="text-[20px] font-black text-slate-300 tracking-[0.2em] uppercase mb-1">INVOICE</h2>
               <table className="text-[10px] text-slate-600 ml-auto">
                 <tbody>
                   <tr>
@@ -143,14 +148,16 @@ const InvoicePrintLayout: React.FC = () => {
           </div>
 
           {/* ── CUSTOMER + GOLD RATE ROW ── */}
-          <div className="flex justify-between items-end mb-3 print-border-b pb-3">
+          <div className="flex justify-between items-end mb-3 border-b border-slate-200 pb-3">
             <div>
               <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Billed To</p>
               <p className="text-[15px] font-bold text-slate-900 leading-tight">{printInvoiceData.buyerName}</p>
             </div>
             {rateEntries.length > 0 && (
               <div className="text-right">
-                <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Gold Rate ({currency}/g)</p>
+                <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">
+                  Gold Rate ({currency}/g)
+                </p>
                 <div className="flex gap-3 justify-end flex-wrap">
                   {rateEntries.map(([type, rate]) => (
                     <span key={type} className="text-[10px] font-bold text-slate-700">
@@ -177,15 +184,10 @@ const InvoicePrintLayout: React.FC = () => {
               </tr>
             </thead>
             <tbody className="text-[10px]">
-              {groupedItems.map((group, idx) => {
-                const gw = group.weight;
-                const sw = group.stone_weight;
-                const nw = Math.max(0, gw - sw);
-                let goldValue = 0;
-                if (printInvoiceData.goldValueMode === 'gross') goldValue = gw * group.goldRate;
-                else if (printInvoiceData.goldValueMode === 'net') goldValue = nw * group.goldRate;
-                const amount = group.makingCharge + goldValue;
-
+              {groups.map((group, idx) => {
+                const goldVal  = goldValueForGroup(group);
+                const making   = makingForGroup(group);
+                const amount   = goldVal + making;
                 return (
                   <tr key={`${group.model}-${group.type}-${idx}`} className="border-b border-slate-200 print-stripe">
                     <td className="py-2 px-1.5 text-center text-slate-500 font-medium border-r border-slate-200">{idx + 1}</td>
@@ -194,10 +196,10 @@ const InvoicePrintLayout: React.FC = () => {
                       <div className="text-[8px] text-slate-500 mt-0.5 uppercase tracking-wide">{group.type}</div>
                     </td>
                     <td className="py-2 px-1.5 font-bold text-center text-slate-700 border-r border-slate-200">{group.qty}</td>
-                    <td className="py-2 px-1.5 font-medium text-right text-slate-600 border-r border-slate-200">{gw.toFixed(2)}</td>
-                    <td className="py-2 px-1.5 text-right text-slate-500 border-r border-slate-200">{sw > 0 ? sw.toFixed(2) : '-'}</td>
-                    <td className="py-2 px-1.5 font-bold text-right text-slate-900 border-r border-slate-200">{nw.toFixed(2)}</td>
-                    <td className="py-2 px-1.5 font-medium text-right text-slate-600 border-r border-slate-200">{group.makingCharge > 0 ? group.makingCharge.toFixed(2) : '-'}</td>
+                    <td className="py-2 px-1.5 font-medium text-right text-slate-600 border-r border-slate-200">{group.grossWeight.toFixed(2)}</td>
+                    <td className="py-2 px-1.5 text-right text-slate-500 border-r border-slate-200">{group.stoneWeight > 0 ? group.stoneWeight.toFixed(2) : '-'}</td>
+                    <td className="py-2 px-1.5 font-bold text-right text-slate-900 border-r border-slate-200">{group.netWeight.toFixed(2)}</td>
+                    <td className="py-2 px-1.5 font-medium text-right text-slate-600 border-r border-slate-200">{making > 0 ? making.toFixed(2) : '-'}</td>
                     <td className="py-2 px-1.5 font-bold text-right text-slate-900">{amount > 0 ? amount.toFixed(2) : '-'}</td>
                   </tr>
                 );
@@ -232,26 +234,26 @@ const InvoicePrintLayout: React.FC = () => {
                   </tr>
                   <tr className="border-t border-slate-200">
                     <td className="py-1.5 pr-3 font-black text-slate-900 text-[11px]">Total Net Weight:</td>
-                    <td className="py-1.5 font-black text-slate-900 text-[11px] w-24 text-right">{printInvoiceData.totalWeight.toFixed(2)} g</td>
+                    <td className="py-1.5 font-black text-slate-900 text-[11px] w-24 text-right">{totalNetWeight.toFixed(2)} g</td>
                   </tr>
-                  {totalAmount > 0 && (
-                    <tr className="border-t-2 border-slate-400">
-                      <td className="py-2 pr-3 font-black text-slate-900 text-[12px]">Total Amount:</td>
-                      <td className="py-2 font-black text-slate-900 text-[13px] w-24 text-right">
-                        {totalAmount.toFixed(2)} <span className="text-[9px] font-bold">{currency}</span>
-                      </td>
-                    </tr>
-                  )}
-                  {printInvoiceData.totalMakingCharge !== undefined &&
-                   printInvoiceData.totalMakingCharge !== 0 &&
-                   Math.abs(printInvoiceData.totalMakingCharge - totalAmount) > 0.5 && (
+                  {totalGoldValue > 0 && (
                     <tr>
-                      <td className="py-1 pr-3 font-medium text-slate-500 text-[9px]">Total Billed (Cash):</td>
-                      <td className="py-1 font-bold text-slate-700 text-[10px] w-24 text-right">
-                        {printInvoiceData.totalMakingCharge.toFixed(2)} <span className="text-[8px]">{currency}</span>
-                      </td>
+                      <td className="py-1 pr-3 font-medium text-slate-600">Gold Value:</td>
+                      <td className="py-1 font-bold text-slate-700 w-24 text-right">{totalGoldValue.toFixed(2)}</td>
                     </tr>
                   )}
+                  {makingTotal > 0 && (
+                    <tr>
+                      <td className="py-1 pr-3 font-medium text-slate-600">Making Charge:</td>
+                      <td className="py-1 font-bold text-slate-700 w-24 text-right">{makingTotal.toFixed(2)}</td>
+                    </tr>
+                  )}
+                  <tr className="border-t-2 border-slate-400">
+                    <td className="py-2 pr-3 font-black text-slate-900 text-[12px]">Total Amount:</td>
+                    <td className="py-2 font-black text-slate-900 text-[13px] w-24 text-right">
+                      {grandTotal.toFixed(2)} <span className="text-[9px] font-bold">{currency}</span>
+                    </td>
+                  </tr>
                 </tbody>
               </table>
             </div>
@@ -265,7 +267,6 @@ const InvoicePrintLayout: React.FC = () => {
                 <p className="text-[8px] text-slate-400 mt-0.5">{printInvoiceData.buyerName}</p>
               </div>
             </div>
-
             <div className="text-center" style={{ minWidth: '120px' }}>
               <div className="border-t border-slate-400 pt-1.5 mt-8">
                 <p className="text-[9px] font-bold text-slate-600 uppercase tracking-wider">Authorised Signatory</p>

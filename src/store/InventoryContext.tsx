@@ -45,6 +45,9 @@ export interface Sale {
   type: string;
   model: string;
   makingCharge: number;
+  goldRate: number;
+  goldValue: number;
+  totalAmount: number;
 }
 
 export interface Payment {
@@ -117,7 +120,7 @@ interface InventoryContextType {
   addModel: (name: string) => Promise<ItemModel | null>;
   editModel: (id: string, name: string) => Promise<boolean>;
   deleteModel: (id: string) => Promise<boolean>;
-  processBulkSale: (barcodes: string[], buyerId: string, totalMakingCharge?: number, goldValueMode?: 'none' | 'gross' | 'net') => Promise<{ success: boolean; message: string }>;
+  processBulkSale: (barcodes: string[], buyerId: string, buyerName: string, totalMakingCharge?: number, goldValueMode?: 'none' | 'gross' | 'net') => Promise<{ success: boolean; message: string }>;
   voidTransaction: (buyerId: string, date: string) => Promise<{ success: boolean; message: string }>;
   returnItems: (barcodes: string[]) => Promise<{ success: boolean; message: string }>;
   addPayment: (buyerId: string, amount: number, notes?: string) => Promise<boolean>;
@@ -438,14 +441,14 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }
   };
 
-  const processBulkSale = async (barcodes: string[], buyerId: string, totalMakingCharge: number = 0, goldValueMode: 'none' | 'gross' | 'net' = 'none') => {
+  const processBulkSale = async (barcodes: string[], buyerId: string, buyerName: string, totalMakingCharge: number = 0, goldValueMode: 'none' | 'gross' | 'net' = 'none') => {
     const buyer = buyers.find(b => b.id === buyerId);
     if (!buyer) return { success: false, message: 'Buyer not found.' };
 
     try {
       const res = await authFetch(`${API_URL}/sales/bulk`, {
         method: 'POST',
-        body: JSON.stringify({ barcodes, buyerId, totalMakingCharge, goldValueMode })
+        body: JSON.stringify({ barcodes, buyerId, buyerName, totalMakingCharge, goldValueMode })
       });
       
       const result = await res.json();

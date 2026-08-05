@@ -398,7 +398,7 @@ const POS: React.FC = () => {
           setDialogConfig(prev => ({ ...prev, isOpen: false }));
           
           const barcodes = completedCart.map(c => c.barcode);
-          const result = await processBulkSale(barcodes, selectedBuyer, finalMakingChargeToUse, goldValueMode);
+          const result = await processBulkSale(barcodes, selectedBuyer, finalBuyerName, finalMakingChargeToUse, goldValueMode);
           
           if (result.success) {
             setPrintItem(null); // Clear any pending barcode

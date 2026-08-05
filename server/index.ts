@@ -1678,7 +1678,7 @@ app.get('/api/sales', authenticateToken, requireActiveOrTrial, async (req: AuthR
 
 app.post('/api/sales/bulk', authenticateToken, requireActiveOrTrial, requireAccess([Role.OWNER, Role.MANAGER, Role.CASHIER], ['access_pos', 'delete_sale']), async (req: AuthRequest, res) => {
   try {
-    const { barcodes, buyerId, goldValueMode, totalMakingCharge } = req.body;
+    const { barcodes, buyerId, buyerName, goldValueMode, totalMakingCharge } = req.body;
     const shopId = req.user!.shopId!;
     
     let actualBuyerId = buyerId;
@@ -1687,6 +1687,16 @@ app.post('/api/sales/bulk', authenticateToken, requireActiveOrTrial, requireAcce
     if (buyerId) {
       const buyer = await prisma.buyer.findUnique({ where: { id: buyerId } });
       if (!buyer || buyer.shopId !== shopId) return res.status(400).json({ error: 'Buyer not found in your shop' });
+      
+      // Dynamic walk-in customer handling:
+      // If the provided buyerName differs from the existing buyer's name,
+      // create a new buyer record on the fly to capture the walk-in name!
+      if (buyerName && buyer.name !== buyerName) {
+         const newBuyer = await prisma.buyer.create({
+            data: { shopId, branchId: buyer.branchId, name: buyerName }
+         });
+         actualBuyerId = newBuyer.id;
+      }
     } else {
        return res.status(400).json({ error: 'Buyer is required' });
     }
