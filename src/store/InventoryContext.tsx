@@ -74,6 +74,8 @@ export interface InvoiceData {
   totalMakingCharge?: number;
   goldRates?: Record<string, number>;
   goldValueMode?: 'none' | 'gross' | 'net';
+  invoiceNumber?: string;
+  salesmanName?: string;
 }
 
 export interface PaymentPrintData {

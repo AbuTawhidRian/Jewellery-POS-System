@@ -410,7 +410,9 @@ const POS: React.FC = () => {
               totalWeight: weight,
               totalMakingCharge: finalMakingChargeToUse,
               goldRates: dailyRates,
-              goldValueMode: goldValueMode
+              goldValueMode: goldValueMode,
+              invoiceNumber: `INV-${Date.now().toString().slice(-8)}`,
+              salesmanName: user?.name || user?.email || 'Staff'
             });
             showNotification('success', 'Sale completed successfully!');
             setTimeout(() => window.print(), 100);
